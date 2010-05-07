@@ -28,7 +28,6 @@ Define_Module(TCPBasicClientApp);
 TCPBasicClientApp::TCPBasicClientApp()
 {
     timeoutMsg = NULL;
-    socketapi = NULL;
 }
 
 TCPBasicClientApp::~TCPBasicClientApp()
