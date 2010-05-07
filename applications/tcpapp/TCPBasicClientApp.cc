@@ -28,6 +28,7 @@ Define_Module(TCPBasicClientApp);
 TCPBasicClientApp::TCPBasicClientApp()
 {
     timeoutMsg = NULL;
+    socketapi = NULL;
 }
 
 TCPBasicClientApp::~TCPBasicClientApp()
@@ -52,6 +53,7 @@ void TCPBasicClientApp::initialize()
 
 void TCPBasicClientApp::sendRequest()
 {
+
      EV << "sending request, " << numRequestsToSend-1 << " more to go\n";
 
      long requestLength = par("requestLength");
@@ -64,6 +66,7 @@ void TCPBasicClientApp::sendRequest()
 
 void TCPBasicClientApp::handleTimer(cMessage *msg)
 {
+
     switch (msg->getKind())
     {
         case MSGKIND_CONNECT:
@@ -88,6 +91,7 @@ void TCPBasicClientApp::handleTimer(cMessage *msg)
 
 void TCPBasicClientApp::socketEstablished(int connId, void *ptr)
 {
+
     TCPGenericCliAppBase::socketEstablished(connId, ptr);
 
     // determine number of requests in this session
@@ -102,6 +106,7 @@ void TCPBasicClientApp::socketEstablished(int connId, void *ptr)
 
 void TCPBasicClientApp::socketDataArrived(int connId, void *ptr, cPacket *msg, bool urgent)
 {
+
     TCPGenericCliAppBase::socketDataArrived(connId, ptr, msg, urgent);
 
     if (numRequestsToSend>0)
@@ -119,6 +124,7 @@ void TCPBasicClientApp::socketDataArrived(int connId, void *ptr, cPacket *msg, b
 
 void TCPBasicClientApp::socketClosed(int connId, void *ptr)
 {
+
     TCPGenericCliAppBase::socketClosed(connId, ptr);
 
     // start another session after a delay
@@ -128,6 +134,7 @@ void TCPBasicClientApp::socketClosed(int connId, void *ptr)
 
 void TCPBasicClientApp::socketFailure(int connId, void *ptr, int code)
 {
+
     TCPGenericCliAppBase::socketFailure(connId, ptr, code);
 
     // reconnect after a delay

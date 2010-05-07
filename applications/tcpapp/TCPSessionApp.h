@@ -18,7 +18,6 @@
 #include <omnetpp.h>
 #include "TCPSocket.h"
 
-
 /**
  * Single-connection TCP application.
  */

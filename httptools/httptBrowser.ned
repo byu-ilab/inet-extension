@@ -55,7 +55,7 @@ simple httptBrowser like TCPApp
         string logFile = default("");					// Name of a browser log file. Browse events are appended, allowing sharing of file for multiple browsers.
         string scriptFile = default("");				// The browsing script file. Blank to disable.
         double activationTime @unit("s") = default(0s);	// The initial activation delay. Zero to disable.
-        xml config;										// The XML config file        
+        xml config;										// The XML config file
     gates:
         input tcpIn;
         output tcpOut;

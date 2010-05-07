@@ -60,7 +60,7 @@ simple httptServerDirect like TCPApp
         string siteDefinition = default("");				// The site script file. Blank to disable.
         double activationTime @unit(s) = default(0s);		// The initial activation delay. Zero to disable.
         double linkSpeed @unit(Mbits) = default(11Mbits);	// Used to model transmission delays.
-        xml config;											// The XML configuration file for random sites        
+        xml config;											// The XML configuration file for random sites
     gates:
         input tcpIn;
         output tcpOut;

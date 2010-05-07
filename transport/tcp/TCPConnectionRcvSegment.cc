@@ -492,15 +492,21 @@ TCPEventCode TCPConnection::processSegment1stThru8th(TCPSegment *tcpseg)
                     // as many bytes as requested. rcv_wnd should be decreased
                     // accordingly!
                     //
+                	EV << "Sending data to app";
+                	int num = 0;
                     cPacket *msg;
                     while ((msg=receiveQueue->extractBytesUpTo(state->rcv_nxt))!=NULL)
                     {
+                    	num++;
                         msg->setKind(TCP_I_DATA);  // TBD currently we never send TCP_I_URGENT_DATA
                         TCPCommand *cmd = new TCPCommand();
                         cmd->setConnId(connId);
                         msg->setControlInfo(cmd);
+                        EV << "\nsegment "<<num;
                         sendToApp(msg);
                     }
+                    EV << "\nDone sending data to app";
+
 
                     // if this segment "filled the gap" until the previously arrived segment
                     // that carried a FIN (i.e.rcv_nxt==rcv_fin_seq), we have to advance

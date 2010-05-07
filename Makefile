@@ -18,6 +18,7 @@ INCLUDE_PATH = \
     -Iapplications/rtpapp \
     -Iapplications/sctpapp \
     -Iapplications/tcpapp \
+    -Iapplications/tcpapp/socketapi \
     -Iapplications/udpapp \
     -Ibase \
     -Ihttptools \
@@ -285,6 +286,7 @@ OBJS = \
     $O/networklayer/ted/LinkStateRouting.o \
     $O/networklayer/ted/TED.o \
     $O/transport/contract/TCPSocket.o \
+    $O/transport/contract/TCPSocketAPI.o \
     $O/transport/contract/UDPSocket.o \
     $O/transport/contract/TCPSocketMap.o \
     $O/transport/contract/SCTPSocket.o \
@@ -567,6 +569,7 @@ clean:
 	-rm -f applications/rtpapp/*_m.cc applications/rtpapp/*_m.h
 	-rm -f applications/sctpapp/*_m.cc applications/sctpapp/*_m.h
 	-rm -f applications/tcpapp/*_m.cc applications/tcpapp/*_m.h
+	-rm -f applications/tcpapp/socketapi/*_m.cc applications/tcpapp/socketapi/*_m.h
 	-rm -f applications/udpapp/*_m.cc applications/udpapp/*_m.h
 	-rm -f base/*_m.cc base/*_m.h
 	-rm -f httptools/*_m.cc httptools/*_m.h
@@ -638,7 +641,7 @@ cleanall: clean
 	-rm -rf $(PROJECT_OUTPUT_DIR)
 
 depend:
-	$(MAKEDEPEND) $(INCLUDE_PATH) -f Makefile -P\$$O/ -- $(MSG_CC_FILES)  ./*.cc applications/*.cc applications/ethernet/*.cc applications/generic/*.cc applications/pingapp/*.cc applications/rtpapp/*.cc applications/sctpapp/*.cc applications/tcpapp/*.cc applications/udpapp/*.cc base/*.cc httptools/*.cc httptools/Documentation/*.cc linklayer/*.cc linklayer/contract/*.cc linklayer/ethernet/*.cc linklayer/etherswitch/*.cc linklayer/ext/*.cc linklayer/ieee80211/*.cc linklayer/ieee80211/mac/*.cc linklayer/ieee80211/mgmt/*.cc linklayer/mf80211/*.cc linklayer/mf80211/macLayer/*.cc linklayer/mf80211/phyLayer/*.cc linklayer/mf80211/phyLayer/decider/*.cc linklayer/mf80211/phyLayer/snrEval/*.cc linklayer/mfcore/*.cc linklayer/ppp/*.cc linklayer/radio/*.cc mobility/*.cc networklayer/*.cc networklayer/arp/*.cc networklayer/autorouting/*.cc networklayer/common/*.cc networklayer/contract/*.cc networklayer/extras/*.cc networklayer/icmpv6/*.cc networklayer/ipv4/*.cc networklayer/ipv6/*.cc networklayer/ldp/*.cc networklayer/mpls/*.cc networklayer/ospfv2/*.cc networklayer/ospfv2/interface/*.cc networklayer/ospfv2/messagehandler/*.cc networklayer/ospfv2/neighbor/*.cc networklayer/ospfv2/router/*.cc networklayer/queue/*.cc networklayer/rsvp_te/*.cc networklayer/ted/*.cc nodes/*.cc nodes/adhoc/*.cc nodes/ethernet/*.cc nodes/inet/*.cc nodes/ipv6/*.cc nodes/mpls/*.cc nodes/wireless/*.cc transport/*.cc transport/contract/*.cc transport/rtp/*.cc transport/rtp/profiles/*.cc transport/rtp/profiles/avprofile/*.cc transport/sctp/*.cc transport/tcp/*.cc transport/tcp/flavours/*.cc transport/tcp/queues/*.cc transport/tcp_nsc/*.cc transport/tcp_nsc/queues/*.cc transport/tcp_old/*.cc transport/tcp_old/flavours/*.cc transport/tcp_old/queues/*.cc transport/udp/*.cc util/*.cc util/headerserializers/*.cc util/headerserializers/headers/*.cc world/*.cc
+	$(MAKEDEPEND) $(INCLUDE_PATH) -f Makefile -P\$$O/ -- $(MSG_CC_FILES)  ./*.cc applications/*.cc applications/ethernet/*.cc applications/generic/*.cc applications/pingapp/*.cc applications/rtpapp/*.cc applications/sctpapp/*.cc applications/tcpapp/*.cc applications/tcpapp/socketapi/*.cc applications/udpapp/*.cc base/*.cc httptools/*.cc httptools/Documentation/*.cc linklayer/*.cc linklayer/contract/*.cc linklayer/ethernet/*.cc linklayer/etherswitch/*.cc linklayer/ext/*.cc linklayer/ieee80211/*.cc linklayer/ieee80211/mac/*.cc linklayer/ieee80211/mgmt/*.cc linklayer/mf80211/*.cc linklayer/mf80211/macLayer/*.cc linklayer/mf80211/phyLayer/*.cc linklayer/mf80211/phyLayer/decider/*.cc linklayer/mf80211/phyLayer/snrEval/*.cc linklayer/mfcore/*.cc linklayer/ppp/*.cc linklayer/radio/*.cc mobility/*.cc networklayer/*.cc networklayer/arp/*.cc networklayer/autorouting/*.cc networklayer/common/*.cc networklayer/contract/*.cc networklayer/extras/*.cc networklayer/icmpv6/*.cc networklayer/ipv4/*.cc networklayer/ipv6/*.cc networklayer/ldp/*.cc networklayer/mpls/*.cc networklayer/ospfv2/*.cc networklayer/ospfv2/interface/*.cc networklayer/ospfv2/messagehandler/*.cc networklayer/ospfv2/neighbor/*.cc networklayer/ospfv2/router/*.cc networklayer/queue/*.cc networklayer/rsvp_te/*.cc networklayer/ted/*.cc nodes/*.cc nodes/adhoc/*.cc nodes/ethernet/*.cc nodes/inet/*.cc nodes/ipv6/*.cc nodes/mpls/*.cc nodes/wireless/*.cc transport/*.cc transport/contract/*.cc transport/rtp/*.cc transport/rtp/profiles/*.cc transport/rtp/profiles/avprofile/*.cc transport/sctp/*.cc transport/tcp/*.cc transport/tcp/flavours/*.cc transport/tcp/queues/*.cc transport/tcp_nsc/*.cc transport/tcp_nsc/queues/*.cc transport/tcp_old/*.cc transport/tcp_old/flavours/*.cc transport/tcp_old/queues/*.cc transport/udp/*.cc util/*.cc util/headerserializers/*.cc util/headerserializers/headers/*.cc world/*.cc
 
 # DO NOT DELETE THIS LINE -- make depend depends on it.
 $O/applications/ethernet/EtherAppCli.o: applications/ethernet/EtherAppCli.cc \
@@ -882,6 +885,8 @@ $O/applications/tcpapp/TCPBasicClientApp.o: applications/tcpapp/TCPBasicClientAp
 	transport/contract/TCPCommand_m.h \
 	networklayer/contract/IPv6Address.h \
 	networklayer/contract/IPAddress.h \
+	transport/contract/TCPSocketMap.h \
+	transport/contract/TCPSocketAPI.h \
 	transport/contract/TCPSocket.h
 $O/applications/tcpapp/TCPSrvHostApp.o: applications/tcpapp/TCPSrvHostApp.cc \
 	networklayer/contract/IPvXAddress.h \
@@ -3832,6 +3837,15 @@ $O/transport/contract/TCPSocket.o: transport/contract/TCPSocket.cc \
 	networklayer/contract/IPv6Address.h \
 	networklayer/contract/IPAddress.h \
 	transport/contract/TCPSocket.h
+$O/transport/contract/TCPSocketAPI.o: transport/contract/TCPSocketAPI.cc \
+	networklayer/contract/IPvXAddress.h \
+	base/INETDefs.h \
+	transport/contract/TCPCommand_m.h \
+	networklayer/contract/IPv6Address.h \
+	transport/contract/TCPSocketMap.h \
+	networklayer/contract/IPAddress.h \
+	transport/contract/TCPSocket.h \
+	transport/contract/TCPSocketAPI.h
 $O/transport/rtp/RTPInnerPacket.o: transport/rtp/RTPInnerPacket.cc \
 	transport/rtp/RTPSenderStatusMessage_m.h \
 	transport/rtp/RTPPacket.h \

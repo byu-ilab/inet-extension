@@ -214,7 +214,7 @@ void httptBrowser::socketDataArrived(int connId, void *yourPtr, cPacket *msg, bo
 	handleDataMessage(msg);
 	if ( --sockdata->pending==0 )
 	{
-		EV_DEBUG << "Received last expected reply on this socket. Issing a close" << endl;
+		EV_DEBUG << "Received last expected reply on this socket. Issuing a close" << endl;
 		socket->close();
 	}
 	// Message deleted in handler - do not delete here!

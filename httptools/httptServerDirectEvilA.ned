@@ -62,7 +62,7 @@ simple httptServerDirectEvilA like TCPApp
         double linkSpeed @unit(Mbits) = default(11Mbits); // Used to model transmission delays.
         int minBadRequests;                               // The lower bound of bad requests.
         int maxBadRequests;                               // The upper bound of bad requests
-        xml config;                                       // The XML configuration file for random sites        
+        xml config;                                       // The XML configuration file for random sites
     gates:
         input tcpIn;
         output tcpOut;

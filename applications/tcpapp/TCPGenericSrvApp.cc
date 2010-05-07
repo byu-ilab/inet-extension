@@ -17,7 +17,6 @@
 #include "TCPCommand_m.h"
 #include "GenericAppMsg_m.h"
 
-
 Define_Module(TCPGenericSrvApp);
 
 void TCPGenericSrvApp::initialize()
