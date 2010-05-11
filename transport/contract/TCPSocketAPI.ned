@@ -23,7 +23,6 @@ simple TCPSocketAPI
     parameters:
         @display("i=block/layer");
     gates:
-        //inout tcpCore;
         input tcpIn;
         output tcpOut;
 }

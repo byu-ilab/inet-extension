@@ -1,3 +1,4 @@
+// Based off of the StandardHost module.
 //
 // Copyright (C) 2004 Andras Varga
 // Copyright (C) 2000 Institut fuer Telematik, Universitaet Karlsruhe
@@ -144,12 +145,12 @@ module StandardHostWithTCPSocketAPI
                 out2[sizeof(pppg)+sizeof(ethg)+numExtInterfaces];
         }
     connections allowunconnected:
-        for i=0..numTcpApps-1 {
-            tcpApp[i].tcpOut --> tcp.appIn++;
-            tcpApp[i].tcpIn <-- tcp.appOut++;
-        }
-//        tcpsocketapi.tcpOut --> tcp.appIn++;
-//        tcpsocketapi.tcpIn <-- tcp.appOut++;
+//        for i=0..numTcpApps-1 {
+//            tcpApp[i].tcpOut --> tcp.appIn++;
+//            tcpApp[i].tcpIn <-- tcp.appOut++;
+//        }
+        tcpsocketapi.tcpOut --> tcp.appIn++;
+        tcpsocketapi.tcpIn  <-- tcp.appOut++;
 
         tcp.ipOut --> networkLayer.tcpIn;
         tcp.ipIn <-- networkLayer.tcpOut;

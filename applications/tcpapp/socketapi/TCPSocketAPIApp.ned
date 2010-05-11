@@ -17,7 +17,7 @@ package inet.applications.tcpapp.socketapi;
 
 import inet.applications.tcpapp.TCPApp;
 
-moduleinterface TCPSocketAPIApp extends TCPApp
+moduleinterface TCPSocketAPIApp
 {
     parameters:
         string socketapi;
