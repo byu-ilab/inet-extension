@@ -69,16 +69,11 @@ void TCPSocketAPI::handleMessage(cMessage *msg)
 			delete socket; // ignore it
 			return;
 		}
+		socket->setCallbackObject(this, i->second); // assume that the message type is TCP_I_ESTABLISHED
 		_socket_map.addSocket(socket);
-
-		CallbackData * cbdata = i->second;
-		cbdata->callback_function(cbdata->socket_id, socket->getConnectionId(), cbdata->function_data);
 	}
-	else
-	{
-		EV_DEBUG << "Process the message " << msg->getName() << endl;
-		socket->processMessage(msg);
-	}
+	EV_DEBUG << "Process the message " << msg->getName() << endl;
+	socket->processMessage(msg);
 
 	// update display?
 }
@@ -136,7 +131,7 @@ void TCPSocketAPI::listen (int socket_id) {
 void TCPSocketAPI::accept (int socket_id, void * yourPtr, SOCK_CB) {
 	TCPSocket * socket = findAndCheckSocket(socket_id, "accept()");
 
-	if (socket->getState() != LISTENING)
+	if (socket->getState() != TCPSocket::LISTENING)
 	{
 		opp_error("TCPSocketAPI::accept() : socket is not a passive socket");
 	}
@@ -226,7 +221,7 @@ void TCPSocketAPI::socketEstablished(int connId, void *yourPtr)
 
 	if ( yourPtr == NULL )
 	{
-		EV_ERROR << "TCPSocketAPI::socketEstablished(): No callback data with the socket!" << endl;
+		EV_ERROR << "TCPSocketAPI::socketEstablished(): No callback data with the socket";
 		return;
 	}
 
@@ -238,9 +233,11 @@ void TCPSocketAPI::socketEstablished(int connId, void *yourPtr)
 		cbdata->callback_function(connId, 0, cbdata->function_data);
 		break;
 	case ACCEPT:
+		cbdata->callback_function(cbdata->socket_id, connId, cbdata->function_data);
+		break;
 	case RECV:
 	default:
-		EV_WARNING << "TCPSocketAPI::socketEstablished(): ACCEPT or RECV callback received";
+		EV_WARNING << "TCPSocketAPI::socketEstablished(): RECV callback received";
 	}
 }
 
@@ -248,13 +245,24 @@ void TCPSocketAPI::socketDataArrived(int connId, void *yourPtr, cPacket *msg, bo
 {
 	if ( yourPtr==NULL )
 	{
-		EV_ERROR << "TCPSocketAPI::socketDataArrived(): No callback data with the socket!  Connection failure?" << endl;
+		EV_ERROR << "TCPSocketAPI::socketDataArrived(): "
+					"No callback data with the socket!  Connection failure?";
 		return;
 	}
-	TCPSocket *socket = (TCPSocket*)yourPtr;
 
 	// invoke the recv callback
+	CallbackData * cbdata = check_and_cast<CallbackData *>(yourPtr);
 
+	switch (cbdata->type)
+	{
+	case RECV:
+		cbdata->callback_function(connId, msg->getByteLength(), cbdata->function_data);
+		break;
+	case CONNECT:
+	case ACCEPT:
+	default:
+		EV_WARNING << "TCPSocketAPI::socketEstablished(): CONNECT or ACCEPT callback received";
+	}
 
 	// delete the message?
 }
@@ -263,18 +271,22 @@ void TCPSocketAPI::socketPeerClosed(int connId, void *yourPtr)
 {
 	if ( yourPtr==NULL )
 	{
-		EV_ERROR << "Socket establish failure. Null pointer" << endl;
+		EV_ERROR << "TCPSocketAPI::socketPeerClosed(): no callback data with socket";
 		return;
 	}
-	TCPSocket *socket = (TCPSocket*)yourPtr;
+	CallbackData * cbdata = check_and_cast<CallbackData *>(yourPtr);
 
-	// invoke the recv callback? or just handle the close operation?
-
-	// close the connection (if not already closed)
-	if (socket->getState()==TCPSocket::PEER_CLOSED)
+	// invoke the recv callback or just handle the close operation?
+	// assume that the application will close the socket
+	switch (cbdata->type)
 	{
-		EV_INFO << "remote TCP closed, closing here as well. Connection id is " << connId << endl;
-		socket->close();  // Call the close method to properly dispose of the socket.
+	case RECV:
+		cbdata->callback_function(connId, 0, cbdata->function_data);
+		break;
+	case CONNECT:
+	case ACCEPT:
+	default:
+		EV_WARNING << "TCPSocketAPI::socketPeerClosed(): CONNECT or ACCEPT callback received";
 	}
 }
 
@@ -282,38 +294,53 @@ void TCPSocketAPI::socketClosed(int connId, void *yourPtr)
 {
 	EV_INFO << "connection closed. Connection id " << connId << endl;
 
-	if ( yourPtr==NULL )
-	{
-		EV_ERROR << "Socket establish failure. Null pointer" << endl;
-		return;
-	}
+	// okay if yourPtr == NULL
+//	if ( yourPtr==NULL )
+//	{
+//		EV_ERROR << "TCPSocketAPI::socketClosed(): no callback data";
+//		return;
+//	}
+
 	// Cleanup
-	TCPSocket *socket = (TCPSocket*)yourPtr;
-	sockCollection.removeSocket(socket);
+	TCPSocket * socket = _socket_map.removeSocket(connId);
 	delete socket;
 }
 
 void TCPSocketAPI::socketFailure(int connId, void *yourPtr, int code)
 {
-	EV_WARNING << "connection broken. Connection id " << connId << endl;
-	numBroken++;
+	EV_WARNING << "connection broken. Connection id " << connId;
+//	numBroken++;
 
-	EV_INFO << "connection closed. Connection id " << connId << endl;
+	EV_INFO << "connection closed. Connection id " << connId;
 
 	if ( yourPtr==NULL )
 	{
-		EV_ERROR << "Socket establish failure. Null pointer" << endl;
+		EV_ERROR << "TCPSocketAPI::socketFailure(): no callback data with socket";
 		return;
 	}
-	TCPSocket *socket = (TCPSocket*)yourPtr;
+
+	CallbackData * cbdata = check_and_cast<CallbackData *>(yourPtr);
 
 	if (code==TCP_I_CONNECTION_RESET)
 		EV_WARNING << "Connection reset!\\n";
 	else if (code==TCP_I_CONNECTION_REFUSED)
 		EV_WARNING << "Connection refused!\\n";
 
+	// invoke the recv callback or just handle the close operation?
+	switch (cbdata->type)
+	{
+	case RECV:
+		cbdata->callback_function(connId, -1, cbdata->function_data);
+		break;
+	case CONNECT:
+		cbdata->callback_function(connId, -1, cbdata->function_data);
+	case ACCEPT:
+	default:
+		EV_WARNING << "TCPSocketAPI::socketPeerClosed(): ACCEPT callback received";
+	}
+
 	// Cleanup
-	sockCollection.removeSocket(socket);
+	TCPSocket * socket = _socket_map.removeSocket(connId);
 	delete socket;
 }
 

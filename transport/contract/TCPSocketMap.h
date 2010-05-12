@@ -72,6 +72,12 @@ class INET_API TCPSocketMap
     TCPSocket *removeSocket(TCPSocket *socket);
 
     /**
+     * Removes the given socket from the data structure.
+     * Returns NULL if the indicated socket is not in the datastructure.
+     */
+    TCPSocket * removeSocket(int connId);
+
+    /**
      * Returns the number of sockets stored.
      */
     unsigned int size() {return socketMap.size();}
