@@ -32,6 +32,7 @@
 enum CALLBACK_TYPE {CONNECT, ACCEPT, RECV};
 
 struct CallbackData {
+	int socket_id;
 	SOCK_CB;
 	void * function_data;
 	CALLBACK_TYPE type;
@@ -41,7 +42,18 @@ class INET_API TCPSocketAPI : public cSimpleModule, TCPSocket::CallbackInterface
 {
 protected:
 	TCPSocketMap _socket_map;
+
+	// port -> callback
 	std::map<int, CallbackData *> _accept_callbacks;
+
+//	// port -> socket *
+//	std::map<int, TCPSocket *> _listening_sockets;
+
+	// socket_id -> callback
+//	std::map<int, CallbackData *> _registered_callbacks;
+//
+//	CallbackData * _default_recv_callback;
+//	CallbackData * _default_accept_callback;
 
 public:
 
@@ -67,6 +79,13 @@ public:
 	// otherwise it is the socket id of the newly created socket
 	virtual void accept (int socket_id, void * yourPtr, SOCK_CB);
 
+//	// registerAcceptCallback must be called before this convenient form can be used
+//	virtual void accept(int socket_id, void * yourPtr);
+//
+//	virtual void registerAcceptCallback(int socket_id, SOCK_CB);
+//
+//	virtual void registerDefaultAcceptCallback(SOCK_CB);
+
 	// sends the data (there doesn't appear to be any buffer limits)
 	virtual void send (int socket_id, std::string data);
 
@@ -74,6 +93,13 @@ public:
 	// @return the value returned in the callback function is -1 if an error occurs, otherwise
 	// returns 0, or the number of bytes returned by receive
 	virtual void recv (int socket_id, void * yourPtr, SOCK_CB);
+
+//	// registerRecvCallback must be called before thsi convenient form can be used
+//	virtual void recv (int socket_id, void * yourPtr);
+//
+//	virtual void registerRecvCallback (int socket_id, SOCK_CB);
+//
+//	virtual void registerDefaultRecvCallback(SOCK_CB);
 
 	// @throws a cRuntimeError if an error occurs (see omnetpp/include/cexception.h)
 	virtual void close (int socket_id);
@@ -99,7 +125,9 @@ protected:
 	// utility / convenience functions
 	TCPSocket * findAndCheckSocket(std::string method);
 
-	void registerCallbackData (TCPSocket * socket, SOCK_CB, void * function_data, CALLBACK_TYPE type);
+	void registerCallbackData (TCPSocket * socket, CallbackData * cbdata);
+
+	void makeCallbackData(int socket_id, SOCK_CB, void * function_data, CALLBACK_TYPE type);
 };
 
 #endif
