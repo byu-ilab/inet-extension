@@ -118,6 +118,7 @@ OBJS = \
     $O/applications/tcpapp/TCPBasicClientApp.o \
     $O/applications/tcpapp/TCPSinkApp.o \
     $O/applications/tcpapp/TelnetApp.o \
+    $O/applications/tcpapp/socketapi/TCPSAPIGenericSrvApp.o \
     $O/applications/udpapp/UDPAppBase.o \
     $O/applications/udpapp/UDPVideoStreamSvr.o \
     $O/applications/udpapp/UDPSink.o \
@@ -848,29 +849,18 @@ $O/applications/tcpapp/TCPGenericSrvApp.o: applications/tcpapp/TCPGenericSrvApp.
 	networklayer/contract/IPvXAddress.h \
 	base/INETDefs.h \
 	transport/contract/TCPCommand_m.h \
-	applications/tcpapp/TCPGenericSrvApp.h \
 	networklayer/contract/IPv6Address.h \
 	networklayer/contract/IPAddress.h \
 	transport/contract/TCPSocket.h
 $O/applications/tcpapp/TelnetApp.o: applications/tcpapp/TelnetApp.cc \
-	applications/tcpapp/TCPGenericCliAppBase.h \
-	networklayer/contract/IPvXAddress.h \
-	base/INETDefs.h \
-	transport/contract/TCPCommand_m.h \
-	applications/tcpapp/TelnetApp.h \
-	networklayer/contract/IPv6Address.h \
-	networklayer/contract/IPAddress.h \
-	transport/contract/TCPSocket.h
+	applications/tcpapp/TelnetApp.h
 $O/applications/tcpapp/TCPGenericCliAppBase.o: applications/tcpapp/TCPGenericCliAppBase.cc \
-	applications/tcpapp/TCPGenericCliAppBase.h \
 	networklayer/contract/IPAddressResolver.h \
 	applications/tcpapp/GenericAppMsg_m.h \
 	networklayer/contract/IPvXAddress.h \
 	base/INETDefs.h \
-	transport/contract/TCPCommand_m.h \
 	networklayer/contract/IPv6Address.h \
-	networklayer/contract/IPAddress.h \
-	transport/contract/TCPSocket.h
+	networklayer/contract/IPAddress.h
 $O/applications/tcpapp/TCPSinkApp.o: applications/tcpapp/TCPSinkApp.cc \
 	applications/tcpapp/TCPSinkApp.h \
 	networklayer/contract/IPvXAddress.h \
@@ -879,19 +869,7 @@ $O/applications/tcpapp/TCPSinkApp.o: applications/tcpapp/TCPSinkApp.cc \
 	networklayer/contract/IPv6Address.h \
 	networklayer/contract/IPAddress.h \
 	transport/contract/TCPSocket.h
-$O/applications/tcpapp/TCPBasicClientApp.o: applications/tcpapp/TCPBasicClientApp.cc \
-	applications/tcpapp/TCPGenericCliAppBase.h \
-	networklayer/contract/IPAddressResolver.h \
-	httptools/httptLogdefs.h \
-	applications/tcpapp/TCPBasicClientApp.h \
-	networklayer/contract/IPvXAddress.h \
-	base/INETDefs.h \
-	transport/contract/TCPCommand_m.h \
-	networklayer/contract/IPv6Address.h \
-	networklayer/contract/IPAddress.h \
-	transport/contract/TCPSocketMap.h \
-	transport/contract/TCPSocketAPI.h \
-	transport/contract/TCPSocket.h
+$O/applications/tcpapp/TCPBasicClientApp.o: applications/tcpapp/TCPBasicClientApp.cc
 $O/applications/tcpapp/TCPSrvHostApp.o: applications/tcpapp/TCPSrvHostApp.cc \
 	networklayer/contract/IPvXAddress.h \
 	base/INETDefs.h \
@@ -915,6 +893,35 @@ $O/applications/tcpapp/TCPSpoof.o: applications/tcpapp/TCPSpoof.cc \
 	networklayer/contract/IPv6Address.h \
 	networklayer/contract/IPAddress.h \
 	networklayer/contract/IPProtocolId_m.h
+$O/applications/tcpapp/socketapi/TCPGenericCliAppBase.o: applications/tcpapp/socketapi/TCPGenericCliAppBase.cc \
+	networklayer/contract/IPAddressResolver.h \
+	applications/tcpapp/GenericAppMsg_m.h \
+	networklayer/contract/IPvXAddress.h \
+	base/INETDefs.h \
+	networklayer/contract/IPv6Address.h \
+	networklayer/contract/IPAddress.h
+$O/applications/tcpapp/socketapi/TCPGenericSrvApp.o: applications/tcpapp/socketapi/TCPGenericSrvApp.cc \
+	applications/tcpapp/GenericAppMsg_m.h \
+	networklayer/contract/IPvXAddress.h \
+	base/INETDefs.h \
+	transport/contract/TCPCommand_m.h \
+	networklayer/contract/IPv6Address.h \
+	networklayer/contract/IPAddress.h \
+	transport/contract/TCPSocket.h
+$O/applications/tcpapp/socketapi/TCPSAPIGenericSrvApp.o: applications/tcpapp/socketapi/TCPSAPIGenericSrvApp.cc \
+	networklayer/contract/IPAddressResolver.h \
+	httptools/httptLogdefs.h \
+	applications/tcpapp/GenericAppMsg_m.h \
+	applications/tcpapp/socketapi/TCPSAPIGenericSrvApp.h \
+	networklayer/contract/IPvXAddress.h \
+	base/INETDefs.h \
+	transport/contract/TCPCommand_m.h \
+	networklayer/contract/IPv6Address.h \
+	transport/contract/TCPSocketMap.h \
+	networklayer/contract/IPAddress.h \
+	transport/contract/TCPSocketAPI.h \
+	transport/contract/TCPSocket.h
+$O/applications/tcpapp/socketapi/TCPBasicClientApp.o: applications/tcpapp/socketapi/TCPBasicClientApp.cc
 $O/applications/udpapp/UDPEchoApp.o: applications/udpapp/UDPEchoApp.cc \
 	transport/contract/UDPControlInfo_m.h \
 	networklayer/contract/IPvXAddress.h \

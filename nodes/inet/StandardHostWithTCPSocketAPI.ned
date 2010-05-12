@@ -23,7 +23,7 @@ package inet.nodes.inet;
 import inet.applications.pingapp.PingApp;
 import inet.applications.sctpapp.SCTPApp;
 //import inet.applications.tcpapp.TCPApp;
-import inet.applications.tcpapp.socketapi.TCPSocketAPIApp;
+import inet.applications.tcpapp.socketapi.*;//TCPSocketAPIApp;
 import inet.applications.udpapp.UDPApp;
 import inet.base.NotificationBoard;
 import inet.linklayer.ethernet.EthernetInterface;

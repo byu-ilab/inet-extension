@@ -24,7 +24,8 @@
 #include "TCPSocket.h"
 #include "TCPSocketMap.h"
 #include "IPAddressResolver.h"
-
+//#include "TCPSAPIGenericSrvApp.h"
+class TCPSAPIGenericSrvApp;
 #include <string>
 #include <map>
 
