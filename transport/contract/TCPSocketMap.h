@@ -55,6 +55,12 @@ class INET_API TCPSocketMap
     TCPSocket *findSocketFor(cMessage *msg);
 
     /**
+     * Finds the socket by connId and returns a pointer to it if found
+     * and NULL if it is not found.
+     */
+    TCPSocket * getSocket(int connId);
+
+    /**
      * Registers the given socket. Should not be called multiple times
      * for one socket object.
      */

@@ -25,9 +25,17 @@ TCPSocket *TCPSocketMap::findSocketFor(cMessage *msg)
     if (!ind)
         opp_error("TCPSocketMap: findSocketFor(): no TCPCommand control info in message (not from TCP?)");
     int connId = ind->getConnId();
-    SocketMap::iterator i = socketMap.find(connId);
+    /*SocketMap::iterator i = socketMap.find(connId);
     ASSERT(i==socketMap.end() || i->first==i->second->getConnectionId());
     return (i==socketMap.end()) ? NULL : i->second;
+    */
+    return getSocket(connId);
+}
+
+TCPSocket * TCPSocketMap::getSocket(int connId) {
+	SocketMap::iterator i = socketMap.find(connId);
+	ASSERT(i==socketMap.end() || i->first==i->second->getConnectionId());
+	return (i==socketMap.end()) ? NULL : i->second;
 }
 
 void TCPSocketMap::addSocket(TCPSocket *socket)

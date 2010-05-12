@@ -17,56 +17,89 @@
 #ifndef __INET_TCPSOCKETAPI_H
 #define __INET_TCPSOCKETAPI_H
 
-#include <string>
 #include <omnetpp.h>
 #include "INETDefs.h"
+#include "httptLogdefs.h"
 
 #include "TCPSocket.h"
 #include "TCPSocketMap.h"
 
-#define SOCK_CB void (*callback)(int socket_id, int ret_value, void * yourPtr)
+#include <string>
+#include <map>
 
-class INET_API TCPSocketAPI : public cSimpleModule
+#define SOCK_CB void (*callback_function)(int socket_id, int ret_value, void * yourPtr)
+
+enum CALLBACK_TYPE {CONNECT, ACCEPT, RECV};
+
+struct CallbackData {
+	SOCK_CB;
+	void * function_data;
+	CALLBACK_TYPE type;
+};
+
+class INET_API TCPSocketAPI : public cSimpleModule, TCPSocket::CallbackInterface
 {
+protected:
+	TCPSocketMap _socket_map;
+	std::map<int, CallbackData *> _accept_callbacks;
+
 public:
+
 	// @brief This function is similar to calling the BSD socket API
 	//		socket(AF_INET, SOCK_STREAM, 0)
 	//
 	// @return the id of a new socket or -1 if and error occurs
 	virtual int socket ();
 
-	// @return -1 if an error occurs otherwise returns 0
-	virtual int bind (int socket_id, std::string local_address, short local_port);
+	// if local_address is "" then will assign the socket to any available IP address
+	// throws a cRuntimeError if an error occurs (see omnetpp/include/cexception.h)
+	virtual void bind (int socket_id, std::string local_address, int local_port);
 
-	// @return the value returned in the callback function is -1 if an error occurs,
-	// otherwise returns 0
-	virtual void connect (int socket_id, std::string remote_address, short remote_port, void * yourPtr,
+	// @throws a cRuntimeError if an error occurs (see omnetpp/include/cexception.h)
+	// @return the value returned in the callback function is -1 if an error occurs, otherwise returns 0
+	virtual void connect (int socket_id, std::string remote_address, int remote_port, void * yourPtr,
 			SOCK_CB );
 
-	// @return -1 if an error occurs otherwise returns 0
-	virtual int listen (int socket_id);
+	// @throws a cRuntimeError if an error occurs (see omnetpp/include/cexception.h)
+	virtual void listen (int socket_id);
 
 	// @return the value returned in the callback function is -1 if an error occurs,
 	// otherwise it is the socket id of the newly created socket
-	virtual void accept (int socket_id /*, address structure? */, void * yourPtr, SOCK_CB);
+	virtual void accept (int socket_id, void * yourPtr, SOCK_CB);
 
-	// @return the number of bytes sent
-	virtual int send (int socket_id, std::string data);
+	// sends the data (there doesn't appear to be any buffer limits)
+	virtual void send (int socket_id, std::string data);
 
-	// @return the value returned in the callback function is -1 if an error occurs,
-	// 0 if the socket is closed, or the number of bytes returned by receive
+	// @throws a cRuntimeError if an error occurs (see omnetpp/include/cexception.h)
+	// @return the value returned in the callback function is -1 if an error occurs, otherwise
+	// returns 0, or the number of bytes returned by receive
 	virtual void recv (int socket_id, void * yourPtr, SOCK_CB);
 
-	// @return -1 if an error occurs otherwise returns 0
-	virtual int close (int socket_id);
-
-
+	// @throws a cRuntimeError if an error occurs (see omnetpp/include/cexception.h)
+	virtual void close (int socket_id);
 
 
 protected:
 
+	// cSimpleModule functions
     virtual void initialize();
     virtual void handleMessage(cMessage *msg);
+    virtual void finish();
+
+    // TCPSocket::CallbackInterface functions
+    virtual void socketDataArrived(int connId, void *yourPtr, cPacket *msg, bool urgent) = 0;
+	virtual void socketEstablished(int connId, void *yourPtr) {}
+	virtual void socketPeerClosed(int connId, void *yourPtr) {}
+	virtual void socketClosed(int connId, void *yourPtr) {}
+	virtual void socketFailure(int connId, void *yourPtr, int code) {}
+
+	// implement if other things should be done other than delete the status info
+	//virtual void socketStatusArrived(int connId, void *yourPtr, TCPStatusInfo *status) {delete status;}
+
+	// utility / convenience functions
+	TCPSocket * findAndCheckSocket(std::string method);
+
+	void registerCallbackData (TCPSocket * socket, SOCK_CB, void * function_data, CALLBACK_TYPE type);
 };
 
 #endif
