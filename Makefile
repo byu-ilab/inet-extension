@@ -881,6 +881,7 @@ $O/applications/tcpapp/TCPSinkApp.o: applications/tcpapp/TCPSinkApp.cc \
 	transport/contract/TCPSocket.h
 $O/applications/tcpapp/TCPBasicClientApp.o: applications/tcpapp/TCPBasicClientApp.cc \
 	applications/tcpapp/TCPGenericCliAppBase.h \
+	networklayer/contract/IPAddressResolver.h \
 	httptools/httptLogdefs.h \
 	applications/tcpapp/TCPBasicClientApp.h \
 	networklayer/contract/IPvXAddress.h \
@@ -3841,6 +3842,7 @@ $O/transport/contract/TCPSocket.o: transport/contract/TCPSocket.cc \
 	networklayer/contract/IPAddress.h \
 	transport/contract/TCPSocket.h
 $O/transport/contract/TCPSocketAPI.o: transport/contract/TCPSocketAPI.cc \
+	networklayer/contract/IPAddressResolver.h \
 	httptools/httptLogdefs.h \
 	networklayer/contract/IPvXAddress.h \
 	base/INETDefs.h \

@@ -23,11 +23,12 @@
 
 #include "TCPSocket.h"
 #include "TCPSocketMap.h"
+#include "IPAddressResolver.h"
 
 #include <string>
 #include <map>
 
-#define SOCK_CB void (*callback_function)(int socket_id, int ret_value, void * yourPtr)
+#define SOCK_CB void (*callback_function)(int socket_id, int ret_status, void * ret_data, void * yourPtr)
 
 enum CALLBACK_TYPE {CONNECT, ACCEPT, RECV};
 
@@ -46,6 +47,8 @@ protected:
 	// port -> callback
 	std::map<int, CallbackData *> _accept_callbacks;
 
+	IPAddressResolver _resolver;
+
 //	// port -> socket *
 //	std::map<int, TCPSocket *> _listening_sockets;
 
@@ -56,6 +59,9 @@ protected:
 //	CallbackData * _default_accept_callback;
 
 public:
+
+	TCPSocketAPI ();
+	~TCPSocketAPI ();
 
 	// @brief This function is similar to calling the BSD socket API
 	//		socket(AF_INET, SOCK_STREAM, 0)
@@ -68,15 +74,17 @@ public:
 	virtual void bind (int socket_id, std::string local_address, int local_port);
 
 	// @throws a cRuntimeError if an error occurs (see omnetpp/include/cexception.h)
-	// @return the value returned in the callback function is -1 if an error occurs, otherwise returns 0
+	// @return the ret_status value will be -1 -1 if an error occurred and 0 otherwise
+	// the ret_data pointer will be NULL
 	virtual void connect (int socket_id, std::string remote_address, int remote_port, void * yourPtr,
 			SOCK_CB );
 
 	// @throws a cRuntimeError if an error occurs (see omnetpp/include/cexception.h)
 	virtual void listen (int socket_id);
 
-	// @return the value returned in the callback function is -1 if an error occurs,
-	// otherwise it is the socket id of the newly created socket
+	// @return the ret_status value will be -1 if an error occurred and otherwise the
+	// socket_id of the accepted socket
+	// the ret_data pointer will be NULL
 	virtual void accept (int socket_id, void * yourPtr, SOCK_CB);
 
 //	// registerAcceptCallback must be called before this convenient form can be used
@@ -87,14 +95,19 @@ public:
 //	virtual void registerDefaultAcceptCallback(SOCK_CB);
 
 	// sends the data (there doesn't appear to be any buffer limits)
-	virtual void send (int socket_id, std::string data);
+	virtual void send (int socket_id, cMessage * msg);
+
+	// build a send function that will take a translator and data to get the cMessage?
 
 	// @throws a cRuntimeError if an error occurs (see omnetpp/include/cexception.h)
-	// @return the value returned in the callback function is -1 if an error occurs, otherwise
-	// returns 0, or the number of bytes returned by receive
+	// @return the ret_status value will be -1 if an error occurs, 0 if the socket
+	// is closed, and the number of bytes of the received message otherwise
+	// the ret_data pointer will pointer to a cPacket which can then be
+	// appropriately cast or translated, will be NULL if an error occurs or the socket
+	// is closed
 	virtual void recv (int socket_id, void * yourPtr, SOCK_CB);
 
-//	// registerRecvCallback must be called before thsi convenient form can be used
+//	// registerRecvCallback must be called before this convenient form can be used
 //	virtual void recv (int socket_id, void * yourPtr);
 //
 //	virtual void registerRecvCallback (int socket_id, SOCK_CB);
@@ -113,21 +126,21 @@ protected:
     virtual void finish();
 
     // TCPSocket::CallbackInterface functions
-    virtual void socketDataArrived(int connId, void *yourPtr, cPacket *msg, bool urgent) = 0;
-	virtual void socketEstablished(int connId, void *yourPtr) {}
-	virtual void socketPeerClosed(int connId, void *yourPtr) {}
-	virtual void socketClosed(int connId, void *yourPtr) {}
-	virtual void socketFailure(int connId, void *yourPtr, int code) {}
+    virtual void socketDataArrived(int connId, void *yourPtr, cPacket *msg, bool urgent);
+	virtual void socketEstablished(int connId, void *yourPtr);
+	virtual void socketPeerClosed(int connId, void *yourPtr);
+	virtual void socketClosed(int connId, void *yourPtr);
+	virtual void socketFailure(int connId, void *yourPtr, int code);
 
 	// implement if other things should be done other than delete the status info
 	//virtual void socketStatusArrived(int connId, void *yourPtr, TCPStatusInfo *status) {delete status;}
 
 	// utility / convenience functions
-	TCPSocket * findAndCheckSocket(std::string method);
+	TCPSocket * findAndCheckSocket(int socket_id, std::string method);
 
-	void registerCallbackData (TCPSocket * socket, CallbackData * cbdata);
+//	void registerCallbackData (TCPSocket * socket, CallbackData * cbdata);
 
-	void makeCallbackData(int socket_id, SOCK_CB, void * function_data, CALLBACK_TYPE type);
+	CallbackData * makeCallbackData(int socket_id, SOCK_CB, void * function_data, CALLBACK_TYPE type);
 };
 
 #endif
