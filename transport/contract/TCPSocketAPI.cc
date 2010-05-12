@@ -230,7 +230,7 @@ void TCPSocketAPI::socketEstablished(int connId, void *yourPtr)
 
 	switch (cbdata->type){
 	case CONNECT:
-		cbdata->callback_function(connId, ret_value, NULL, cbdata->function_data);
+		cbdata->callback_function(connId, 0, NULL, cbdata->function_data);
 		break;
 	case ACCEPT:
 		cbdata->callback_function(cbdata->socket_id, connId, NULL, cbdata->function_data);
@@ -281,7 +281,7 @@ void TCPSocketAPI::socketPeerClosed(int connId, void *yourPtr)
 	switch (cbdata->type)
 	{
 	case RECV:
-		cbdata->callback_function(connId, ret_value, NULL, cbdata->function_data);
+		cbdata->callback_function(connId, 0, NULL, cbdata->function_data);
 		break;
 	case CONNECT:
 	case ACCEPT:

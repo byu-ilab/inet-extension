@@ -52,7 +52,7 @@ TCPSocket *TCPSocketMap::removeSocket(TCPSocket *socket)
     return socket;
 }
 
-TCPSocket * TCPSocketMap::removeSocket(int connid)
+TCPSocket * TCPSocketMap::removeSocket(int connId)
 {
 	SocketMap::iterator i = socketMap.find(connId);
 	if (i!=socketMap.end()) {
