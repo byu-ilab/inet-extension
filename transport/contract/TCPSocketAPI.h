@@ -25,10 +25,12 @@
 #include "TCPSocketMap.h"
 #include "IPAddressResolver.h"
 //#include "TCPSAPIGenericSrvApp.h"
-class TCPSAPIGenericSrvApp;
+//class TCPSAPIGenericSrvApp;
 #include <string>
 #include <map>
 
+#include "CallbackInterface.h"
+// TODO are member callbacks inheritable?
 #define SOCK_CB void (*callback_function)(int socket_id, int ret_status, void * ret_data, void * yourPtr)
 
 enum CALLBACK_TYPE {CONNECT, ACCEPT, RECV};
