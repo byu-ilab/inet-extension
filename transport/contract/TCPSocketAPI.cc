@@ -85,6 +85,7 @@ void TCPSocketAPI::finish() {
 // TCP Socket API functions
 
 int TCPSocketAPI::socket () {
+	Enter_Method_Silent();
 	TCPSocket * socket = new TCPSocket();
 	socket->setOutputGate(gate("tcpOut"));
 	socket->setCallbackObject(this, NULL);
@@ -95,6 +96,8 @@ int TCPSocketAPI::socket () {
 
 void TCPSocketAPI::bind (int socket_id, std::string local_address,
 		int local_port) {
+
+	Enter_Method_Silent();
 
 	// verifies that socket exists
 	TCPSocket * socket = findAndCheckSocket(socket_id, "bind()");
@@ -111,25 +114,32 @@ void TCPSocketAPI::bind (int socket_id, std::string local_address,
 }
 
 void TCPSocketAPI::connect (int socket_id, std::string remote_address,
-		int remote_port, void * yourPtr, SOCK_CB ) {
+		int remote_port, void * yourPtr, CallbackInterface * cbobj ) {
+
+	Enter_Method_Silent();
 
 	// verifies that socket exists
 	TCPSocket * socket = findAndCheckSocket(socket_id, "connect()");
 
-	socket->setCallbackObject(this, makeCallbackData(socket_id, callback_function, yourPtr, CONNECT));
+	socket->setCallbackObject(this, makeCallbackData(socket_id, cbobj, yourPtr, CONNECT));
 
 	socket->connect(_resolver.resolve(remote_address.c_str(),
 			IPAddressResolver::ADDR_PREFER_IPv4), remote_port);
 }
 
 void TCPSocketAPI::listen (int socket_id) {
+	Enter_Method_Silent();
+
 	TCPSocket * socket = findAndCheckSocket(socket_id, "listen()");
 
 	// creates a forking socket
 	socket->listen();
 }
 
-void TCPSocketAPI::accept (int socket_id, void * yourPtr, SOCK_CB) {
+void TCPSocketAPI::accept (int socket_id, void * yourPtr, CallbackInterface * cbobj) {
+
+	Enter_Method_Silent();
+
 	TCPSocket * socket = findAndCheckSocket(socket_id, "accept()");
 
 	if (socket->getState() != TCPSocket::LISTENING)
@@ -142,7 +152,7 @@ void TCPSocketAPI::accept (int socket_id, void * yourPtr, SOCK_CB) {
 	//_listening_sockets.add(socket->getLocalPort(), socket);
 
 	_accept_callbacks[socket->getLocalPort()] =
-			makeCallbackData(socket_id, callback_function, yourPtr, ACCEPT);
+			makeCallbackData(socket_id, cbobj, yourPtr, ACCEPT);
 }
 
 //void TCPSocketAPI::accept(int socket_id, void * yourPtr) {
@@ -169,13 +179,25 @@ void TCPSocketAPI::accept (int socket_id, void * yourPtr, SOCK_CB) {
 //}
 
 void TCPSocketAPI::send (int socket_id, cMessage * msg) {
+
+	Enter_Method_Silent();
+
 	TCPSocket * socket = findAndCheckSocket(socket_id, "send()");
+
+	// remove any control info with the message
+	cObject * ctrl_info = msg->removeControlInfo();
+	if (ctrl_info)
+		delete ctrl_info;
+
 	socket->send(msg);
 }
 
-void TCPSocketAPI::recv (int socket_id, void * yourPtr, SOCK_CB) {
+void TCPSocketAPI::recv (int socket_id, void * yourPtr, CallbackInterface * cbobj) {
+
+	Enter_Method_Silent();
+
 	TCPSocket * socket = findAndCheckSocket(socket_id, "recv()");
-	socket->setCallbackObject(this, makeCallbackData(socket_id, callback_function, yourPtr, RECV));
+	socket->setCallbackObject(this, makeCallbackData(socket_id, cbobj, yourPtr, RECV));
 }
 
 //void TCPSocketAPI::recv (int socket_id, void * yourPtr) {
@@ -204,6 +226,9 @@ void TCPSocketAPI::recv (int socket_id, void * yourPtr, SOCK_CB) {
 //}
 
 void TCPSocketAPI::close (int socket_id) {
+
+	Enter_Method_Silent();
+
 	TCPSocket * socket = findAndCheckSocket(socket_id, "close()");
 
 	socket->close();
@@ -230,10 +255,10 @@ void TCPSocketAPI::socketEstablished(int connId, void *yourPtr)
 
 	switch (cbdata->type){
 	case CONNECT:
-		cbdata->callback_function(connId, 0, NULL, cbdata->function_data);
+		cbdata->cbobj->connectCallback(connId, 0, cbdata->function_data);
 		break;
 	case ACCEPT:
-		cbdata->callback_function(cbdata->socket_id, connId, NULL, cbdata->function_data);
+		cbdata->cbobj->acceptCallback(cbdata->socket_id, connId, cbdata->function_data);
 		break;
 	case RECV:
 	default:
@@ -256,7 +281,7 @@ void TCPSocketAPI::socketDataArrived(int connId, void *yourPtr, cPacket *msg, bo
 	switch (cbdata->type)
 	{
 	case RECV:
-		cbdata->callback_function(connId, msg->getByteLength(), msg, cbdata->function_data);
+		cbdata->cbobj->recvCallback(connId, msg->getByteLength(), msg, cbdata->function_data);
 		break;
 	case CONNECT:
 	case ACCEPT:
@@ -281,7 +306,7 @@ void TCPSocketAPI::socketPeerClosed(int connId, void *yourPtr)
 	switch (cbdata->type)
 	{
 	case RECV:
-		cbdata->callback_function(connId, 0, NULL, cbdata->function_data);
+		cbdata->cbobj->recvCallback(connId, 0, NULL, cbdata->function_data);
 		break;
 	case CONNECT:
 	case ACCEPT:
@@ -330,10 +355,10 @@ void TCPSocketAPI::socketFailure(int connId, void *yourPtr, int code)
 	switch (cbdata->type)
 	{
 	case RECV:
-		cbdata->callback_function(connId, -1, NULL, cbdata->function_data);
+		cbdata->cbobj->recvCallback(connId, -1, NULL, cbdata->function_data);
 		break;
 	case CONNECT:
-		cbdata->callback_function(connId, -1, NULL, cbdata->function_data);
+		cbdata->cbobj->connectCallback(connId, -1, cbdata->function_data);
 	case ACCEPT:
 	default:
 		EV_WARNING << "TCPSocketAPI::socketPeerClosed(): ACCEPT callback received";
@@ -356,12 +381,12 @@ TCPSocket * TCPSocketAPI::findAndCheckSocket(int socket_id, std::string method) 
 	return socket;
 }
 
-CallbackData * TCPSocketAPI::makeCallbackData(int socket_id, SOCK_CB,
-		void * function_data, CALLBACK_TYPE type) {
+TCPSocketAPI::CallbackData * TCPSocketAPI::makeCallbackData(int socket_id,
+		CallbackInterface * cbobj, void * function_data, CALLBACK_TYPE type) {
 
 	CallbackData * cbdata = new CallbackData();
 	cbdata->socket_id = socket_id;
-	cbdata->callback_function = callback_function;
+	cbdata->cbobj = cbobj;
 	cbdata->function_data = function_data;
 	cbdata->type = type;
 	return cbdata;

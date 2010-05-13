@@ -29,22 +29,41 @@
 #include <string>
 #include <map>
 
-#include "CallbackInterface.h"
-// TODO are member callbacks inheritable?
-#define SOCK_CB void (*callback_function)(int socket_id, int ret_status, void * ret_data, void * yourPtr)
+//#define SOCK_CB void (CallbackInterface::*callback_function)(int socket_id, int ret_status, void * ret_data, void * yourPtr)
 
 enum CALLBACK_TYPE {CONNECT, ACCEPT, RECV};
 
-struct CallbackData {
-	int socket_id;
-	SOCK_CB;
-	void * function_data;
-	CALLBACK_TYPE type;
-};
+//struct CallbackData {
+//	int socket_id;
+//	//SOCK_CB;
+//	void * cbobj;
+//	void * function_data;
+//	CALLBACK_TYPE type;
+//};
 
 class INET_API TCPSocketAPI : public cSimpleModule, TCPSocket::CallbackInterface
 {
+public:
+//	enum CALLBACK_TYPE {CONNECT, ACCEPT, RECV};
+
+	class CallbackInterface {
+	public:
+		virtual bool hasCallback (CALLBACK_TYPE type) =0;
+		virtual void connectCallback (int socket_id, int ret_status, void * yourPtr) {}
+		virtual void acceptCallback  (int socket_id, int ret_status, void * yourPtr) {}
+		virtual void recvCallback    (int socket_id, int ret_status, cPacket * msg, void * yourPtr) {}
+	};
+
 protected:
+
+	struct CallbackData {
+		int socket_id;
+		//SOCK_CB;
+		CallbackInterface * cbobj;
+		void * function_data;
+		CALLBACK_TYPE type;
+	};
+
 	TCPSocketMap _socket_map;
 
 	// port -> callback
@@ -79,8 +98,8 @@ public:
 	// @throws a cRuntimeError if an error occurs (see omnetpp/include/cexception.h)
 	// @return the ret_status value will be -1 -1 if an error occurred and 0 otherwise
 	// the ret_data pointer will be NULL
-	virtual void connect (int socket_id, std::string remote_address, int remote_port, void * yourPtr,
-			SOCK_CB );
+	virtual void connect (int socket_id, std::string remote_address, int remote_port,
+			void * yourPtr, CallbackInterface * cbobj);
 
 	// @throws a cRuntimeError if an error occurs (see omnetpp/include/cexception.h)
 	virtual void listen (int socket_id);
@@ -88,7 +107,7 @@ public:
 	// @return the ret_status value will be -1 if an error occurred and otherwise the
 	// socket_id of the accepted socket
 	// the ret_data pointer will be NULL
-	virtual void accept (int socket_id, void * yourPtr, SOCK_CB);
+	virtual void accept (int socket_id, void * yourPtr, CallbackInterface * cbobj);
 
 //	// registerAcceptCallback must be called before this convenient form can be used
 //	virtual void accept(int socket_id, void * yourPtr);
@@ -108,7 +127,7 @@ public:
 	// the ret_data pointer will pointer to a cPacket which can then be
 	// appropriately cast or translated, will be NULL if an error occurs or the socket
 	// is closed
-	virtual void recv (int socket_id, void * yourPtr, SOCK_CB);
+	virtual void recv (int socket_id, void * yourPtr, CallbackInterface * cbobj);
 
 //	// registerRecvCallback must be called before this convenient form can be used
 //	virtual void recv (int socket_id, void * yourPtr);
@@ -143,7 +162,8 @@ protected:
 
 //	void registerCallbackData (TCPSocket * socket, CallbackData * cbdata);
 
-	CallbackData * makeCallbackData(int socket_id, SOCK_CB, void * function_data, CALLBACK_TYPE type);
+	CallbackData * makeCallbackData(int socket_id, CallbackInterface * cbobj,
+			void * function_data, CALLBACK_TYPE type);
 };
 
 #endif

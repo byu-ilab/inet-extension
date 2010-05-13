@@ -18,20 +18,22 @@
 #include "INETDefs.h"
 #include "TCPSocketAPI.h"
 
-
 /**
  * Generic server application. It serves requests coming in GenericAppMsg
  * request messages. Clients are usually subclassed from TCPGenericCliAppBase.
  *
  * @see GenericAppMsg, TCPGenericCliAppBase
  */
-class INET_API TCPSAPIGenericSrvApp : public cSimpleModule
+class INET_API TCPSAPIGenericSrvApp : public cSimpleModule, TCPSocketAPI::CallbackInterface
 {
   protected:
+//	  int port;
     simtime_t delay;
     simtime_t maxMsgDelay;
 
     TCPSocketAPI * socketapi;
+
+//    cMessage * mymsg;
 
     long msgsRcvd;
     long msgsSent;
@@ -47,8 +49,10 @@ class INET_API TCPSAPIGenericSrvApp : public cSimpleModule
     virtual void handleMessage(cMessage *msg);
     virtual void finish();
 
-    virtual void accept_connection (int socket_id, int ret_status, void * ret_data, void * myPtr);
-    virtual void recv_data (int socket_id, int ret_status, void * ret_data, void * myPtr);
+    virtual bool hasCallback (CALLBACK_TYPE type);
+    //virtual void connectCallback(int socket_id, int ret_status, void * myPtr);
+    virtual void acceptCallback (int socket_id, int ret_status, void * myPtr);
+    virtual void recvCallback   (int socket_id, int ret_status, cPacket * msg, void * myPtr);
 };
 
 #endif

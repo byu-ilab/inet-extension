@@ -83,14 +83,14 @@ module StandardHostWithTCPSocketAPI
                 routingFile = routingFile;
                 @display("p=57,214");
         }
+        tcpsocketapi: TCPSocketAPI {
+            parameters:
+                @display("p=186,102");
+        }
         tcpApp[numTcpApps]: <tcpAppType> like TCPSocketAPIApp {
             parameters:
                 @display("p=186,33");
                 socketapi = "tcpsocketapi";
-        }
-        tcpsocketapi: TCPSocketAPI {
-            parameters:
-                @display("p=186,102");
         }
         tcp: <tcpType> like ITCP {
             parameters:

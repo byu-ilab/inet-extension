@@ -20,6 +20,7 @@ Define_Module(TCPSAPIGenericSrvApp);
 
 void TCPSAPIGenericSrvApp::initialize()
 {
+	EV << "parameter parsing...";
     const char *address = par("address");
     int port = par("port");
     delay = par("replyDelay");
@@ -31,16 +32,21 @@ void TCPSAPIGenericSrvApp::initialize()
 
     socketapi = check_and_cast<TCPSocketAPI *>(getParentModule()->getSubmodule(api_obj_name.c_str()));
 
+    EV << "vector/scalar initialization...";
     msgsRcvd = msgsSent = bytesRcvd = bytesSent = 0;
     WATCH(msgsRcvd);
     WATCH(msgsSent);
     WATCH(bytesRcvd);
     WATCH(bytesSent);
 
+//    mymsg = new cMessage();
+//    scheduleAt(0.0, mymsg);
+
+    EV << "passive socket creation...";
     int s_id = socketapi->socket();
     socketapi->bind(s_id, "", /*address[0] ? IPvXAddress(address) : IPvXAddress(),*/ port);
     socketapi->listen(s_id);
-    socketapi->accept(s_id, NULL, &TCPSAPIGenericSrvApp::accept_connection);
+    socketapi->accept(s_id, NULL, this);//&CallbackInterface::accept_connection);
     /*TCPSocket socket;
     socket.setOutputGate(gate("tcpOut"));
     socket.bind(address[0] ? IPvXAddress(address) : IPvXAddress(), port);
@@ -80,17 +86,32 @@ void TCPSAPIGenericSrvApp::initialize()
 
 void TCPSAPIGenericSrvApp::handleMessage(cMessage *msg)
 {
+//	if (msg->isSelfMessage())
+//	{
+//		EV << "passive socket creation...";
+//		int s_id = socketapi->socket();
+//		    socketapi->bind(s_id, "", /*address[0] ? IPvXAddress(address) : IPvXAddress(),*/ port);
+//		    socketapi->listen(s_id);
+//		    socketapi->accept(s_id, NULL, this);
+//	}
 	EV << "TCPSAPIGenericSrvApp::handleMessage(): recieved a message: " << msg->getClassName()
 		<< ", " << msg->getName();
 	delete msg;
 }
 
-void TCPSAPIGenericSrvApp::accept_connection(int socket_id, int ret_status, void * ret_data, void * myPtr)
-{
-	socketapi->recv(ret_status, NULL, &TCPSAPIGenericSrvApp::recv_data);
+bool TCPSAPIGenericSrvApp::hasCallback (CALLBACK_TYPE type) {
+	if (type == ACCEPT || type == RECV)
+		return true;
+	else
+		return false;
 }
 
-void TCPSAPIGenericSrvApp::recv_data(int socket_id, int ret_status, void * ret_data, void * myPtr)
+void TCPSAPIGenericSrvApp::acceptCallback(int socket_id, int ret_status, void * myPtr)
+{
+	socketapi->recv(ret_status, NULL, this);// &TCPSAPIGenericSrvApp::recv_data);
+}
+
+void TCPSAPIGenericSrvApp::recvCallback(int socket_id, int ret_status, cPacket * msg, void * myPtr)
 {
 	if (ret_status == 0) {
 		EV << "TCPSAPIGenericSrvApp::recv_data(): socket closed";
@@ -101,10 +122,6 @@ void TCPSAPIGenericSrvApp::recv_data(int socket_id, int ret_status, void * ret_d
 		EV << "TCPSAPIGenericSrvApp::recv_data(): error occurred";
 		return;
 	}
-
-	cMessage * msg = static_cast<cMessage *>(ret_data);
-	if (!msg)
-		opp_error("TCPSAPIGenericSrvApp::recv_data(): ret_data is not a cMessage");
 
 	GenericAppMsg *appmsg = dynamic_cast<GenericAppMsg *>(msg);
 	if (!appmsg)
@@ -133,7 +150,7 @@ void TCPSAPIGenericSrvApp::recv_data(int socket_id, int ret_status, void * ret_d
 	}
 	else
 	{
-//		delete appmsg->removeControlInfo();
+		//delete appmsg->removeControlInfo();
 //		TCPSendCommand *cmd = new TCPSendCommand();
 //		cmd->setConnId(connId);
 //		appmsg->setControlInfo(cmd);
@@ -167,3 +184,4 @@ void TCPSAPIGenericSrvApp::finish()
     recordScalar("bytes sent", bytesSent);
     recordScalar("bytes rcvd", bytesRcvd);
 }
+
