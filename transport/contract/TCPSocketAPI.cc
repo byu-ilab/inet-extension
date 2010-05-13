@@ -20,13 +20,17 @@ Define_Module(TCPSocketAPI);
 
 TCPSocketAPI::TCPSocketAPI() : _socket_map(), _accept_callbacks(),
 	_registered_callbacks(), _resolver() {
-//	_default_recv_callback = NULL;
-//	_default_accept_callback = NULL;
+
 }
 
 TCPSocketAPI::~TCPSocketAPI() {
-	// TODO delete CallbackData objects
 	_socket_map.deleteSockets();
+
+	std::map<int, CallbackData *>::iterator i = _registered_callbacks.begin();
+	while (i != _registered_callbacks.end())
+	{
+		delete i->second;
+	}
 }
 
 //==============================================================================
@@ -123,20 +127,6 @@ void TCPSocketAPI::bind (int socket_id, std::string local_address,
 	}
 }
 
-//void TCPSocketAPI::connect (int socket_id, std::string remote_address,
-//		int remote_port, void * yourPtr, CallbackInterface * cbobj ) {
-//
-//	Enter_Method_Silent();
-//
-//	// verifies that socket exists
-//	TCPSocket * socket = findAndCheckSocket(socket_id, "connect()");
-//
-//	socket->setCallbackObject(this, makeCallbackData(socket_id, cbobj, yourPtr, CONNECT));
-//
-//	socket->connect(_resolver.resolve(remote_address.c_str(),
-//			IPAddressResolver::ADDR_PREFER_IPv4), remote_port);
-//}
-
 void TCPSocketAPI::connect (int socket_id, std::string remote_address,
 		int remote_port, void * yourPtr) {
 
@@ -180,7 +170,7 @@ int TCPSocketAPI::makeActiveSocket (CallbackInterface * cbobj, std::string local
 }
 
 int TCPSocketAPI::makePassiveSocket (CallbackInterface * cbobj, std::string local_address,
-			int local_port, CallbackInterface * cbobj_for_accepted=NULL) {
+			int local_port, CallbackInterface * cbobj_for_accepted) {
 	Enter_Method_Silent();
 	int id = socket(cbobj);
 	bind(id, local_address, local_port);
