@@ -145,7 +145,7 @@ void httptServerBase::updateDisplay()
 	if ( ev.isGUI() )
 	{
 		char buf[1024];
-		sprintf( buf, "%ld", htmlDocsServed );
+		sprintf( buf, "%ld", htmlDocsServed + imgResourcesServed + textResourcesServed );
 		getParentModule()->getDisplayString().setTagArg("t",0,buf);
 
 		if ( activationTime<=simTime() )

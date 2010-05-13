@@ -18,7 +18,8 @@
 
 Define_Module(TCPSocketAPI);
 
-TCPSocketAPI::TCPSocketAPI() : _socket_map(), _accept_callbacks(), _resolver() {
+TCPSocketAPI::TCPSocketAPI() : _socket_map(), _accept_callbacks(),
+	_registered_callbacks(), _resolver() {
 //	_default_recv_callback = NULL;
 //	_default_accept_callback = NULL;
 }
@@ -84,13 +85,22 @@ void TCPSocketAPI::finish() {
 //==============================================================================
 // TCP Socket API functions
 
-int TCPSocketAPI::socket () {
+int TCPSocketAPI::socket (CallbackInterface * cbobj) {
 	Enter_Method_Silent();
+
+	if (!cbobj) {
+		opp_error("TCPSocketAPI::socket(): no callback object specified");
+	}
+
 	TCPSocket * socket = new TCPSocket();
 	socket->setOutputGate(gate("tcpOut"));
-	socket->setCallbackObject(this, NULL);
+
+	int id = socket->getConnectionId();
+	_registered_callbacks[id] = makeCallbackData(id, cbobj, NULL, NONE);
+	socket->setCallbackObject(this, _registered_callbacks[id]);
+
 	_socket_map.addSocket(socket);
-	return socket->getConnectionId();
+	return id;
 }
 
 
@@ -113,30 +123,72 @@ void TCPSocketAPI::bind (int socket_id, std::string local_address,
 	}
 }
 
+//void TCPSocketAPI::connect (int socket_id, std::string remote_address,
+//		int remote_port, void * yourPtr, CallbackInterface * cbobj ) {
+//
+//	Enter_Method_Silent();
+//
+//	// verifies that socket exists
+//	TCPSocket * socket = findAndCheckSocket(socket_id, "connect()");
+//
+//	socket->setCallbackObject(this, makeCallbackData(socket_id, cbobj, yourPtr, CONNECT));
+//
+//	socket->connect(_resolver.resolve(remote_address.c_str(),
+//			IPAddressResolver::ADDR_PREFER_IPv4), remote_port);
+//}
+
 void TCPSocketAPI::connect (int socket_id, std::string remote_address,
-		int remote_port, void * yourPtr, CallbackInterface * cbobj ) {
+		int remote_port, void * yourPtr) {
 
 	Enter_Method_Silent();
 
 	// verifies that socket exists
 	TCPSocket * socket = findAndCheckSocket(socket_id, "connect()");
 
-	socket->setCallbackObject(this, makeCallbackData(socket_id, cbobj, yourPtr, CONNECT));
+	CallbackData * cbdata = _registered_callbacks[socket_id];
+	// should not be NULL
+	cbdata->function_data = yourPtr;
+	cbdata->type = CONNECT;
+	//socket->setCallbackObject(this, cbdata);
 
 	socket->connect(_resolver.resolve(remote_address.c_str(),
 			IPAddressResolver::ADDR_PREFER_IPv4), remote_port);
 }
 
-void TCPSocketAPI::listen (int socket_id) {
+
+void TCPSocketAPI::listen (int socket_id, CallbackInterface * cbobj_for_accepted) {
 	Enter_Method_Silent();
 
 	TCPSocket * socket = findAndCheckSocket(socket_id, "listen()");
+
+	if (cbobj_for_accepted) {
+		CallbackData * cbdata = _registered_callbacks[socket_id];
+		cbdata->cbobj_for_accepted = cbobj_for_accepted;
+	}
 
 	// creates a forking socket
 	socket->listen();
 }
 
-void TCPSocketAPI::accept (int socket_id, void * yourPtr, CallbackInterface * cbobj) {
+int TCPSocketAPI::makeActiveSocket (CallbackInterface * cbobj, std::string local_address,
+			int local_port, std::string remote_address, int remote_port, void * yourPtr) {
+	Enter_Method_Silent();
+	int id = socket(cbobj);
+	bind(id, local_address, local_port);
+	connect(id, remote_address, remote_port, yourPtr);
+	return id;
+}
+
+int TCPSocketAPI::makePassiveSocket (CallbackInterface * cbobj, std::string local_address,
+			int local_port, CallbackInterface * cbobj_for_accepted=NULL) {
+	Enter_Method_Silent();
+	int id = socket(cbobj);
+	bind(id, local_address, local_port);
+	listen(id, cbobj_for_accepted);
+	return id;
+}
+
+void TCPSocketAPI::accept (int socket_id, void * yourPtr) {
 
 	Enter_Method_Silent();
 
@@ -147,36 +199,12 @@ void TCPSocketAPI::accept (int socket_id, void * yourPtr, CallbackInterface * cb
 		opp_error("TCPSocketAPI::accept() : socket is not a passive socket");
 	}
 
+	CallbackData * cbdata = _registered_callbacks[socket_id];
+	cbdata->function_data = yourPtr;
+	cbdata->type = ACCEPT;
 
-	//socket->setCallbackObject(this, makeCallbackData(socket_id, callback_fucntion, yourPtr, ACCEPT));
-	//_listening_sockets.add(socket->getLocalPort(), socket);
-
-	_accept_callbacks[socket->getLocalPort()] =
-			makeCallbackData(socket_id, cbobj, yourPtr, ACCEPT);
+	_accept_callbacks[socket->getLocalPort()] = cbdata;
 }
-
-//void TCPSocketAPI::accept(int socket_id, void * yourPtr) {
-//	TCPSocket * socket = findAndCheckSocket(socket_id, "recv()");
-//	std::map<int, CallbackData *>::iterator i = _registered_callbacks.find(socket_id);
-//
-//	if (i == _registered_callbacks.end() || i->second->type != ACCEPT)
-//	{
-//		opp_error("TCPSocketAPI::accept(): no accept callback registered");
-//	}
-//
-//	i->second->function_data = yourPtr;
-//
-//	socket->setCallbackObject(this, i->second);
-//}
-//
-//void TCPSocketAPI::registerAcceptCallback(int socket_id, SOCK_CB) {
-//	TCPSocket * socket = findAndCheckSocket(socket_id, "registerAcceptCallback");
-//	registerCallbackData(socket, makeCallbackData(callback_function, NULL, ACCEPT));
-//}
-//
-//void TCPSocketAPI::registerDefaultAcceptCallback(SOCK_CB) {
-//	_default_accept_callback = makeCallbackData(callback_function, NULL, ACCEPT);
-//}
 
 void TCPSocketAPI::send (int socket_id, cMessage * msg) {
 
@@ -192,38 +220,15 @@ void TCPSocketAPI::send (int socket_id, cMessage * msg) {
 	socket->send(msg);
 }
 
-void TCPSocketAPI::recv (int socket_id, void * yourPtr, CallbackInterface * cbobj) {
+void TCPSocketAPI::recv (int socket_id, void * yourPtr) {
 
 	Enter_Method_Silent();
 
 	TCPSocket * socket = findAndCheckSocket(socket_id, "recv()");
-	socket->setCallbackObject(this, makeCallbackData(socket_id, cbobj, yourPtr, RECV));
+	CallbackData * cbdata = _registered_callbacks[socket_id];
+	cbdata->function_data = yourPtr;
+	cbdata->type = RECV;
 }
-
-//void TCPSocketAPI::recv (int socket_id, void * yourPtr) {
-//	TCPSocket * socket = findAndCheckSocket(socket_id, "recv()");
-//	std::map<int, CallbackData *>::iterator i = _registered_callbacks.find(socket_id);
-//
-//	if (i == _registered_callbacks.end())
-//	{
-//		if (_default_recv_callback)
-//			registerCallbackData(socket, )
-//		opp_error("TCPSocketAPI::recv(): no recv callback registered");
-//	}
-//
-//	i->second->function_data = yourPtr;
-//
-//	socket->setCallbackObject(this, i->second);
-//}
-//
-//void TCPSocketAPI::registerRecvCallback (int socket_id, SOCK_CB) {
-//	TCPSocket * socket = findAndCheckSocket(socket_id, "registerRecvCallback()");
-//	registerCallbackData(socket, makeCallbackData(callback_function, NULL, RECV));
-//}
-//
-//void TCPSocketAPI::registerDefaultRecvCallback(SOCK_CB) {
-//	_default_recv_callback = makeCallbackData(callback_function, NULL, RECV);
-//}
 
 void TCPSocketAPI::close (int socket_id) {
 
@@ -232,8 +237,6 @@ void TCPSocketAPI::close (int socket_id) {
 	TCPSocket * socket = findAndCheckSocket(socket_id, "close()");
 
 	socket->close();
-	//_socket_map.removeSocket(socket);
-	// delete the socket in the socketClosed callback
 }
 
 //==============================================================================
@@ -253,11 +256,19 @@ void TCPSocketAPI::socketEstablished(int connId, void *yourPtr)
 	// invoke the "connect" or "accept" callback
 	CallbackData * cbdata = static_cast<CallbackData *>(yourPtr);
 
+	CallbackData * new_cbdata = NULL;
+
 	switch (cbdata->type){
 	case CONNECT:
 		cbdata->cbobj->connectCallback(connId, 0, cbdata->function_data);
 		break;
 	case ACCEPT:
+		// set the spawned socket's callback data to match itself now
+		new_cbdata = makeCallbackData(connId, cbdata->cbobj_for_accepted, NULL, NONE);
+		_registered_callbacks[connId] = new_cbdata;
+		_socket_map.getSocket(connId)->setCallbackObject(this, new_cbdata);
+
+		// notify the passive socket of an accept
 		cbdata->cbobj->acceptCallback(cbdata->socket_id, connId, cbdata->function_data);
 		break;
 	case RECV:
@@ -288,8 +299,6 @@ void TCPSocketAPI::socketDataArrived(int connId, void *yourPtr, cPacket *msg, bo
 	default:
 		EV_WARNING << "TCPSocketAPI::socketEstablished(): CONNECT or ACCEPT callback received";
 	}
-
-	// delete the message?
 }
 
 void TCPSocketAPI::socketPeerClosed(int connId, void *yourPtr)
@@ -320,13 +329,7 @@ void TCPSocketAPI::socketClosed(int connId, void *yourPtr)
 	EV_INFO << "connection closed. Connection id " << connId << endl;
 
 	// okay if yourPtr == NULL
-//	if ( yourPtr==NULL )
-//	{
-//		EV_ERROR << "TCPSocketAPI::socketClosed(): no callback data";
-//		return;
-//	}
 
-	// Cleanup
 	TCPSocket * socket = _socket_map.removeSocket(connId);
 	delete socket;
 }
@@ -334,7 +337,6 @@ void TCPSocketAPI::socketClosed(int connId, void *yourPtr)
 void TCPSocketAPI::socketFailure(int connId, void *yourPtr, int code)
 {
 	EV_WARNING << "connection broken. Connection id " << connId;
-//	numBroken++;
 
 	EV_INFO << "connection closed. Connection id " << connId;
 
@@ -389,9 +391,6 @@ TCPSocketAPI::CallbackData * TCPSocketAPI::makeCallbackData(int socket_id,
 	cbdata->cbobj = cbobj;
 	cbdata->function_data = function_data;
 	cbdata->type = type;
+	cbdata->cbobj_for_accepted = cbobj;
 	return cbdata;
 }
-
-//void TCPSocketAPI::registerCallbackData (TCPSocket * socket, CallbackData * cbdata) {
-//		_registered_callbacks.add(socket->getConnectionId, cbdata);
-//}

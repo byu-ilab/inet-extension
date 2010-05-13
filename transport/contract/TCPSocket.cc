@@ -25,7 +25,7 @@ TCPSocket::TCPSocket()
     connId = ev.getUniqueNumber();
     sockstate = NOT_BOUND;
 
-    localPrst = remotePrt = -1;
+    localPrt = remotePrt = -1;
     cb = NULL;
     yourPtr = NULL;
 

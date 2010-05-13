@@ -43,10 +43,10 @@ void TCPSAPIGenericSrvApp::initialize()
 //    scheduleAt(0.0, mymsg);
 
     EV << "passive socket creation...";
-    int s_id = socketapi->socket();
+    int s_id = socketapi->socket(this);
     socketapi->bind(s_id, "", /*address[0] ? IPvXAddress(address) : IPvXAddress(),*/ port);
     socketapi->listen(s_id);
-    socketapi->accept(s_id, NULL, this);//&CallbackInterface::accept_connection);
+    socketapi->accept(s_id, NULL);//, this);//&CallbackInterface::accept_connection);
     /*TCPSocket socket;
     socket.setOutputGate(gate("tcpOut"));
     socket.bind(address[0] ? IPvXAddress(address) : IPvXAddress(), port);
@@ -108,7 +108,7 @@ bool TCPSAPIGenericSrvApp::hasCallback (CALLBACK_TYPE type) {
 
 void TCPSAPIGenericSrvApp::acceptCallback(int socket_id, int ret_status, void * myPtr)
 {
-	socketapi->recv(ret_status, NULL, this);// &TCPSAPIGenericSrvApp::recv_data);
+	socketapi->recv(ret_status, NULL);//, this);// &TCPSAPIGenericSrvApp::recv_data);
 }
 
 void TCPSAPIGenericSrvApp::recvCallback(int socket_id, int ret_status, cPacket * msg, void * myPtr)
