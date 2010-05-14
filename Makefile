@@ -139,6 +139,7 @@ OBJS = \
     $O/base/PassiveQueueBase.o \
     $O/base/ReassemblyBuffer.o \
     $O/base/ByteArrayMessage.o \
+    $O/emulation/EmulationPlug.o \
     $O/httptools/httptServerDirectEvilA.o \
     $O/httptools/httptBrowser.o \
     $O/httptools/httptServerBase.o \
@@ -381,6 +382,7 @@ OBJS = \
     $O/applications/tcpapp/GenericAppMsg_m.o \
     $O/applications/udpapp/UDPEchoAppMsg_m.o \
     $O/base/ByteArrayMessage_m.o \
+    $O/emulation/EmulationPlugMsg_m.o \
     $O/httptools/httptMessages_m.o \
     $O/httptools/httptEventMessages_m.o \
     $O/linklayer/contract/PhyControlInfo_m.o \
@@ -435,6 +437,7 @@ MSGFILES = \
     applications/tcpapp/GenericAppMsg.msg \
     applications/udpapp/UDPEchoAppMsg.msg \
     base/ByteArrayMessage.msg \
+    emulation/EmulationPlugMsg.msg \
     httptools/httptMessages.msg \
     httptools/httptEventMessages.msg \
     linklayer/contract/PhyControlInfo.msg \
@@ -1041,6 +1044,15 @@ $O/base/Blackboard.o: base/Blackboard.cc \
 $O/base/NotifierConsts.o: base/NotifierConsts.cc \
 	base/INETDefs.h \
 	base/NotifierConsts.h
+$O/emulation/EmulationPlugMsg_m.o: emulation/EmulationPlugMsg_m.cc \
+	emulation/EmulationPlugCallback.h \
+	emulation/EmulationPluginInterface.h \
+	emulation/EmulationPlugMsg_m.h
+$O/emulation/EmulationPlug.o: emulation/EmulationPlug.cc \
+	emulation/EmulationPlugCallback.h \
+	emulation/EmulationPlug.h \
+	emulation/EmulationPluginInterface.h \
+	emulation/EmulationPlugMsg_m.h
 $O/httptools/httptServerDirectEvilA.o: httptools/httptServerDirectEvilA.cc \
 	httptools/httptEventMessages_m.h \
 	httptools/httptServerBase.h \
