@@ -25,5 +25,6 @@ moduleinterface TCPSocketAPIApp
 
 // code snippet to extract pointer to TCPSocketAPI
 //    std::string api_obj_name = par("socketapi").stringValue();
-//    if (api_obj_name.compare("") != 0)
-//    	socketapi = check_and_cast<TCPSocketAPI *>(getParentModule()->getSubmodule(api_obj_name.c_str()));
+//    if (api_obj_name.empty())
+//    	opp_error("TCPSAPIGenericSrvApp::initialize(): no tcp socket api specified!");
+//    socketapi = check_and_cast<TCPSocketAPI *>(getParentModule()->getSubmodule(api_obj_name.c_str()));

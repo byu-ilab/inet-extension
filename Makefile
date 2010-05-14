@@ -21,7 +21,6 @@ INCLUDE_PATH = \
     -Iapplications/tcpapp/socketapi \
     -Iapplications/udpapp \
     -Ibase \
-    -Iemulation \
     -Ihttptools \
     -Ihttptools/Documentation \
     -Ilinklayer \
@@ -139,7 +138,6 @@ OBJS = \
     $O/base/PassiveQueueBase.o \
     $O/base/ReassemblyBuffer.o \
     $O/base/ByteArrayMessage.o \
-    $O/emulation/EmulationJack.o \
     $O/httptools/httptServerDirectEvilA.o \
     $O/httptools/httptBrowser.o \
     $O/httptools/httptServerBase.o \
@@ -382,7 +380,6 @@ OBJS = \
     $O/applications/tcpapp/GenericAppMsg_m.o \
     $O/applications/udpapp/UDPEchoAppMsg_m.o \
     $O/base/ByteArrayMessage_m.o \
-    $O/emulation/EmulationJackMsg_m.o \
     $O/httptools/httptMessages_m.o \
     $O/httptools/httptEventMessages_m.o \
     $O/linklayer/contract/PhyControlInfo_m.o \
@@ -437,7 +434,6 @@ MSGFILES = \
     applications/tcpapp/GenericAppMsg.msg \
     applications/udpapp/UDPEchoAppMsg.msg \
     base/ByteArrayMessage.msg \
-    emulation/EmulationJackMsg.msg \
     httptools/httptMessages.msg \
     httptools/httptEventMessages.msg \
     linklayer/contract/PhyControlInfo.msg \
@@ -577,7 +573,6 @@ clean:
 	-rm -f applications/tcpapp/socketapi/*_m.cc applications/tcpapp/socketapi/*_m.h
 	-rm -f applications/udpapp/*_m.cc applications/udpapp/*_m.h
 	-rm -f base/*_m.cc base/*_m.h
-	-rm -f emulation/*_m.cc emulation/*_m.h
 	-rm -f httptools/*_m.cc httptools/*_m.h
 	-rm -f httptools/Documentation/*_m.cc httptools/Documentation/*_m.h
 	-rm -f linklayer/*_m.cc linklayer/*_m.h
@@ -647,7 +642,7 @@ cleanall: clean
 	-rm -rf $(PROJECT_OUTPUT_DIR)
 
 depend:
-	$(MAKEDEPEND) $(INCLUDE_PATH) -f Makefile -P\$$O/ -- $(MSG_CC_FILES)  ./*.cc applications/*.cc applications/ethernet/*.cc applications/generic/*.cc applications/pingapp/*.cc applications/rtpapp/*.cc applications/sctpapp/*.cc applications/tcpapp/*.cc applications/tcpapp/socketapi/*.cc applications/udpapp/*.cc base/*.cc emulation/*.cc httptools/*.cc httptools/Documentation/*.cc linklayer/*.cc linklayer/contract/*.cc linklayer/ethernet/*.cc linklayer/etherswitch/*.cc linklayer/ext/*.cc linklayer/ieee80211/*.cc linklayer/ieee80211/mac/*.cc linklayer/ieee80211/mgmt/*.cc linklayer/mf80211/*.cc linklayer/mf80211/macLayer/*.cc linklayer/mf80211/phyLayer/*.cc linklayer/mf80211/phyLayer/decider/*.cc linklayer/mf80211/phyLayer/snrEval/*.cc linklayer/mfcore/*.cc linklayer/ppp/*.cc linklayer/radio/*.cc mobility/*.cc networklayer/*.cc networklayer/arp/*.cc networklayer/autorouting/*.cc networklayer/common/*.cc networklayer/contract/*.cc networklayer/extras/*.cc networklayer/icmpv6/*.cc networklayer/ipv4/*.cc networklayer/ipv6/*.cc networklayer/ldp/*.cc networklayer/mpls/*.cc networklayer/ospfv2/*.cc networklayer/ospfv2/interface/*.cc networklayer/ospfv2/messagehandler/*.cc networklayer/ospfv2/neighbor/*.cc networklayer/ospfv2/router/*.cc networklayer/queue/*.cc networklayer/rsvp_te/*.cc networklayer/ted/*.cc nodes/*.cc nodes/adhoc/*.cc nodes/ethernet/*.cc nodes/inet/*.cc nodes/ipv6/*.cc nodes/mpls/*.cc nodes/wireless/*.cc transport/*.cc transport/contract/*.cc transport/rtp/*.cc transport/rtp/profiles/*.cc transport/rtp/profiles/avprofile/*.cc transport/sctp/*.cc transport/tcp/*.cc transport/tcp/flavours/*.cc transport/tcp/queues/*.cc transport/tcp_nsc/*.cc transport/tcp_nsc/queues/*.cc transport/tcp_old/*.cc transport/tcp_old/flavours/*.cc transport/tcp_old/queues/*.cc transport/udp/*.cc util/*.cc util/headerserializers/*.cc util/headerserializers/headers/*.cc world/*.cc
+	$(MAKEDEPEND) $(INCLUDE_PATH) -f Makefile -P\$$O/ -- $(MSG_CC_FILES)  ./*.cc applications/*.cc applications/ethernet/*.cc applications/generic/*.cc applications/pingapp/*.cc applications/rtpapp/*.cc applications/sctpapp/*.cc applications/tcpapp/*.cc applications/tcpapp/socketapi/*.cc applications/udpapp/*.cc base/*.cc httptools/*.cc httptools/Documentation/*.cc linklayer/*.cc linklayer/contract/*.cc linklayer/ethernet/*.cc linklayer/etherswitch/*.cc linklayer/ext/*.cc linklayer/ieee80211/*.cc linklayer/ieee80211/mac/*.cc linklayer/ieee80211/mgmt/*.cc linklayer/mf80211/*.cc linklayer/mf80211/macLayer/*.cc linklayer/mf80211/phyLayer/*.cc linklayer/mf80211/phyLayer/decider/*.cc linklayer/mf80211/phyLayer/snrEval/*.cc linklayer/mfcore/*.cc linklayer/ppp/*.cc linklayer/radio/*.cc mobility/*.cc networklayer/*.cc networklayer/arp/*.cc networklayer/autorouting/*.cc networklayer/common/*.cc networklayer/contract/*.cc networklayer/extras/*.cc networklayer/icmpv6/*.cc networklayer/ipv4/*.cc networklayer/ipv6/*.cc networklayer/ldp/*.cc networklayer/mpls/*.cc networklayer/ospfv2/*.cc networklayer/ospfv2/interface/*.cc networklayer/ospfv2/messagehandler/*.cc networklayer/ospfv2/neighbor/*.cc networklayer/ospfv2/router/*.cc networklayer/queue/*.cc networklayer/rsvp_te/*.cc networklayer/ted/*.cc nodes/*.cc nodes/adhoc/*.cc nodes/ethernet/*.cc nodes/inet/*.cc nodes/ipv6/*.cc nodes/mpls/*.cc nodes/wireless/*.cc transport/*.cc transport/contract/*.cc transport/rtp/*.cc transport/rtp/profiles/*.cc transport/rtp/profiles/avprofile/*.cc transport/sctp/*.cc transport/tcp/*.cc transport/tcp/flavours/*.cc transport/tcp/queues/*.cc transport/tcp_nsc/*.cc transport/tcp_nsc/queues/*.cc transport/tcp_old/*.cc transport/tcp_old/flavours/*.cc transport/tcp_old/queues/*.cc transport/udp/*.cc util/*.cc util/headerserializers/*.cc util/headerserializers/headers/*.cc world/*.cc
 
 # DO NOT DELETE THIS LINE -- make depend depends on it.
 $O/applications/ethernet/EtherAppCli.o: applications/ethernet/EtherAppCli.cc \
@@ -933,7 +928,21 @@ $O/applications/tcpapp/socketapi/TCPSAPIGenericSrvApp.o: applications/tcpapp/soc
 	transport/contract/TCPSocketAPI.h \
 	transport/contract/TCPSocket.h
 $O/applications/tcpapp/socketapi/VideoStreamerEmulationJack.o: applications/tcpapp/socketapi/VideoStreamerEmulationJack.cc \
-	applications/tcpapp/socketapi/VideoStreamerEmulationJack.h
+	applications/tcpapp/socketapi/VideoStreamerEmulationJack.h \
+	httptools/httptLogdefs.h \
+	base/INETDefs.h \
+	transport/contract/TCPCommand_m.h \
+	emulation/EmulationJackCallback.h \
+	transport/contract/TCPSocket.h \
+	transport/contract/TCPSocketAPI.h \
+	emulation/EmulationJackMsg_m.h \
+	networklayer/contract/IPAddressResolver.h \
+	emulation/EmulationJack.h \
+	emulation/EmulationPluginInterface.h \
+	networklayer/contract/IPvXAddress.h \
+	networklayer/contract/IPv6Address.h \
+	networklayer/contract/IPAddress.h \
+	transport/contract/TCPSocketMap.h
 $O/applications/udpapp/UDPEchoApp.o: applications/udpapp/UDPEchoApp.cc \
 	transport/contract/UDPControlInfo_m.h \
 	networklayer/contract/IPvXAddress.h \
@@ -1046,24 +1055,6 @@ $O/base/Blackboard.o: base/Blackboard.cc \
 $O/base/NotifierConsts.o: base/NotifierConsts.cc \
 	base/INETDefs.h \
 	base/NotifierConsts.h
-$O/emulation/EmulationPlugMsg_m.o: emulation/EmulationPlugMsg_m.cc \
-	emulation/EmulationPlugCallback.h \
-	emulation/EmulationPluginInterface.h \
-	emulation/EmulationPlugMsg_m.h
-$O/emulation/EmulationJack.o: emulation/EmulationJack.cc \
-	emulation/EmulationJackMsg_m.h \
-	emulation/EmulationJack.h \
-	emulation/EmulationPluginInterface.h \
-	emulation/EmulationJackCallback.h
-$O/emulation/EmulationPlug.o: emulation/EmulationPlug.cc \
-	emulation/EmulationPlugCallback.h \
-	emulation/EmulationPlug.h \
-	emulation/EmulationPluginInterface.h \
-	emulation/EmulationPlugMsg_m.h
-$O/emulation/EmulationJackMsg_m.o: emulation/EmulationJackMsg_m.cc \
-	emulation/EmulationJackMsg_m.h \
-	emulation/EmulationPluginInterface.h \
-	emulation/EmulationJackCallback.h
 $O/httptools/httptServerDirectEvilA.o: httptools/httptServerDirectEvilA.cc \
 	httptools/httptEventMessages_m.h \
 	httptools/httptServerBase.h \
