@@ -100,7 +100,7 @@ void TCPSAPIGenericSrvApp::handleMessage(cMessage *msg)
 }
 
 bool TCPSAPIGenericSrvApp::hasCallback (CALLBACK_TYPE type) {
-	if (type == ACCEPT || type == RECV)
+	if (type == CB_T_ACCEPT || type == CB_T_RECV)
 		return true;
 	else
 		return false;

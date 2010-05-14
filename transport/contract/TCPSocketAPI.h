@@ -28,7 +28,9 @@
 #include <string>
 #include <map>
 
-enum CALLBACK_TYPE {NONE, CONNECT, ACCEPT, RECV};
+enum CALLBACK_TYPE {CB_T_CONNECT, CB_T_ACCEPT, CB_T_RECV};
+
+enum CALLBACK_STATE {CB_S_NONE, CB_S_CONNECT, CB_S_ACCEPT, CB_S_RECV, CB_S_CLOSED};
 
 class INET_API TCPSocketAPI : public cSimpleModule, TCPSocket::CallbackInterface
 {
@@ -70,7 +72,7 @@ protected:
 		int socket_id;
 		CallbackInterface * cbobj;
 		void * function_data;
-		CALLBACK_TYPE type;
+		CALLBACK_STATE state;
 		CallbackInterface * cbobj_for_accepted;
 	};
 
@@ -112,6 +114,7 @@ public:
 	virtual void listen (int socket_id, CallbackInterface * cbobj_for_accepted=NULL);
 
 	// calls socket, bind, and connect
+	// if local_port is negative then will not call bind
 	// @return the socket id
 	virtual int makeActiveSocket (CallbackInterface * cbobj, std::string local_address,
 			int local_port, std::string remote_address, int remote_port, void * yourPtr);
@@ -162,7 +165,7 @@ protected:
 	TCPSocket * findAndCheckSocket(int socket_id, std::string method);
 
 	CallbackData * makeCallbackData(int socket_id, CallbackInterface * cbobj,
-			void * function_data, CALLBACK_TYPE type);
+			void * function_data, CALLBACK_STATE type);
 };
 
 #endif
