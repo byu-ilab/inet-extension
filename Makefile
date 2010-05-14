@@ -139,7 +139,7 @@ OBJS = \
     $O/base/PassiveQueueBase.o \
     $O/base/ReassemblyBuffer.o \
     $O/base/ByteArrayMessage.o \
-    $O/emulation/EmulationPlug.o \
+    $O/emulation/EmulationJack.o \
     $O/httptools/httptServerDirectEvilA.o \
     $O/httptools/httptBrowser.o \
     $O/httptools/httptServerBase.o \
@@ -382,7 +382,7 @@ OBJS = \
     $O/applications/tcpapp/GenericAppMsg_m.o \
     $O/applications/udpapp/UDPEchoAppMsg_m.o \
     $O/base/ByteArrayMessage_m.o \
-    $O/emulation/EmulationPlugMsg_m.o \
+    $O/emulation/EmulationJackMsg_m.o \
     $O/httptools/httptMessages_m.o \
     $O/httptools/httptEventMessages_m.o \
     $O/linklayer/contract/PhyControlInfo_m.o \
@@ -437,7 +437,7 @@ MSGFILES = \
     applications/tcpapp/GenericAppMsg.msg \
     applications/udpapp/UDPEchoAppMsg.msg \
     base/ByteArrayMessage.msg \
-    emulation/EmulationPlugMsg.msg \
+    emulation/EmulationJackMsg.msg \
     httptools/httptMessages.msg \
     httptools/httptEventMessages.msg \
     linklayer/contract/PhyControlInfo.msg \
@@ -932,6 +932,8 @@ $O/applications/tcpapp/socketapi/TCPSAPIGenericSrvApp.o: applications/tcpapp/soc
 	networklayer/contract/IPAddress.h \
 	transport/contract/TCPSocketAPI.h \
 	transport/contract/TCPSocket.h
+$O/applications/tcpapp/socketapi/VideoStreamerEmulationJack.o: applications/tcpapp/socketapi/VideoStreamerEmulationJack.cc \
+	applications/tcpapp/socketapi/VideoStreamerEmulationJack.h
 $O/applications/udpapp/UDPEchoApp.o: applications/udpapp/UDPEchoApp.cc \
 	transport/contract/UDPControlInfo_m.h \
 	networklayer/contract/IPvXAddress.h \
@@ -1048,11 +1050,20 @@ $O/emulation/EmulationPlugMsg_m.o: emulation/EmulationPlugMsg_m.cc \
 	emulation/EmulationPlugCallback.h \
 	emulation/EmulationPluginInterface.h \
 	emulation/EmulationPlugMsg_m.h
+$O/emulation/EmulationJack.o: emulation/EmulationJack.cc \
+	emulation/EmulationJackMsg_m.h \
+	emulation/EmulationJack.h \
+	emulation/EmulationPluginInterface.h \
+	emulation/EmulationJackCallback.h
 $O/emulation/EmulationPlug.o: emulation/EmulationPlug.cc \
 	emulation/EmulationPlugCallback.h \
 	emulation/EmulationPlug.h \
 	emulation/EmulationPluginInterface.h \
 	emulation/EmulationPlugMsg_m.h
+$O/emulation/EmulationJackMsg_m.o: emulation/EmulationJackMsg_m.cc \
+	emulation/EmulationJackMsg_m.h \
+	emulation/EmulationPluginInterface.h \
+	emulation/EmulationJackCallback.h
 $O/httptools/httptServerDirectEvilA.o: httptools/httptServerDirectEvilA.cc \
 	httptools/httptEventMessages_m.h \
 	httptools/httptServerBase.h \

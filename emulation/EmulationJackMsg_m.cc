@@ -1,5 +1,5 @@
 //
-// Generated file, do not edit! Created by opp_msgc 4.0 from ./EmulationPlugMsg.msg.
+// Generated file, do not edit! Created by opp_msgc 4.0 from ./EmulationJackMsg.msg.
 //
 
 // Disable warnings about unused variables, empty switch stmts, etc:
@@ -10,7 +10,7 @@
 
 #include <iostream>
 #include <sstream>
-#include "EmulationPlugMsg_m.h"
+#include "EmulationJackMsg_m.h"
 
 // Template rule which fires if a struct or class doesn't have operator<<
 template<typename T>
@@ -30,23 +30,23 @@ void doUnpacking(cCommBuffer *, T& t) {
 
 
 
-Register_Class(EmulationPlugMsg);
+Register_Class(EmulationJackMsg);
 
-EmulationPlugMsg::EmulationPlugMsg(const char *name, int kind) : cMessage(name,kind)
+EmulationJackMsg::EmulationJackMsg(const char *name, int kind) : cMessage(name,kind)
 {
 }
 
-EmulationPlugMsg::EmulationPlugMsg(const EmulationPlugMsg& other) : cMessage()
+EmulationJackMsg::EmulationJackMsg(const EmulationJackMsg& other) : cMessage()
 {
     setName(other.getName());
     operator=(other);
 }
 
-EmulationPlugMsg::~EmulationPlugMsg()
+EmulationJackMsg::~EmulationJackMsg()
 {
 }
 
-EmulationPlugMsg& EmulationPlugMsg::operator=(const EmulationPlugMsg& other)
+EmulationJackMsg& EmulationJackMsg::operator=(const EmulationJackMsg& other)
 {
     if (this==&other) return *this;
     cMessage::operator=(other);
@@ -54,33 +54,33 @@ EmulationPlugMsg& EmulationPlugMsg::operator=(const EmulationPlugMsg& other)
     return *this;
 }
 
-void EmulationPlugMsg::parsimPack(cCommBuffer *b)
+void EmulationJackMsg::parsimPack(cCommBuffer *b)
 {
     cMessage::parsimPack(b);
     doPacking(b,this->callback_var);
 }
 
-void EmulationPlugMsg::parsimUnpack(cCommBuffer *b)
+void EmulationJackMsg::parsimUnpack(cCommBuffer *b)
 {
     cMessage::parsimUnpack(b);
     doUnpacking(b,this->callback_var);
 }
 
-EmulationPlugCallback& EmulationPlugMsg::getCallback()
+EmulationJackCallback& EmulationJackMsg::getCallback()
 {
     return callback_var;
 }
 
-void EmulationPlugMsg::setCallback(const EmulationPlugCallback& callback_var)
+void EmulationJackMsg::setCallback(const EmulationJackCallback& callback_var)
 {
     this->callback_var = callback_var;
 }
 
-class EmulationPlugMsgDescriptor : public cClassDescriptor
+class EmulationJackMsgDescriptor : public cClassDescriptor
 {
   public:
-    EmulationPlugMsgDescriptor();
-    virtual ~EmulationPlugMsgDescriptor();
+    EmulationJackMsgDescriptor();
+    virtual ~EmulationJackMsgDescriptor();
 
     virtual bool doesSupport(cObject *obj) const;
     virtual const char *getProperty(const char *propertyname) const;
@@ -98,34 +98,34 @@ class EmulationPlugMsgDescriptor : public cClassDescriptor
     virtual void *getFieldStructPointer(void *object, int field, int i) const;
 };
 
-Register_ClassDescriptor(EmulationPlugMsgDescriptor);
+Register_ClassDescriptor(EmulationJackMsgDescriptor);
 
-EmulationPlugMsgDescriptor::EmulationPlugMsgDescriptor() : cClassDescriptor("EmulationPlugMsg", "cMessage")
+EmulationJackMsgDescriptor::EmulationJackMsgDescriptor() : cClassDescriptor("EmulationJackMsg", "cMessage")
 {
 }
 
-EmulationPlugMsgDescriptor::~EmulationPlugMsgDescriptor()
+EmulationJackMsgDescriptor::~EmulationJackMsgDescriptor()
 {
 }
 
-bool EmulationPlugMsgDescriptor::doesSupport(cObject *obj) const
+bool EmulationJackMsgDescriptor::doesSupport(cObject *obj) const
 {
-    return dynamic_cast<EmulationPlugMsg *>(obj)!=NULL;
+    return dynamic_cast<EmulationJackMsg *>(obj)!=NULL;
 }
 
-const char *EmulationPlugMsgDescriptor::getProperty(const char *propertyname) const
+const char *EmulationJackMsgDescriptor::getProperty(const char *propertyname) const
 {
     cClassDescriptor *basedesc = getBaseClassDescriptor();
     return basedesc ? basedesc->getProperty(propertyname) : NULL;
 }
 
-int EmulationPlugMsgDescriptor::getFieldCount(void *object) const
+int EmulationJackMsgDescriptor::getFieldCount(void *object) const
 {
     cClassDescriptor *basedesc = getBaseClassDescriptor();
     return basedesc ? 1+basedesc->getFieldCount(object) : 1;
 }
 
-unsigned int EmulationPlugMsgDescriptor::getFieldTypeFlags(void *object, int field) const
+unsigned int EmulationJackMsgDescriptor::getFieldTypeFlags(void *object, int field) const
 {
     cClassDescriptor *basedesc = getBaseClassDescriptor();
     if (basedesc) {
@@ -139,7 +139,7 @@ unsigned int EmulationPlugMsgDescriptor::getFieldTypeFlags(void *object, int fie
     }
 }
 
-const char *EmulationPlugMsgDescriptor::getFieldName(void *object, int field) const
+const char *EmulationJackMsgDescriptor::getFieldName(void *object, int field) const
 {
     cClassDescriptor *basedesc = getBaseClassDescriptor();
     if (basedesc) {
@@ -153,7 +153,7 @@ const char *EmulationPlugMsgDescriptor::getFieldName(void *object, int field) co
     }
 }
 
-const char *EmulationPlugMsgDescriptor::getFieldTypeString(void *object, int field) const
+const char *EmulationJackMsgDescriptor::getFieldTypeString(void *object, int field) const
 {
     cClassDescriptor *basedesc = getBaseClassDescriptor();
     if (basedesc) {
@@ -162,12 +162,12 @@ const char *EmulationPlugMsgDescriptor::getFieldTypeString(void *object, int fie
         field -= basedesc->getFieldCount(object);
     }
     switch (field) {
-        case 0: return "EmulationPlugCallback";
+        case 0: return "EmulationJackCallback";
         default: return NULL;
     }
 }
 
-const char *EmulationPlugMsgDescriptor::getFieldProperty(void *object, int field, const char *propertyname) const
+const char *EmulationJackMsgDescriptor::getFieldProperty(void *object, int field, const char *propertyname) const
 {
     cClassDescriptor *basedesc = getBaseClassDescriptor();
     if (basedesc) {
@@ -180,7 +180,7 @@ const char *EmulationPlugMsgDescriptor::getFieldProperty(void *object, int field
     }
 }
 
-int EmulationPlugMsgDescriptor::getArraySize(void *object, int field) const
+int EmulationJackMsgDescriptor::getArraySize(void *object, int field) const
 {
     cClassDescriptor *basedesc = getBaseClassDescriptor();
     if (basedesc) {
@@ -188,13 +188,13 @@ int EmulationPlugMsgDescriptor::getArraySize(void *object, int field) const
             return basedesc->getArraySize(object, field);
         field -= basedesc->getFieldCount(object);
     }
-    EmulationPlugMsg *pp = (EmulationPlugMsg *)object; (void)pp;
+    EmulationJackMsg *pp = (EmulationJackMsg *)object; (void)pp;
     switch (field) {
         default: return 0;
     }
 }
 
-bool EmulationPlugMsgDescriptor::getFieldAsString(void *object, int field, int i, char *resultbuf, int bufsize) const
+bool EmulationJackMsgDescriptor::getFieldAsString(void *object, int field, int i, char *resultbuf, int bufsize) const
 {
     cClassDescriptor *basedesc = getBaseClassDescriptor();
     if (basedesc) {
@@ -202,14 +202,14 @@ bool EmulationPlugMsgDescriptor::getFieldAsString(void *object, int field, int i
             return basedesc->getFieldAsString(object,field,i,resultbuf,bufsize);
         field -= basedesc->getFieldCount(object);
     }
-    EmulationPlugMsg *pp = (EmulationPlugMsg *)object; (void)pp;
+    EmulationJackMsg *pp = (EmulationJackMsg *)object; (void)pp;
     switch (field) {
         case 0: {std::stringstream out; out << pp->getCallback(); opp_strprettytrunc(resultbuf,out.str().c_str(),bufsize-1); return true;}
         default: return false;
     }
 }
 
-bool EmulationPlugMsgDescriptor::setFieldAsString(void *object, int field, int i, const char *value) const
+bool EmulationJackMsgDescriptor::setFieldAsString(void *object, int field, int i, const char *value) const
 {
     cClassDescriptor *basedesc = getBaseClassDescriptor();
     if (basedesc) {
@@ -217,13 +217,13 @@ bool EmulationPlugMsgDescriptor::setFieldAsString(void *object, int field, int i
             return basedesc->setFieldAsString(object,field,i,value);
         field -= basedesc->getFieldCount(object);
     }
-    EmulationPlugMsg *pp = (EmulationPlugMsg *)object; (void)pp;
+    EmulationJackMsg *pp = (EmulationJackMsg *)object; (void)pp;
     switch (field) {
         default: return false;
     }
 }
 
-const char *EmulationPlugMsgDescriptor::getFieldStructName(void *object, int field) const
+const char *EmulationJackMsgDescriptor::getFieldStructName(void *object, int field) const
 {
     cClassDescriptor *basedesc = getBaseClassDescriptor();
     if (basedesc) {
@@ -232,12 +232,12 @@ const char *EmulationPlugMsgDescriptor::getFieldStructName(void *object, int fie
         field -= basedesc->getFieldCount(object);
     }
     switch (field) {
-        case 0: return "EmulationPlugCallback"; break;
+        case 0: return "EmulationJackCallback"; break;
         default: return NULL;
     }
 }
 
-void *EmulationPlugMsgDescriptor::getFieldStructPointer(void *object, int field, int i) const
+void *EmulationJackMsgDescriptor::getFieldStructPointer(void *object, int field, int i) const
 {
     cClassDescriptor *basedesc = getBaseClassDescriptor();
     if (basedesc) {
@@ -245,7 +245,7 @@ void *EmulationPlugMsgDescriptor::getFieldStructPointer(void *object, int field,
             return basedesc->getFieldStructPointer(object, field, i);
         field -= basedesc->getFieldCount(object);
     }
-    EmulationPlugMsg *pp = (EmulationPlugMsg *)object; (void)pp;
+    EmulationJackMsg *pp = (EmulationJackMsg *)object; (void)pp;
     switch (field) {
         case 0: return (void *)(&pp->getCallback()); break;
         default: return NULL;

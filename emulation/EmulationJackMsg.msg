@@ -15,11 +15,11 @@
 //
 
 cplusplus {{
-#include "EmulationPlugCallback.h"
+#include "EmulationJackCallback.h"
 }}
 
-struct EmulationPlugCallback;
+struct EmulationJackCallback;
 
-message EmulationPlugMsg {
-    EmulationPlugCallback callback;
+message EmulationJackMsg {
+    EmulationJackCallback callback;
 }

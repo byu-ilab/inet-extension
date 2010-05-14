@@ -1,7 +1,7 @@
 // Author: Kevin Black
 
-#ifndef EMULATIONPLUG_H_
-#define EMULATIONPLUG_H_
+#ifndef EMULATIONJACK_H_
+#define EMULATIONJACK_H_
 
 #include <omnetpp.h>
 #include <simtime.h>
@@ -9,20 +9,20 @@
 #include <map>
 
 #include "EmulationPluginInterface.h"
-#include "EmulationPlugMsg_m.h"
-#include "EmulationPlugCallback.h"
+#include "EmulationJackMsg_m.h"
+#include "EmulationJackCallback.h"
 
-class EmulationPlug: public cSimpleModule {
+class EmulationJack: public cSimpleModule {
 protected:
 	// callback id -> callback msg
-	std::map<int, EmulationPlugMsg *> _callback_map;
+	std::map<int, EmulationJackMsg *> _callback_map;
 	int _callback_counter;
 
 public:
 	// SECTION: EmulationPlugin methods
 
-	EmulationPlug ();
-	virtual ~EmulationPlug ();
+	EmulationJack ();
+	virtual ~EmulationJack ();
 
 	// @return the callback id as an int
 	virtual int scheduleCallback(simtime_t t_from_now,
@@ -40,4 +40,4 @@ public:
 	virtual void finish();
 };
 
-#endif /* EMULATIONPLUG_H_ */
+#endif /* EMULATIONJACK_H_ */
