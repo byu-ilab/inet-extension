@@ -39,7 +39,7 @@ TCPSocketAPI::~TCPSocketAPI() {
 void TCPSocketAPI::initialize()
 {
 	cSimpleModule::initialize();
-	EV_DEBUG << "initializing tcp socket api" << endl;
+	EV_DEBUG << "initializing TCP socket API" << endl;
 
 	// other variables, scalars/vectors WATCH calls
 }
@@ -49,7 +49,8 @@ void TCPSocketAPI::handleMessage(cMessage *msg)
 	// based off of code in httptServer.cc
 
 	if (msg->isSelfMessage()) {
-		// if this class eventually extends EmulationInterface then pass processing to that code
+		// if this class eventually extends EmulationInterface then pass
+		// processing to that code
 		return;
 	}
 
@@ -69,11 +70,16 @@ void TCPSocketAPI::handleMessage(cMessage *msg)
 
 		if (i == _accept_callbacks.end())
 		{
-			EV_WARNING << "TCPSocketAPI::handleMessage(): received message for new connection on non-listening port";
-			delete socket; // ignore it
+			EV_WARNING << "handleMessage(): received message for new connection " <<
+				socket->getConnectionId() << " on non-listening port" <<
+				" OR received a message for a closed socket" <<endl;
+			// ignore it
+			delete socket;
+			delete msg;
 			return;
 		}
-		socket->setCallbackObject(this, i->second); // assume that the message type is TCP_I_ESTABLISHED
+		 // assume that the message type is TCP_I_ESTABLISHED
+		socket->setCallbackObject(this, i->second);
 		_socket_map.addSocket(socket);
 	}
 	EV_DEBUG << "Process the message " << msg->getName() << endl;
@@ -100,10 +106,12 @@ int TCPSocketAPI::socket (CallbackInterface * cbobj) {
 	socket->setOutputGate(gate("tcpOut"));
 
 	int id = socket->getConnectionId();
-	_registered_callbacks[id] = makeCallbackData(id, cbobj, NULL, CB_S_NONE);
+	CallbackData * cbdata = makeCallbackData(id, cbobj, NULL, CB_S_NONE);
+	_registered_callbacks[id] = cbdata;
 	socket->setCallbackObject(this, _registered_callbacks[id]);
 
 	_socket_map.addSocket(socket);
+	EV_DEBUG << "socket(): new socket " << socket->getConnectionId() << " created" << endl;
 	return id;
 }
 
@@ -125,6 +133,8 @@ void TCPSocketAPI::bind (int socket_id, std::string local_address,
 		socket->bind(_resolver.resolve(local_address.c_str(),
 				IPAddressResolver::ADDR_PREFER_IPv4), local_port);
 	}
+	EV_DEBUG << "bind(): socket " << socket->getConnectionId() << " bound on " <<
+		socket->getLocalAddress() << ":" << socket->getLocalPort() << endl;
 }
 
 void TCPSocketAPI::connect (int socket_id, std::string remote_address,
@@ -136,12 +146,14 @@ void TCPSocketAPI::connect (int socket_id, std::string remote_address,
 	TCPSocket * socket = findAndCheckSocket(socket_id, "connect()");
 
 	CallbackData * cbdata = _registered_callbacks[socket_id];
-	// should not be NULL
 	cbdata->function_data = yourPtr;
 	cbdata->state = CB_S_CONNECT;
 
 	socket->connect(_resolver.resolve(remote_address.c_str(),
 			IPAddressResolver::ADDR_PREFER_IPv4), remote_port);
+
+	EV_DEBUG << "connect(): socket " << socket->getConnectionId() << " connecting to " <<
+		socket->getRemoteAddress() << ":" << socket->getRemotePort() << "..." << endl;
 }
 
 
@@ -157,6 +169,9 @@ void TCPSocketAPI::listen (int socket_id, CallbackInterface * cbobj_for_accepted
 
 	// creates a forking socket
 	socket->listen();
+
+	EV_DEBUG << "listen(): socket " << socket->getConnectionId() << " listening on " <<
+		socket->getLocalAddress() << ":" << socket->getLocalPort() << endl;
 }
 
 int TCPSocketAPI::makeActiveSocket (CallbackInterface * cbobj, std::string local_address,
@@ -195,6 +210,8 @@ void TCPSocketAPI::accept (int socket_id, void * yourPtr) {
 	cbdata->state = CB_S_ACCEPT;
 
 	_accept_callbacks[socket->getLocalPort()] = cbdata;
+	EV_DEBUG << "accept(): socket "<< socket->getConnectionId() << " accepting on " <<
+		socket->getLocalAddress() << ":" << socket->getLocalPort() << endl;
 }
 
 void TCPSocketAPI::send (int socket_id, cMessage * msg) {
@@ -208,7 +225,10 @@ void TCPSocketAPI::send (int socket_id, cMessage * msg) {
 	if (ctrl_info)
 		delete ctrl_info;
 
+	take(msg); // take ownership of the message
 	socket->send(msg);
+	EV_DEBUG << "send(): socket " << socket->getConnectionId() << " sent message " <<
+		msg->getName() << endl;
 }
 
 void TCPSocketAPI::recv (int socket_id, void * yourPtr) {
@@ -216,9 +236,13 @@ void TCPSocketAPI::recv (int socket_id, void * yourPtr) {
 	Enter_Method_Silent();
 
 	TCPSocket * socket = findAndCheckSocket(socket_id, "recv()");
+	if (socket->getState() != TCPSocket::CONNECTED) {
+		opp_error("TCPSocketAPI::recv(): socket is not connected!");
+	}
 	CallbackData * cbdata = _registered_callbacks[socket_id];
 	cbdata->function_data = yourPtr;
 	cbdata->state = CB_S_RECV;
+	EV_DEBUG << "recv(): socket " << socket->getConnectionId() << " receiving..." << endl;
 }
 
 void TCPSocketAPI::close (int socket_id) {
@@ -232,6 +256,7 @@ void TCPSocketAPI::close (int socket_id) {
 	cbdata->state = CB_S_CLOSED;
 
 	socket->close();
+	EV_DEBUG << "close(): socket " << socket->getConnectionId() << " closing..." << endl;
 }
 
 //==============================================================================
@@ -239,13 +264,11 @@ void TCPSocketAPI::close (int socket_id) {
 
 void TCPSocketAPI::socketEstablished(int connId, void *yourPtr)
 {
-	EV_INFO << "connected socket with id=" << connId << endl;
 	// update scalar variables
 
 	if ( yourPtr == NULL )
 	{
-		EV_ERROR << "TCPSocketAPI::socketEstablished(): No callback data with the socket";
-		return;
+		opp_error("TCPSocketAPI::socketEstablished(): No callback data with the socket");
 	}
 
 	// invoke the "connect" or "accept" callback
@@ -255,6 +278,8 @@ void TCPSocketAPI::socketEstablished(int connId, void *yourPtr)
 
 	switch (cbdata->state){
 	case CB_S_CONNECT:
+		EV_DEBUG << "connected socket " << connId << endl;
+		cbdata->state = CB_S_NONE;
 		cbdata->cbobj->connectCallback(connId, 0, cbdata->function_data);
 		break;
 	case CB_S_ACCEPT:
@@ -263,14 +288,17 @@ void TCPSocketAPI::socketEstablished(int connId, void *yourPtr)
 		_registered_callbacks[connId] = new_cbdata;
 		_socket_map.getSocket(connId)->setCallbackObject(this, new_cbdata);
 
+		EV_DEBUG << "accepted socket with id=" << connId << endl;
+
 		// notify the passive socket of an accept
 		cbdata->cbobj->acceptCallback(cbdata->socket_id, connId, cbdata->function_data);
 		break;
 	case CB_S_RECV:
-		EV_WARNING << "TCPSocketAPI::socketEstablished(): RECV callback received";
+		EV_WARNING << "TCPSocketAPI::socketEstablished(): RECV callback received" << endl;
 		break;
 	case CB_S_CLOSED:
 		// absorb it silently
+		EV_DEBUG << "socketEstablished(): CLOSED callback received" << endl;
 		break;
 	default: // i.e. CB_S_NONE
 		opp_error("TCPSocketAPI::socketEstablished(): NONE callback received");
@@ -295,16 +323,18 @@ void TCPSocketAPI::socketDataArrived(int connId, void *yourPtr, cPacket *msg, bo
 		cbdata->cbobj->recvCallback(connId, msg->getByteLength(), msg, cbdata->function_data);
 		break;
 	case CB_S_CONNECT:
-		EV_WARNING << "TCPSocketAPI::socketEstablished(): CONNECT callback received";
+		EV_WARNING << "TCPSocketAPI::socketDataArrived(): CONNECT callback received" << endl;
 		break;
 	case CB_S_ACCEPT:
-		EV_WARNING << "TCPSocketAPI::socketEstablished(): ACCEPT callback received";
+		EV_WARNING << "TCPSocketAPI::socketDataArrived(): ACCEPT callback received" << endl;
 		break;
 	case CB_S_CLOSED:
 		// absorb it silently
+		EV_DEBUG << "socketDataArrived(): CLOSED callback received" << endl;
+		delete msg;
 		break;
 	default: // i.e. CB_S_NONE
-		opp_error("TCPSocketAPI::socketEstablished(): NONE callback received");
+		opp_error("TCPSocketAPI::socketDataArrived(): NONE callback received");
 	}
 }
 
@@ -325,16 +355,17 @@ void TCPSocketAPI::socketPeerClosed(int connId, void *yourPtr)
 		cbdata->cbobj->recvCallback(connId, 0, NULL, cbdata->function_data);
 		break;
 	case CB_S_CONNECT:
-		EV_WARNING << "TCPSocketAPI::socketEstablished(): CONNECT callback received";
+		EV_WARNING << "TCPSocketAPI::socketPeerClosed(): CONNECT callback received" << endl;
 		break;
 	case CB_S_ACCEPT:
-		EV_WARNING << "TCPSocketAPI::socketEstablished(): ACCEPT callback received";
+		EV_WARNING << "TCPSocketAPI::socketPeerClosed(): ACCEPT callback received" << endl;
 		break;
 	case CB_S_CLOSED:
 		// absorb it silently
+		EV_DEBUG << "socketPeerClosed(): CLOSED callback received" << endl;
 		break;
 	default: // i.e. CB_S_NONE
-		opp_error("TCPSocketAPI::socketEstablished(): NONE callback received");
+		opp_error("TCPSocketAPI::socketPeerClosed(): NONE callback received");
 	}
 }
 
@@ -356,16 +387,15 @@ void TCPSocketAPI::socketFailure(int connId, void *yourPtr, int code)
 
 	if ( yourPtr==NULL )
 	{
-		EV_ERROR << "TCPSocketAPI::socketFailure(): no callback data with socket";
-		return;
+		opp_error("TCPSocketAPI::socketFailure(): no callback data with socket");
 	}
 
 	CallbackData * cbdata = static_cast<CallbackData *>(yourPtr);
 
 	if (code==TCP_I_CONNECTION_RESET)
-		EV_WARNING << "Connection reset!\\n";
+		EV_WARNING << "Connection reset!" << endl;
 	else if (code==TCP_I_CONNECTION_REFUSED)
-		EV_WARNING << "Connection refused!\\n";
+		EV_WARNING << "Connection refused!" << endl;
 
 	// invoke the recv callback or just handle the close operation?
 	switch (cbdata->state)
@@ -376,13 +406,14 @@ void TCPSocketAPI::socketFailure(int connId, void *yourPtr, int code)
 	case CB_S_CONNECT:
 		cbdata->cbobj->connectCallback(connId, -1, cbdata->function_data);
 	case CB_S_ACCEPT:
-		EV_WARNING << "TCPSocketAPI::socketPeerClosed(): ACCEPT callback received";
+		EV_WARNING << "TCPSocketAPI::socketFailure(): ACCEPT callback received" << endl;
 		break;
 	case CB_S_CLOSED:
 		// absorb it silently
+		EV_DEBUG << "socketFailure(): CLOSED callback received" << endl;
 		break;
 	default: // i.e. CB_S_NONE
-		opp_error("TCPSocketAPI::socketEstablished(): NONE callback received");
+		opp_error("TCPSocketAPI::socketFailure(): NONE callback received");
 	}
 
 	// Cleanup
