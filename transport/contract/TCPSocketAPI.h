@@ -149,7 +149,12 @@ public:
 	// is closed, and the number of bytes of the received message otherwise
 	// the msg pointer will point to the received message or be NULL if an error occurs
 	// or the socket is closed
-	virtual void recv (int socket_id, void * yourPtr=NULL, simtime_t timeout=-1.0);
+	virtual void recv (int socket_id, void * yourPtr=NULL);
+
+	virtual void setTimeout(int socket_id, simtime_t timeout_interval);
+
+	// @return true if there was a timeout set and false otherwise
+	virtual bool removeTimeout(int socket_id);
 
 	// @throws a cRuntimeError if an error occurs (see omnetpp/include/cexception.h)
 	virtual void close (int socket_id);

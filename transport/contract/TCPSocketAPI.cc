@@ -29,13 +29,20 @@ TCPSocketAPI::~TCPSocketAPI() {
 //	std::cout << "~TCPSocketAPI()..."<<endl;
 	_socket_map.deleteSockets();
 
-	std::map<int, CallbackData *>::iterator i = _registered_callbacks.begin();
-	while (i != _registered_callbacks.end())
+	std::map<int, CallbackData *>::iterator cb_itr = _registered_callbacks.begin();
+	while (cb_itr != _registered_callbacks.end())
 	{
-		delete i->second;
-		i++;
+		delete cb_itr->second;
+		cb_itr++;
 	}
-	// TODO cancelAndDelete timeout timers
+
+	std::map<int, SocketTimeoutMsg *>::iterator tmr_itr = _timeout_timers.begin();
+	while (tmr_itr != _timeout_timers.end()) {
+		if (tmr_itr->second) {
+			cancelAndDelete(tmr_itr->second);
+		}
+		tmr_itr++;
+	}
 //	std::cout << "~TCPSocketAPI()!"<<endl;
 }
 
@@ -66,7 +73,7 @@ void TCPSocketAPI::handleMessage(cMessage *msg)
 		if (!cbdata) {
 			opp_error("handleMessage(): invalid socket id in timeout message");
 		}
-
+		EV_DEBUG << "Handle timout on socket "<< socket_id << endl;
 		socketTimeout(socket_id, cbdata);
 		return;
 	}
@@ -237,18 +244,19 @@ void TCPSocketAPI::send (int socket_id, cMessage * msg) {
 
 	TCPSocket * socket = findAndCheckSocket(socket_id, "send()");
 
+	take(msg); // take ownership of the message
+
 	// remove any control info with the message
 	cObject * ctrl_info = msg->removeControlInfo();
 	if (ctrl_info)
 		delete ctrl_info;
 
-	take(msg); // take ownership of the message
 	socket->send(msg);
 	EV_DEBUG << "send(): socket " << socket->getConnectionId() << " sent message " <<
 		msg->getName() << endl;
 }
 
-void TCPSocketAPI::recv (int socket_id, void * yourPtr, simtime_t timeout) {
+void TCPSocketAPI::recv (int socket_id, void * yourPtr) {
 
 	Enter_Method_Silent();
 
@@ -260,20 +268,50 @@ void TCPSocketAPI::recv (int socket_id, void * yourPtr, simtime_t timeout) {
 	cbdata->function_data = yourPtr;
 	cbdata->state = CB_S_RECV;
 
-	if (timeout > 0) {
-		SocketTimeoutMsg * timer = _timeout_timers[socket_id];
-		if (!timer) {
-			timer = new SocketTimeoutMsg("socket timeout");
-			timer->setSocketId(socket_id);
-			_timeout_timers[socket_id] = timer;
+	// schedule a timeout if set
+	SocketTimeoutMsg * timer = _timeout_timers[socket_id];
+	if (timer) {
+		if (timer->isScheduled()) {
+			cancelEvent(timer);
 		}
-
-		// set interval on timer
-		timer->setTimeoutInterval(timeout.dbl());
-		scheduleAt(simTime()+timeout, timer);
+		scheduleAt(simTime()+timer->getTimeoutInterval(), timer);
 	}
 
 	EV_DEBUG << "recv(): socket " << socket->getConnectionId() << " receiving..." << endl;
+}
+
+void TCPSocketAPI::setTimeout(int socket_id, simtime_t timeout_interval) {
+	Enter_Method_Silent();
+	SocketTimeoutMsg * timer = _timeout_timers[socket_id];
+	if (!timer) {
+		timer = new SocketTimeoutMsg("socket timeout");
+		timer->setSocketId(socket_id);
+		_timeout_timers[socket_id] = timer;
+	}
+	else if (timer->isScheduled()){
+		cancelEvent(timer);
+	}
+
+	// set interval on timer
+	timer->setTimeoutInterval(timeout_interval.dbl());
+
+	// see if a timeout should be scheduled now
+	CallbackData * cbdata = _registered_callbacks[socket_id];
+	if (cbdata && cbdata->state == CB_S_RECV) {
+		scheduleAt(simTime()+timeout_interval, timer);
+	}
+}
+
+bool TCPSocketAPI::removeTimeout(int socket_id) {
+	Enter_Method_Silent();
+	SocketTimeoutMsg * timer = _timeout_timers[socket_id];
+	if (!timer) {
+		return false;
+	}
+
+	_timeout_timers[socket_id] = NULL;
+	cancelAndDelete(timer);
+	return true;
 }
 
 void TCPSocketAPI::close (int socket_id) {
@@ -510,7 +548,7 @@ void TCPSocketAPI::socketTimeout(int connId, void * yourPtr) {
 		EV_DEBUG << "socketTimeout(): CLOSE callback received" << endl;
 		break;
 	case CB_S_TIMEOUT:
-		EV_WARNING << "socketTimeout(): double TIMOUT occurred";
+		EV_WARNING << "socketTimeout(): multiple TIMEOUT occurred";
 	default: // i.e. CB_S_NONE
 		opp_error("TCPSocketAPI::socketTimeout(): NONE callback received");
 	}
