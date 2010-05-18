@@ -24,13 +24,20 @@
 #include "TCPSocket.h"
 #include "TCPSocketMap.h"
 #include "IPAddressResolver.h"
+#include "SocketTimeoutMsg_m.h"
 
 #include <string>
 #include <map>
 
 enum CALLBACK_TYPE {CB_T_CONNECT, CB_T_ACCEPT, CB_T_RECV};
 
-enum CALLBACK_STATE {CB_S_NONE, CB_S_CONNECT, CB_S_ACCEPT, CB_S_RECV, CB_S_CLOSED};
+enum CALLBACK_STATE {CB_S_NONE, CB_S_CONNECT, CB_S_ACCEPT, CB_S_RECV, CB_S_CLOSE, CB_S_TIMEOUT};
+
+enum CALLBACK_ERROR {
+	CB_E_TIMEOUT = -2,
+	CB_E_UNKNOWN = -1,
+	CB_E_CLOSED = 0
+};
 
 class INET_API TCPSocketAPI : public cSimpleModule, TCPSocket::CallbackInterface
 {
@@ -70,9 +77,10 @@ protected:
 
 	struct CallbackData {
 		int socket_id;
+		CALLBACK_STATE state;
+
 		CallbackInterface * cbobj;
 		void * function_data;
-		CALLBACK_STATE state;
 		CallbackInterface * cbobj_for_accepted;
 	};
 
@@ -83,6 +91,9 @@ protected:
 
 	// socket id -> callback data
 	std::map<int, CallbackData *> _registered_callbacks;
+
+	// socket id -> timeout message
+	std::map<int, SocketTimeoutMsg *> _timeout_timers;
 
 	IPAddressResolver _resolver;
 
@@ -106,7 +117,7 @@ public:
 	// @throws a cRuntimeError if an error occurs (see omnetpp/include/cexception.h)
 	// @callback the ret_status value will be -1 if an error occurred and 0 otherwise
 	virtual void connect (int socket_id, std::string remote_address, int remote_port,
-				void * yourPtr);
+				void * yourPtr=NULL);
 
 	// @param cbobj_for_accepted -- the CallbackInterface for connected spawned by
 	// 								this listening socket
@@ -117,7 +128,7 @@ public:
 	// if local_port is negative then will not call bind
 	// @return the socket id
 	virtual int makeActiveSocket (CallbackInterface * cbobj, std::string local_address,
-			int local_port, std::string remote_address, int remote_port, void * yourPtr);
+			int local_port, std::string remote_address, int remote_port, void * yourPtr=NULL);
 
 	// calls socket, bind, and listen
 	// @return the socket id
@@ -126,7 +137,7 @@ public:
 
 	// @callback the ret_status value will be -1 if an error occurred and otherwise the
 	// socket_id of the accepted socket
-	virtual void accept (int socket_id, void * yourPtr);
+	virtual void accept (int socket_id, void * yourPtr=NULL);
 
 	// sends the data (there doesn't appear to be any buffer limits)
 	virtual void send (int socket_id, cMessage * msg);
@@ -138,14 +149,14 @@ public:
 	// is closed, and the number of bytes of the received message otherwise
 	// the msg pointer will point to the received message or be NULL if an error occurs
 	// or the socket is closed
-	virtual void recv (int socket_id, void * yourPtr);
+	virtual void recv (int socket_id, void * yourPtr=NULL, simtime_t timeout=-1.0);
 
 	// @throws a cRuntimeError if an error occurs (see omnetpp/include/cexception.h)
 	virtual void close (int socket_id);
 
 	// @return the void pointer to the data previously set in a connect, accept, or
 	// recv call.  Returns NULL if the socket_id doesn't pertain to a current socket
-	// or if the void pointer is to NULL.
+	// or if the provided void pointer is NULL.
 	virtual void * getMyPtr (int socket_id);
 
 protected:
@@ -166,9 +177,12 @@ protected:
 	//virtual void socketStatusArrived(int connId, void *yourPtr, TCPStatusInfo *status);
 
 	// utility / convenience functions
-	TCPSocket * findAndCheckSocket(int socket_id, std::string method);
+		// NOT part of the TCPSocket::CallbackInteface
+	virtual void socketTimeout(int connId, void * yourPtr);
 
-	CallbackData * makeCallbackData(int socket_id, CallbackInterface * cbobj,
+	virtual TCPSocket * findAndCheckSocket(int socket_id, std::string method);
+
+	virtual CallbackData * makeCallbackData(int socket_id, CallbackInterface * cbobj,
 			void * function_data, CALLBACK_STATE type);
 };
 

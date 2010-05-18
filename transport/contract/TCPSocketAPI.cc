@@ -21,12 +21,12 @@
 Define_Module(TCPSocketAPI);
 
 TCPSocketAPI::TCPSocketAPI() : _socket_map(), _accept_callbacks(),
-	_registered_callbacks(), _resolver() {
+	_registered_callbacks(), _timeout_timers(), _resolver() {
 
 }
 
 TCPSocketAPI::~TCPSocketAPI() {
-	std::cout << "~TCPSocketAPI()..."<<endl;
+//	std::cout << "~TCPSocketAPI()..."<<endl;
 	_socket_map.deleteSockets();
 
 	std::map<int, CallbackData *>::iterator i = _registered_callbacks.begin();
@@ -35,7 +35,8 @@ TCPSocketAPI::~TCPSocketAPI() {
 		delete i->second;
 		i++;
 	}
-	std::cout << "~TCPSocketAPI()!"<<endl;
+	// TODO cancelAndDelete timeout timers
+//	std::cout << "~TCPSocketAPI()!"<<endl;
 }
 
 //==============================================================================
@@ -54,8 +55,19 @@ void TCPSocketAPI::handleMessage(cMessage *msg)
 	// based off of code in httptServer.cc
 
 	if (msg->isSelfMessage()) {
-		// if this class eventually extends EmulationInterface then pass
-		// processing to that code
+		SocketTimeoutMsg * timer = static_cast<SocketTimeoutMsg *>(msg);
+		if (!timer) {
+			opp_error("TCPSocketAPI::handleMessage(): unknown self message received");
+		}
+
+		int socket_id = timer->getSocketId();
+		CallbackData * cbdata = _registered_callbacks[socket_id];
+
+		if (!cbdata) {
+			opp_error("handleMessage(): invalid socket id in timeout message");
+		}
+
+		socketTimeout(socket_id, cbdata);
 		return;
 	}
 
@@ -236,7 +248,7 @@ void TCPSocketAPI::send (int socket_id, cMessage * msg) {
 		msg->getName() << endl;
 }
 
-void TCPSocketAPI::recv (int socket_id, void * yourPtr) {
+void TCPSocketAPI::recv (int socket_id, void * yourPtr, simtime_t timeout) {
 
 	Enter_Method_Silent();
 
@@ -247,6 +259,20 @@ void TCPSocketAPI::recv (int socket_id, void * yourPtr) {
 	CallbackData * cbdata = _registered_callbacks[socket_id];
 	cbdata->function_data = yourPtr;
 	cbdata->state = CB_S_RECV;
+
+	if (timeout > 0) {
+		SocketTimeoutMsg * timer = _timeout_timers[socket_id];
+		if (!timer) {
+			timer = new SocketTimeoutMsg("socket timeout");
+			timer->setSocketId(socket_id);
+			_timeout_timers[socket_id] = timer;
+		}
+
+		// set interval on timer
+		timer->setTimeoutInterval(timeout.dbl());
+		scheduleAt(simTime()+timeout, timer);
+	}
+
 	EV_DEBUG << "recv(): socket " << socket->getConnectionId() << " receiving..." << endl;
 }
 
@@ -257,19 +283,19 @@ void TCPSocketAPI::close (int socket_id) {
 	TCPSocket * socket = findAndCheckSocket(socket_id, "close()");
 
 	CallbackData * cbdata = _registered_callbacks[socket_id];
-	cbdata->function_data = NULL;
-	cbdata->state = CB_S_CLOSED;
+	// DO NOT set cbdata->function_data to NULL because getMyPtr needs
+	// to be valid at any time, even after the socket is closed
+	cbdata->state = CB_S_CLOSE;
 
 	socket->close();
 	EV_DEBUG << "close(): socket " << socket->getConnectionId() << " closing..." << endl;
 }
 
 void * TCPSocketAPI::getMyPtr(int socket_id) {
-	if (!_socket_map.getSocket(socket_id)) {
-		return NULL;
+	if (_registered_callbacks[socket_id]) {
+		return _registered_callbacks[socket_id]->function_data;
 	}
-
-	return _registered_callbacks[socket_id]->function_data;
+	return NULL;
 }
 
 //==============================================================================
@@ -309,9 +335,12 @@ void TCPSocketAPI::socketEstablished(int connId, void *yourPtr)
 	case CB_S_RECV:
 		EV_WARNING << "TCPSocketAPI::socketEstablished(): RECV callback received" << endl;
 		break;
-	case CB_S_CLOSED:
+	case CB_S_CLOSE:
 		// absorb it silently
 		EV_DEBUG << "socketEstablished(): CLOSED callback received" << endl;
+		break;
+	case CB_S_TIMEOUT:
+		EV_WARNING << "socketEstablished(): TIMEOUT callback received" << endl;
 		break;
 	default: // i.e. CB_S_NONE
 		opp_error("TCPSocketAPI::socketEstablished(): NONE callback received");
@@ -329,10 +358,15 @@ void TCPSocketAPI::socketDataArrived(int connId, void *yourPtr, cPacket *msg, bo
 
 	// invoke the recv callback
 	CallbackData * cbdata = static_cast<CallbackData *>(yourPtr);
-
+	SocketTimeoutMsg * timer = NULL;
 	switch (cbdata->state)
 	{
 	case CB_S_RECV:
+		timer = _timeout_timers[connId];
+		if (timer) {
+			cancelEvent(timer);
+			scheduleAt(simTime()+timer->getTimeoutInterval(), timer);
+		}
 		cbdata->cbobj->recvCallback(connId, msg->getByteLength(), msg, cbdata->function_data);
 		break;
 	case CB_S_CONNECT:
@@ -341,9 +375,13 @@ void TCPSocketAPI::socketDataArrived(int connId, void *yourPtr, cPacket *msg, bo
 	case CB_S_ACCEPT:
 		EV_WARNING << "TCPSocketAPI::socketDataArrived(): ACCEPT callback received" << endl;
 		break;
-	case CB_S_CLOSED:
+	case CB_S_CLOSE:
 		// absorb it silently
 		EV_DEBUG << "socketDataArrived(): CLOSED callback received" << endl;
+		delete msg;
+		break;
+	case CB_S_TIMEOUT:
+		EV_DEBUG << "socketDataArrived(): TIMEOUT callback recieved" << endl;
 		delete msg;
 		break;
 	default: // i.e. CB_S_NONE
@@ -365,7 +403,7 @@ void TCPSocketAPI::socketPeerClosed(int connId, void *yourPtr)
 	switch (cbdata->state)
 	{
 	case CB_S_RECV:
-		cbdata->cbobj->recvCallback(connId, 0, NULL, cbdata->function_data);
+		cbdata->cbobj->recvCallback(connId, CB_E_CLOSED, NULL, cbdata->function_data);
 		break;
 	case CB_S_CONNECT:
 		EV_WARNING << "TCPSocketAPI::socketPeerClosed(): CONNECT callback received" << endl;
@@ -373,9 +411,12 @@ void TCPSocketAPI::socketPeerClosed(int connId, void *yourPtr)
 	case CB_S_ACCEPT:
 		EV_WARNING << "TCPSocketAPI::socketPeerClosed(): ACCEPT callback received" << endl;
 		break;
-	case CB_S_CLOSED:
+	case CB_S_CLOSE:
 		// absorb it silently
 		EV_DEBUG << "socketPeerClosed(): CLOSED callback received" << endl;
+		break;
+	case CB_S_TIMEOUT:
+		EV_WARNING << "socketPeerClosed(): TIMEOUT callback recieved" << endl;
 		break;
 	default: // i.e. CB_S_NONE
 		opp_error("TCPSocketAPI::socketPeerClosed(): NONE callback received");
@@ -394,6 +435,11 @@ void TCPSocketAPI::socketClosed(int connId, void *yourPtr)
 
 void TCPSocketAPI::socketFailure(int connId, void *yourPtr, int code)
 {
+	if (code == TCP_I_TIMED_OUT) {
+		socketTimeout(connId, yourPtr);
+		return;
+	}
+
 	EV_WARNING << "connection broken. Connection id " << connId;
 
 	EV_INFO << "connection closed. Connection id " << connId;
@@ -409,21 +455,27 @@ void TCPSocketAPI::socketFailure(int connId, void *yourPtr, int code)
 		EV_WARNING << "Connection reset!" << endl;
 	else if (code==TCP_I_CONNECTION_REFUSED)
 		EV_WARNING << "Connection refused!" << endl;
+	else
+		EV_WARNING << "Unknown TCP socket failure code!"<<endl;
 
 	// invoke the recv callback or just handle the close operation?
 	switch (cbdata->state)
 	{
 	case CB_S_RECV:
-		cbdata->cbobj->recvCallback(connId, -1, NULL, cbdata->function_data);
+		cbdata->cbobj->recvCallback(connId, CB_E_UNKNOWN, NULL, cbdata->function_data);
 		break;
 	case CB_S_CONNECT:
-		cbdata->cbobj->connectCallback(connId, -1, cbdata->function_data);
+		cbdata->cbobj->connectCallback(connId, CB_E_UNKNOWN, cbdata->function_data);
+		break;
 	case CB_S_ACCEPT:
 		EV_WARNING << "TCPSocketAPI::socketFailure(): ACCEPT callback received" << endl;
 		break;
-	case CB_S_CLOSED:
+	case CB_S_CLOSE:
 		// absorb it silently
-		EV_DEBUG << "socketFailure(): CLOSED callback received" << endl;
+		EV_DEBUG << "socketFailure(): CLOSE callback received" << endl;
+		break;
+	case CB_S_TIMEOUT:
+		EV_DEBUG << "socketFailure(): TIMEOUT callback received" << endl;
 		break;
 	default: // i.e. CB_S_NONE
 		opp_error("TCPSocketAPI::socketFailure(): NONE callback received");
@@ -432,6 +484,36 @@ void TCPSocketAPI::socketFailure(int connId, void *yourPtr, int code)
 	// Cleanup
 	TCPSocket * socket = _socket_map.removeSocket(connId);
 	delete socket;
+}
+
+void TCPSocketAPI::socketTimeout(int connId, void * yourPtr) {
+	if ( yourPtr==NULL )
+	{
+		opp_error("TCPSocketAPI::socketTimeout(): no callback data with socket");
+	}
+
+	CallbackData * cbdata = static_cast<CallbackData *>(yourPtr);
+
+	switch (cbdata->state)
+	{
+	case CB_S_RECV:
+		cbdata->state = CB_S_TIMEOUT;
+		cbdata->cbobj->recvCallback(connId, CB_E_TIMEOUT, NULL, cbdata->function_data);
+		break;
+	case CB_S_CONNECT:
+		EV_WARNING << "socketTimeout(): CONNECT callback received" << endl;
+		break;
+	case CB_S_ACCEPT:
+		EV_WARNING << "TCPSocketAPI::socketTimeout(): ACCEPT callback received" << endl;
+		break;
+	case CB_S_CLOSE:
+		EV_DEBUG << "socketTimeout(): CLOSE callback received" << endl;
+		break;
+	case CB_S_TIMEOUT:
+		EV_WARNING << "socketTimeout(): double TIMOUT occurred";
+	default: // i.e. CB_S_NONE
+		opp_error("TCPSocketAPI::socketTimeout(): NONE callback received");
+	}
 }
 
 //==============================================================================
