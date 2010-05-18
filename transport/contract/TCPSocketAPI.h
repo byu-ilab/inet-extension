@@ -143,6 +143,10 @@ public:
 	// @throws a cRuntimeError if an error occurs (see omnetpp/include/cexception.h)
 	virtual void close (int socket_id);
 
+	// @return the void pointer to the data previously set in a connect, accept, or
+	// recv call.  Returns NULL if the socket_id doesn't pertain to a current socket
+	// or if the void pointer is to NULL.
+	virtual void * getMyPtr (int socket_id);
 
 protected:
 

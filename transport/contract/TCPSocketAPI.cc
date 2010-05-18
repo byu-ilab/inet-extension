@@ -16,6 +16,8 @@
 
 #include "TCPSocketAPI.h"
 
+#include <iostream>
+
 Define_Module(TCPSocketAPI);
 
 TCPSocketAPI::TCPSocketAPI() : _socket_map(), _accept_callbacks(),
@@ -24,13 +26,16 @@ TCPSocketAPI::TCPSocketAPI() : _socket_map(), _accept_callbacks(),
 }
 
 TCPSocketAPI::~TCPSocketAPI() {
+	std::cout << "~TCPSocketAPI()..."<<endl;
 	_socket_map.deleteSockets();
 
 	std::map<int, CallbackData *>::iterator i = _registered_callbacks.begin();
 	while (i != _registered_callbacks.end())
 	{
 		delete i->second;
+		i++;
 	}
+	std::cout << "~TCPSocketAPI()!"<<endl;
 }
 
 //==============================================================================
@@ -259,6 +264,14 @@ void TCPSocketAPI::close (int socket_id) {
 	EV_DEBUG << "close(): socket " << socket->getConnectionId() << " closing..." << endl;
 }
 
+void * TCPSocketAPI::getMyPtr(int socket_id) {
+	if (!_socket_map.getSocket(socket_id)) {
+		return NULL;
+	}
+
+	return _registered_callbacks[socket_id]->function_data;
+}
+
 //==============================================================================
 // TCPSocket::CallbackInterface functions
 
@@ -427,8 +440,8 @@ void TCPSocketAPI::socketFailure(int connId, void *yourPtr, int code)
 TCPSocket * TCPSocketAPI::findAndCheckSocket(int socket_id, std::string method) {
 	TCPSocket * socket = _socket_map.getSocket(socket_id);
 	if (!socket) {
-		std::string info = "TCPSocketAPI::"+method+" : invalid socket id";
-		opp_error(info.c_str());
+		std::string info = "TCPSocketAPI::"+method+" : invalid socket id %d";
+		opp_error(info.c_str(), socket_id);
 	}
 	return socket;
 }
