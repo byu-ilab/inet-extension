@@ -119,29 +119,30 @@ public:
 
 protected:
 
-	enum CALLBACK_STATE {CB_S_NONE, CB_S_CONNECT, CB_S_ACCEPT,
-			CB_S_RECV, CB_S_CLOSE, CB_S_TIMEOUT};
-
-	struct CallbackData {
-		int socket_id;
-		CALLBACK_STATE state;
-		CallbackInterface * cbobj;
-		void * function_data;
-		CallbackInterface * cbobj_for_accepted;
-	};
-
 	TCPSocketMap _socket_map;
-
-	// port -> callback data
-	std::map<int, CallbackData *> _accept_callbacks;
-
-	// socket id -> callback data
-	std::map<int, CallbackData *> _registered_callbacks;
 
 	// socket id -> timeout message
 	std::map<int, SocketTimeoutMsg *> _timeout_timers;
 
 	IPAddressResolver _resolver;
+
+
+	enum CALLBACK_STATE {CB_S_NONE, CB_S_CONNECT, CB_S_ACCEPT,
+			CB_S_RECV, CB_S_CLOSE, CB_S_TIMEOUT, CB_S_WAIT};
+
+	struct CallbackData {
+		int socket_id;
+		CALLBACK_STATE state;
+		CallbackInterface * cbobj;
+		void * userptr;
+		CallbackInterface * cbobj_for_accepted;
+	};
+
+		// port -> callback data
+	std::map<int, CallbackData *> _accept_callbacks;
+
+	// socket id -> callback data
+	std::map<int, CallbackData *> _registered_callbacks;
 
 public:
 
@@ -348,9 +349,12 @@ protected:
 	virtual CallbackData * makeCallbackData(int socket_id, CallbackInterface * cbobj,
 			void * function_data, CALLBACK_STATE type);
 
+	virtual std::string getStateName(CALLBACK_STATE state);
+
 	virtual void signalFunctionError(const std::string & fname, const std::string & details);
 	virtual void signalCBNullError(const std::string & fname);
-	virtual void signalCBStateError(const std::string & fname, CALLBACK_STATE state);
+	virtual void signalCBStateReceptionError(const std::string & fname, CALLBACK_STATE state);
+	virtual void signalCBStateInconsistentError(const std::string & fname, CALLBACK_STATE state);
 	//@}
 };
 
