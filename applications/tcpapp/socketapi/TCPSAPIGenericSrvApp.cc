@@ -99,8 +99,8 @@ void TCPSAPIGenericSrvApp::handleMessage(cMessage *msg)
 	delete msg;
 }
 
-bool TCPSAPIGenericSrvApp::hasCallback (CALLBACK_TYPE type) {
-	if (type == CB_T_ACCEPT || type == CB_T_RECV)
+bool TCPSAPIGenericSrvApp::hasCallback (TCPSocketAPI::CALLBACK_TYPE type) {
+	if (type == TCPSocketAPI::CB_T_ACCEPT || type == TCPSocketAPI::CB_T_RECV)
 		return true;
 	else
 		return false;

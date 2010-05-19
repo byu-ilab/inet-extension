@@ -29,26 +29,36 @@
 #include <string.h>
 #include <map>
 
-enum CALLBACK_TYPE {CB_T_CONNECT, CB_T_ACCEPT, CB_T_RECV};
-
-enum CALLBACK_STATE {CB_S_NONE, CB_S_CONNECT, CB_S_ACCEPT,
-	CB_S_RECV, CB_S_CLOSE, CB_S_TIMEOUT};
-
-enum CALLBACK_ERROR {
-	CB_E_UNKNOWN = -1,
-	CB_E_CLOSED = -2,
-	CB_E_TIMEOUT = -3,
-	CB_E_RESET = -4,
-	CB_E_REFUSED = -5
-};
-
 /// Provides a convenient way of managing TCPSockets similar to the BSD socket
 /// API.
 /// @todo document usage
-/// @todo make callback enums internal
+/// @todo build a send function that will take a translator and data to get the cMessage?
 class INET_API TCPSocketAPI : public cSimpleModule, TCPSocket::CallbackInterface
 {
 public:
+
+	/// The type of callbacks expected by the socket API.
+	///
+	/// CB_T_CONNECT -- callback to handle socket connection
+	/// CB_T_ACCEPT  -- callback to handle socket acceptance
+	/// CB_T_RECV    -- callback to handle socket reception
+	enum CALLBACK_TYPE {CB_T_CONNECT, CB_T_ACCEPT, CB_T_RECV};
+
+	/// Values that may be returned in callbacks to make error identification
+	/// more convenient.
+	///
+	/// CB_E_UNKNOWN -- an unknown error occurred on socket connection
+	/// CB_E_CLOSED  -- socket connection closed
+	/// CB_E_TIMEOUT -- socket connection timed out
+	/// CB_E_RESET   -- socket connection reset
+	/// CB_E_REFUSED -- socket connection refused
+	enum CALLBACK_ERROR {
+		CB_E_UNKNOWN = -1,
+		CB_E_CLOSED = -2,
+		CB_E_TIMEOUT = -3,
+		CB_E_RESET = -4,
+		CB_E_REFUSED = -5
+	};
 
 	/// Defines the functions that must be implemented to make the TCPSocketAPI's
 	/// callbacks work.
@@ -73,6 +83,7 @@ public:
 		/// @details
 		/// On success: ret_status will be 0 (zero)
 		/// On error: ret_status will be CB_E_UNKNOWN if an error occurred
+		/// @todo return other error codes
 		virtual void connectCallback (int socket_id, int ret_status, void * yourPtr) {}
 
 		/// Handles the acceptance of a new socket.
@@ -85,10 +96,10 @@ public:
 		///
 		/// @details
 		/// On success: ret_status will be the descriptor of the accepted socket
-		/// On error: ret_status will be CB_E_UNKNOWN
+		/// On error: ret_status will be CB_E_UNKNOWN from the CALLBACK_ERROR enumeration
 		virtual void acceptCallback  (int socket_id, int ret_status, void * yourPtr) {}
 
-		/// Handles the reception of data on a socket.
+		/// Handles the reception of data on the specified socket.
 		///
 		/// @param socket_id -- the descriptor of the receiving socket
 		/// @param ret_status -- the status of the previously invoked recv method or
@@ -100,17 +111,16 @@ public:
 		/// @details
 		/// On success: msg will point to the received message and ret_status will be
 		///		the number of bytes in the message
-		/// On error: msg will point to NULL and ret_status will be:
-		/// 		CB_E_CLOSED if the socket is closed
-		///			CB_E_TIMEOUT if a timeout occurred
-		/// 		CB_E_RESET if the connection is reset
-		///			CB_E_REFUSED if the connection is refused
-		/// 		CB_E_UNKNOWN if an unknown error occurred
+		/// On error: msg will point to NULL and ret_status will be a value from the
+		/// 	CALLBACK_ERROR enumeration
 		virtual void recvCallback    (int socket_id, int ret_status, cPacket * msg,
 										void * yourPtr) {}
 	};
 
 protected:
+
+	enum CALLBACK_STATE {CB_S_NONE, CB_S_CONNECT, CB_S_ACCEPT,
+			CB_S_RECV, CB_S_CLOSE, CB_S_TIMEOUT};
 
 	struct CallbackData {
 		int socket_id;
@@ -249,8 +259,6 @@ public:
 	///
 	/// @throws throws a cRuntimeError if an error occurs
 	virtual void send (int socket_id, cMessage * msg);
-
-	///< @todo build a send function that will take a translator and data to get the cMessage?
 
 	/// Signals to the (active) socket that it should receive incoming data.
 	/// When data is actually received the recvCallback function will be invoked on the

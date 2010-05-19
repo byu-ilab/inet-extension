@@ -49,7 +49,7 @@ class INET_API TCPSAPIGenericSrvApp : public cSimpleModule, TCPSocketAPI::Callba
     virtual void handleMessage(cMessage *msg);
     virtual void finish();
 
-    virtual bool hasCallback (CALLBACK_TYPE type);
+    virtual bool hasCallback (TCPSocketAPI::CALLBACK_TYPE type);
     //virtual void connectCallback(int socket_id, int ret_status, void * myPtr);
     virtual void acceptCallback (int socket_id, int ret_status, void * myPtr);
     virtual void recvCallback   (int socket_id, int ret_status, cPacket * msg, void * myPtr);
