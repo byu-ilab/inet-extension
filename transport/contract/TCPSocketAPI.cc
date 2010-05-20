@@ -30,11 +30,11 @@ TCPSocketAPI::~TCPSocketAPI() {
 //	std::cout << "~TCPSocketAPI()..."<<endl;
 	_socket_map.deleteSockets();
 
-	std::map<int, CallbackData *>::iterator cb_itr = _registered_callbacks.begin();
-	while (cb_itr != _registered_callbacks.end())
+	std::map<int, CallbackData *>::iterator rcb_itr = _registered_callbacks.begin();
+	while (rcb_itr != _registered_callbacks.end())
 	{
-		delete cb_itr->second;
-		cb_itr++;
+		delete rcb_itr->second;
+		rcb_itr++;
 	}
 
 	std::map<int, SocketTimeoutMsg *>::iterator tmr_itr = _timeout_timers.begin();
@@ -182,7 +182,7 @@ void TCPSocketAPI::connect (int socket_id, std::string remote_address,
 				IPAddressResolver::ADDR_PREFER_IPv4), remote_port);
 
 	CallbackData * cbdata = _registered_callbacks[socket_id];
-	if (cbdata->state != CB_S_NONE) {// && cbdata->state != CB_S_CONNECT) {
+	if (cbdata->state != CB_S_NONE) {
 		signalCBStateInconsistentError(__fname, cbdata->state);
 	}
 	cbdata->userptr = yourPtr;
@@ -206,7 +206,6 @@ void TCPSocketAPI::listen (int socket_id, CallbackInterface * cbobj_for_accepted
 	CallbackData * cbdata = _registered_callbacks[socket_id];
 	cbdata->state = CB_S_WAIT;
 	if (cbobj_for_accepted) {
-		//CallbackData * cbdata = _registered_callbacks[socket_id];
 		cbdata->cbobj_for_accepted = cbobj_for_accepted;
 	}
 
@@ -247,7 +246,7 @@ void TCPSocketAPI::accept (int socket_id, void * yourPtr) {
 	}
 
 	CallbackData * cbdata = _registered_callbacks[socket_id];
-	if (cbdata->state != CB_S_WAIT) {//NONE && cbdata->state != CB_S_ACCEPT) {
+	if (cbdata->state != CB_S_WAIT) {
 		signalCBStateInconsistentError(__fname, cbdata->state);
 	}
 	cbdata->userptr = yourPtr;
@@ -291,7 +290,7 @@ void TCPSocketAPI::recv (int socket_id, void * yourPtr) {
 	}
 
 	CallbackData * cbdata = _registered_callbacks[socket_id];
-	if (cbdata->state != CB_S_WAIT) {//NONE && cbdata->state != CB_S_RECV) {
+	if (cbdata->state != CB_S_WAIT) {
 		signalCBStateInconsistentError(__fname, cbdata->state);
 	}
 	cbdata->userptr = yourPtr;
@@ -347,7 +346,7 @@ bool TCPSocketAPI::removeTimeout(int socket_id) {
 	return true;
 }
 
-void TCPSocketAPI::close (int socket_id) {
+void * TCPSocketAPI::close (int socket_id) {
 
 	Enter_Method_Silent();
 
@@ -356,17 +355,19 @@ void TCPSocketAPI::close (int socket_id) {
 	TCPSocket * socket = findAndCheckSocket(socket_id, __fname);
 
 	CallbackData * cbdata = _registered_callbacks[socket_id];
-	// DO NOT set cbdata->function_data to NULL because getMyPtr needs
-	// to be valid at any time, even after the socket is closed
+	void * userPtr = cbdata->userptr;
+	cbdata->userptr = NULL;
 	cbdata->state = CB_S_CLOSE;
 
 	socket->close();
 	EV_DEBUG << "close(): socket " << socket->getConnectionId() << " closing..." << endl;
+	return userPtr;
 }
 
 void * TCPSocketAPI::getMyPtr(int socket_id) {
-	if (_registered_callbacks[socket_id]) {
-		return _registered_callbacks[socket_id]->userptr;
+	std::map<int, CallbackData *>::iterator rcb_itr = _registered_callbacks.find(socket_id);
+	if (rcb_itr != _registered_callbacks.end()) {
+		return rcb_itr->second->userptr;
 	}
 	return NULL;
 }
@@ -410,9 +411,10 @@ void TCPSocketAPI::socketEstablished(int connId, void *yourPtr)
 		cbdata->cbobj->acceptCallback(cbdata->socket_id, connId, userPtr);
 		break;
 	case CB_S_CLOSE:
-		EV_DEBUG << "socketEstablished(): CLOSED callback received" << endl;
+	case CB_S_WAIT:
+		printCBStateReceptionNotice(__fname, cbdata->state);
 		break;
-	default: // i.e. CB_S_RECV, CB_S_TIMEOUT, or CB_S_NONE
+	default:
 		signalCBStateReceptionError(__fname, cbdata->state);
 	}
 }
@@ -431,28 +433,19 @@ void TCPSocketAPI::socketDataArrived(int connId, void *yourPtr, cPacket *msg, bo
 	void * userPtr = cbdata->userptr;
 	cbdata->userptr = NULL;
 
-	SocketTimeoutMsg * timer = NULL;
-
 	switch (cbdata->state)
 	{
 	case CB_S_RECV:
-//		timer = _timeout_timers[connId];
-//		if (timer) {
-//			cancelEvent(timer);
-//			scheduleAt(simTime()+timer->getTimeoutInterval(), timer);
-//		}
 		cbdata->state = CB_S_WAIT;
 		cbdata->cbobj->recvCallback(connId, msg->getByteLength(), msg, userPtr);
 		break;
 	case CB_S_CLOSE:
-		EV_DEBUG << "socketDataArrived(): CLOSED callback received" << endl;
-		delete msg;
-		break;
 	case CB_S_TIMEOUT:
-		EV_DEBUG << "socketDataArrived(): TIMEOUT callback recieved" << endl;
+	case CB_S_WAIT:
 		delete msg;
+		printCBStateReceptionNotice(__fname, cbdata->state);
 		break;
-	default: // i.e. CB_S_CONNECT, CB_S_ACCEPT, or CB_S_NONE
+	default:
 		signalCBStateReceptionError(__fname, cbdata->state);
 	}
 }
@@ -477,9 +470,10 @@ void TCPSocketAPI::socketPeerClosed(int connId, void *yourPtr)
 		cbdata->cbobj->recvCallback(connId, CB_E_CLOSED, NULL, userPtr);
 		break;
 	case CB_S_CLOSE:
-		EV_DEBUG << "socketPeerClosed(): CLOSED callback received" << endl;
+	case CB_S_WAIT:
+		printCBStateReceptionNotice(__fname, cbdata->state);
 		break;
-	default: // i.e. CB_S_CONNECT, CB_S_ACCEPT, CB_S_TIMEOUT, or CB_S_NONE
+	default:
 		signalCBStateReceptionError(__fname, cbdata->state);
 	}
 }
@@ -489,9 +483,7 @@ void TCPSocketAPI::socketClosed(int connId, void *yourPtr)
 	EV_INFO << "connection closed. Connection id " << connId << endl;
 
 	// okay if yourPtr == NULL
-	// todo delete callback data?
-	TCPSocket * socket = _socket_map.removeSocket(connId);
-	delete socket;
+	cleanupSocket(connId);
 }
 
 void TCPSocketAPI::socketFailure(int connId, void *yourPtr, int code)
@@ -505,8 +497,6 @@ void TCPSocketAPI::socketFailure(int connId, void *yourPtr, int code)
 	}
 
 	EV_WARNING << "connection broken. Connection id " << connId;
-
-	EV_INFO << "connection closed. Connection id " << connId;
 
 	if ( yourPtr==NULL )
 	{
@@ -543,20 +533,17 @@ void TCPSocketAPI::socketFailure(int connId, void *yourPtr, int code)
 		cbdata->cbobj->connectCallback(connId, ecode, userPtr);
 		break;
 	case CB_S_CLOSE:
-		EV_DEBUG << "socketFailure(): CLOSE callback received" << endl;
-		break;
 	case CB_S_TIMEOUT:
-		EV_DEBUG << "socketFailure(): TIMEOUT callback received" << endl;
+	case CB_S_WAIT:
+		printCBStateReceptionNotice(__fname, cbdata->state);
 		break;
 	default:
 		signalCBStateReceptionError(__fname, cbdata->state);
 	}
-
-	// Cleanup
-	// todo delete callback data?
-	TCPSocket * socket = _socket_map.removeSocket(connId);
-	delete socket;
 }
+
+//==============================================================================
+// UTILITY FUNCTIONS
 
 void TCPSocketAPI::socketTimeout(int connId, void * yourPtr) {
 
@@ -578,18 +565,33 @@ void TCPSocketAPI::socketTimeout(int connId, void * yourPtr) {
 		cbdata->cbobj->recvCallback(connId, CB_E_TIMEOUT, NULL, userPtr);
 		break;
 	case CB_S_CLOSE:
-		EV_DEBUG << "socketTimeout(): CLOSE callback received" << endl;
+	case CB_S_WAIT:
+		printCBStateReceptionNotice(__fname, cbdata->state);
 		break;
 	case CB_S_TIMEOUT:
-		EV_WARNING << "socketTimeout(): multiple TIMEOUT occurred";
+		printFunctionNotice(__fname, "multiple TIMEOUT occurred");
 		break;
 	default:
 		signalCBStateReceptionError(__fname, cbdata->state);
 	}
 }
 
-//==============================================================================
-// UTILITY FUNCTIONS
+void TCPSocketAPI::cleanupSocket(int socket_id) {
+	// delete socket
+	TCPSocket * socket = _socket_map.removeSocket(socket_id);
+	if (socket) {
+		delete socket;
+	}
+
+	// delete callback data
+	std::map<int, CallbackData *>::iterator rcb_itr = _registered_callbacks.find(socket_id);
+	if (rcb_itr != _registered_callbacks.end()) {
+		if (rcb_itr->second) {
+			delete rcb_itr->second;
+		}
+		_registered_callbacks.erase(rcb_itr);
+	}
+}
 
 TCPSocket * TCPSocketAPI::findAndCheckSocket(int socket_id, const std::string & fname) {
 	TCPSocket * socket = _socket_map.getSocket(socket_id);
@@ -633,6 +635,9 @@ std::string TCPSocketAPI::getStateName(CALLBACK_STATE state) {
 	case CB_S_NONE:
 		name = "NONE";
 		break;
+	case CB_S_WAIT:
+		name = "WAIT";
+		break;
 	default:
 		name = "unknown";
 	}
@@ -656,4 +661,13 @@ void TCPSocketAPI::signalCBStateInconsistentError(const std::string & fname, CAL
 
 void TCPSocketAPI::signalCBNullError(const std::string & fname) {
 	signalFunctionError(fname, "no callback data with socket");
+}
+
+void TCPSocketAPI::printFunctionNotice(const std::string & fname, const std::string & notice){
+	EV_DEBUG << fname << ": " << notice;
+}
+
+void TCPSocketAPI::printCBStateReceptionNotice(const std::string & fname, CALLBACK_STATE state) {
+	std::string notice = getStateName(state) + " callback received";
+	printFunctionNotice(fname, notice);
 }

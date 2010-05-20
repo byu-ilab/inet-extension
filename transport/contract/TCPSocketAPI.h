@@ -33,6 +33,7 @@
 /// API.
 /// @todo document usage
 /// @todo build a send function that will take a translator and data to get the cMessage?
+/// @todo prevent copying, assignment, etc
 class INET_API TCPSocketAPI : public cSimpleModule, TCPSocket::CallbackInterface
 {
 public:
@@ -297,7 +298,7 @@ public:
 	/// @param socket_id -- the descriptor to identify the socket to be closed
 	///
 	/// @throws throws a cRuntimeError if an error occurs
-	virtual void close (int socket_id);
+	virtual void * close (int socket_id);
 
 	/// Returns the pointer to the data/struct/object you specified in a connect,
 	/// listen, or recv invocation on the specified socket.  Provided to facilitate
@@ -344,6 +345,8 @@ protected:
 	/// NOT part of the TCPSocket::CallbackInteface
 	virtual void socketTimeout(int connId, void * yourPtr);
 
+	virtual void cleanupSocket(int socket_id);
+
 	virtual TCPSocket * findAndCheckSocket(int socket_id, const std::string & fname);
 
 	virtual CallbackData * makeCallbackData(int socket_id, CallbackInterface * cbobj,
@@ -355,6 +358,9 @@ protected:
 	virtual void signalCBNullError(const std::string & fname);
 	virtual void signalCBStateReceptionError(const std::string & fname, CALLBACK_STATE state);
 	virtual void signalCBStateInconsistentError(const std::string & fname, CALLBACK_STATE state);
+
+	virtual void printFunctionNotice(const std::string & fname, const std::string & notice);
+	virtual void printCBStateReceptionNotice(const std::string & fname, CALLBACK_STATE state);
 	//@}
 };
 
