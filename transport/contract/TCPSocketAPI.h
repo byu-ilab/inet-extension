@@ -34,6 +34,10 @@
 /// @todo document usage
 /// @todo build a send function that will take a translator and data to get the cMessage?
 /// @todo prevent copying, assignment, etc
+/// @todo track listening ports because by the time TCP figures it out it is too late
+/// for the user to catch the error
+/// @todo track active ports because by the time TCP figures out a port collision it
+/// is too late for the user to catch the error
 class INET_API TCPSocketAPI : public cSimpleModule, TCPSocket::CallbackInterface
 {
 public:

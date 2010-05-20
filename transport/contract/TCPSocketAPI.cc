@@ -178,6 +178,18 @@ void TCPSocketAPI::connect (int socket_id, std::string remote_address,
 	// verifies that socket exists
 	TCPSocket * socket = findAndCheckSocket(socket_id, __fname);
 
+	// check here because this isn't checked until the TCP core
+	// processes the connect request
+	if (remote_address.empty())
+	{
+		signalFunctionError(__fname, "remote address must be specified");
+	}
+
+//	if (remote_port < 0 || remote_port > 65535)
+//	{
+//		signalFunctionError(__fname, "remote port is out of range");
+//	}
+
 	socket->connect(_resolver.resolve(remote_address.c_str(),
 				IPAddressResolver::ADDR_PREFER_IPv4), remote_port);
 
@@ -213,6 +225,7 @@ void TCPSocketAPI::listen (int socket_id, CallbackInterface * cbobj_for_accepted
 		socket->getLocalAddress() << ":" << socket->getLocalPort() << endl;
 }
 
+/// @todo allow a bind on address only?
 int TCPSocketAPI::makeActiveSocket (CallbackInterface * cbobj, std::string local_address,
 			int local_port, std::string remote_address, int remote_port, void * yourPtr) {
 	Enter_Method_Silent();
