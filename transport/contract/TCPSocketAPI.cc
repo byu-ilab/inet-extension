@@ -122,6 +122,48 @@ void TCPSocketAPI::finish() {
 //==============================================================================
 // TCP Socket API functions
 
+std::string TCPSocketAPI::getErrorName(int error) //CALLBACK_ERROR error)
+{
+	switch(error)
+	{
+	case CB_E_UNKNOWN:
+		return "UNKNOWN";
+		break;
+	case CB_E_CLOSED:
+		return "CLOSED";
+		break;
+	case CB_E_TIMEOUT:
+		return "TIMEOUT";
+		break;
+	case CB_E_RESET:
+		return "RESET";
+		break;
+	case CB_E_REFUSED:
+		return "REFUSED";
+		break;
+	default:
+		return "UNDEFINED";
+	}
+}
+
+std::string TCPSocketAPI::getTypeName(int type) //CALLBACK_TYPE type)
+{
+	switch(type)
+	{
+	case CB_T_CONNECT:
+		return "CONNECT";
+		break;
+	case CB_T_ACCEPT:
+		return "ACCPET";
+		break;
+	case CB_T_RECV:
+		return "RECV";
+		break;
+	default:
+		return "UNDEFINED";
+	}
+}
+
 int TCPSocketAPI::socket (CallbackInterface * cbobj) {
 	Enter_Method_Silent();
 

@@ -38,6 +38,8 @@
 /// for the user to catch the error
 /// @todo track active ports because by the time TCP figures out a port collision it
 /// is too late for the user to catch the error
+/// @todo write a connect/listen collision detector? or just don't allow the reuse address
+/// socket option?
 class INET_API TCPSocketAPI : public cSimpleModule, TCPSocket::CallbackInterface
 {
 public:
@@ -153,6 +155,10 @@ public:
 
 	TCPSocketAPI ();
 	~TCPSocketAPI ();
+
+	static std::string getErrorName(int error);//CALLBACK_ERROR error);
+
+	static std::string getTypeName(int type);//CALLBACK_TYPE type);
 
 	/** @name TCPSocketAPI functions */
 	//@{
@@ -356,7 +362,7 @@ protected:
 	virtual CallbackData * makeCallbackData(int socket_id, CallbackInterface * cbobj,
 			void * function_data, CALLBACK_STATE type);
 
-	virtual std::string getStateName(CALLBACK_STATE state);
+	static std::string getStateName(CALLBACK_STATE state);
 
 	virtual void signalFunctionError(const std::string & fname, const std::string & details);
 	virtual void signalCBNullError(const std::string & fname);
