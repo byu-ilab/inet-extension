@@ -112,7 +112,8 @@ void httptBrowserBase::initialize(int stage)
 		rdProcessingDelay = rdFactory.create(attributes);
 		if ( rdProcessingDelay==NULL) error("Processing delay random object could not be created");
 
-		controller = dynamic_cast<httptController*>(getParentModule()->getParentModule()->getSubmodule("controller"));
+		controller = dynamic_cast<httptController*>(findModuleSomewhereUp("controller", this));
+		//controller = dynamic_cast<httptController*>(getParentModule()->getParentModule()->getSubmodule("controller"));
 		if ( controller == NULL )
 			error("Controller module not found");
 

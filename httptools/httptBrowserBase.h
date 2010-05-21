@@ -34,6 +34,7 @@
 
 #include <omnetpp.h>
 #include "httptNodeBase.h"
+#include "ModuleAccess.h"
 
 #define MSGKIND_START_SESSION 	 0
 #define MSGKIND_NEXT_MESSAGE  	 1
