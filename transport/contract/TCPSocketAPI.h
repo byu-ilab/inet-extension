@@ -32,14 +32,21 @@
 /// Provides a convenient way of managing TCPSockets similar to the BSD socket
 /// API.
 /// @todo document usage
+/// @todo document that negative timeouts are not allowed
+/// @todo document that send won't work unless it is in the wait state
+///
 /// @todo build a send function that will take a translator and data to get the cMessage?
 /// @todo prevent copying, assignment, etc
+///
 /// @todo track listening ports because by the time TCP figures it out it is too late
 /// for the user to catch the error
 /// @todo track active ports because by the time TCP figures out a port collision it
 /// is too late for the user to catch the error
 /// @todo write a connect/listen collision detector? or just don't allow the reuse address
 /// socket option?
+/// @todo determine up to what port can be listened on, 60000 doesn't seem to work
+/// @todo continue testing bind and close with the addition of the port tracking
+/// see if you can't break it too by not intercepting something before the TCP core
 class INET_API TCPSocketAPI : public cSimpleModule, TCPSocket::CallbackInterface
 {
 public:
@@ -145,20 +152,27 @@ protected:
 		CallbackInterface * cbobj_for_accepted;
 	};
 
-		// port -> callback data
+	// port -> callback data
 	std::map<int, CallbackData *> _accept_callbacks;
 
 	// socket id -> callback data
 	std::map<int, CallbackData *> _registered_callbacks;
+
+	// port -> socket id
+	std::map<int, int> _bound_ports;
 
 public:
 
 	TCPSocketAPI ();
 	~TCPSocketAPI ();
 
-	static std::string getErrorName(int error);//CALLBACK_ERROR error);
+	static bool isCallbackError(int error);
 
-	static std::string getTypeName(int type);//CALLBACK_TYPE type);
+	static std::string getErrorName(int error);
+
+	static bool isCallbackType(int type);
+
+	static std::string getTypeName(int type);
 
 	/** @name TCPSocketAPI functions */
 	//@{
@@ -356,6 +370,7 @@ protected:
 	virtual void socketTimeout(int connId, void * yourPtr);
 
 	virtual void cleanupSocket(int socket_id);
+	virtual void freePort(int socket_id);
 
 	virtual TCPSocket * findAndCheckSocket(int socket_id, const std::string & fname);
 

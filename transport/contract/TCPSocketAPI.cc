@@ -22,7 +22,7 @@
 Define_Module(TCPSocketAPI);
 
 TCPSocketAPI::TCPSocketAPI() : _socket_map(), _timeout_timers(), _resolver(),
-	_accept_callbacks(), _registered_callbacks() {
+	_accept_callbacks(), _registered_callbacks(), _bound_ports() {
 
 }
 
@@ -122,7 +122,23 @@ void TCPSocketAPI::finish() {
 //==============================================================================
 // TCP Socket API functions
 
-std::string TCPSocketAPI::getErrorName(int error) //CALLBACK_ERROR error)
+bool TCPSocketAPI::isCallbackError(int error)
+{
+	switch(error)
+	{
+	case CB_E_UNKNOWN:
+	case CB_E_CLOSED:
+	case CB_E_TIMEOUT:
+	case CB_E_RESET:
+	case CB_E_REFUSED:
+		return true;
+		break;
+	default:
+		return false;
+	}
+}
+
+std::string TCPSocketAPI::getErrorName(int error)
 {
 	switch(error)
 	{
@@ -146,7 +162,22 @@ std::string TCPSocketAPI::getErrorName(int error) //CALLBACK_ERROR error)
 	}
 }
 
-std::string TCPSocketAPI::getTypeName(int type) //CALLBACK_TYPE type)
+bool TCPSocketAPI::isCallbackType(int type)
+{
+
+	switch(type)
+	{
+	case CB_T_CONNECT:
+	case CB_T_ACCEPT:
+	case CB_T_RECV:
+		return true;
+		break;
+	default:
+		return false;
+	}
+}
+
+std::string TCPSocketAPI::getTypeName(int type)
 {
 	switch(type)
 	{
@@ -197,6 +228,16 @@ void TCPSocketAPI::bind (int socket_id, std::string local_address,
 	// verifies that socket exists
 	TCPSocket * socket = findAndCheckSocket(socket_id, __fname);
 
+	// check if port is available
+	if (local_port != -1)
+	{
+		std::map<int, int>::iterator bprt_itr = _bound_ports.find(local_port);
+		if (bprt_itr != _bound_ports.end())
+		{
+			signalFunctionError(__fname, "port is being used");
+		}
+	}
+
 	if (local_address.empty()) {
 		//checks socket state and port number
 		socket->bind(local_port);
@@ -206,6 +247,13 @@ void TCPSocketAPI::bind (int socket_id, std::string local_address,
 		socket->bind(_resolver.resolve(local_address.c_str(),
 				IPAddressResolver::ADDR_PREFER_IPv4), local_port);
 	}
+
+	// mark the port as claimed
+	if (local_port != -1)
+	{
+		_bound_ports[local_port] = socket_id;
+	}
+
 	EV_DEBUG << "bind(): socket " << socket->getConnectionId() << " bound on " <<
 		socket->getLocalAddress() << ":" << socket->getLocalPort() << endl;
 }
@@ -321,12 +369,22 @@ void TCPSocketAPI::send (int socket_id, cMessage * msg) {
 
 	TCPSocket * socket = findAndCheckSocket(socket_id, __fname);
 
-	take(msg); // take ownership of the message
+	if (!msg)
+	{
+		signalFunctionError(__fname, "cannot send a NULL message");
+	}
 
+	take(msg); // take ownership of the message
 	// remove any control info with the message
 	cObject * ctrl_info = msg->removeControlInfo();
-	if (ctrl_info)
+	if (ctrl_info) {
 		delete ctrl_info;
+	}
+
+	CallbackData * cbdata = _registered_callbacks[socket_id];
+	if (cbdata->state != CB_S_WAIT) {
+		signalCBStateInconsistentError(__fname, cbdata->state);
+	}
 
 	socket->send(msg);
 	EV_DEBUG << "send(): socket " << socket->getConnectionId() << " sent message " <<
@@ -368,6 +426,11 @@ void TCPSocketAPI::setTimeout(int socket_id, simtime_t timeout_interval) {
 	std::string __fname = "setTimeout";
 
 	findAndCheckSocket(socket_id, __fname);
+
+	if (timeout_interval < 0)
+	{
+		signalFunctionError(__fname, "negative timeout interval not allowed");
+	}
 
 	SocketTimeoutMsg * timer = _timeout_timers[socket_id];
 	if (!timer) {
@@ -414,8 +477,30 @@ void * TCPSocketAPI::close (int socket_id) {
 	cbdata->userptr = NULL;
 	cbdata->state = CB_S_CLOSE;
 
-	socket->close();
-	EV_DEBUG << "close(): socket " << socket->getConnectionId() << " closing..." << endl;
+	switch(socket->getState())
+	{
+	case TCPSocket::NOT_BOUND:
+	case TCPSocket::BOUND:
+	case TCPSocket::SOCKERROR:
+		// then remove the socket from the Socket API
+		cleanupSocket(socket_id);
+		EV_DEBUG << "close(): socket " << socket->getConnectionId() << " closed." << endl;
+		break;
+	case TCPSocket::CLOSED:
+	case TCPSocket::LOCALLY_CLOSED:
+		signalFunctionError(__fname, "close() already called on this socket");
+		break;
+	default: // including TCPSocket::PEER_CLOSED, TCPSocket::CONNECTED, TCPSocket::LISTENING,
+		// TCPSocket::CONNECTING
+		// cancel any callbacks
+		removeTimeout(socket_id);
+		// free the port
+		freePort(socket_id);
+		// then initiate close messages on the connection
+		socket->close();
+		EV_DEBUG << "close(): socket " << socket->getConnectionId() << " closing..." << endl;
+	}
+
 	return userPtr;
 }
 
@@ -439,13 +524,20 @@ void TCPSocketAPI::socketEstablished(int connId, void *yourPtr)
 		signalCBNullError(__fname);
 	}
 
-	// invoke the "connect" or "accept" callback
 	CallbackData * cbdata = static_cast<CallbackData *>(yourPtr);
 	void * userPtr = cbdata->userptr;
 	cbdata->userptr = NULL;
 
 	CallbackData * new_cbdata = NULL;
 
+	int port = _socket_map.getSocket(connId)->getLocalPort();
+	std::map<int, int>::iterator bprt_itr = _bound_ports.find(port);
+	if (bprt_itr == _bound_ports.end())
+	{
+		_bound_ports[port] = connId;
+	}
+
+	// invoke the "connect" or "accept" callback
 	switch (cbdata->state){
 	case CB_S_CONNECT:
 		EV_DEBUG << "connected socket " << connId << endl;
@@ -619,6 +711,10 @@ void TCPSocketAPI::socketTimeout(int connId, void * yourPtr) {
 		cbdata->state = CB_S_TIMEOUT;
 		cbdata->cbobj->recvCallback(connId, CB_E_TIMEOUT, NULL, userPtr);
 		break;
+	case CB_S_CONNECT:
+		cbdata->state = CB_S_TIMEOUT;
+		cbdata->cbobj->connectCallback(connId, CB_E_TIMEOUT, userPtr);
+		break;
 	case CB_S_CLOSE:
 	case CB_S_WAIT:
 		printCBStateReceptionNotice(__fname, cbdata->state);
@@ -632,7 +728,9 @@ void TCPSocketAPI::socketTimeout(int connId, void * yourPtr) {
 }
 
 void TCPSocketAPI::cleanupSocket(int socket_id) {
-	// delete socket
+	freePort(socket_id);
+	removeTimeout(socket_id);
+	// delete the socket
 	TCPSocket * socket = _socket_map.removeSocket(socket_id);
 	if (socket) {
 		delete socket;
@@ -645,6 +743,18 @@ void TCPSocketAPI::cleanupSocket(int socket_id) {
 			delete rcb_itr->second;
 		}
 		_registered_callbacks.erase(rcb_itr);
+	}
+}
+
+void TCPSocketAPI::freePort(int socket_id)
+{
+	TCPSocket * socket = _socket_map.getSocket(socket_id);
+	if (socket) {
+		std::map<int, int>::iterator bprt_itr = _bound_ports.find(socket->getLocalPort());
+		if (bprt_itr != _bound_ports.end())
+		{
+			_bound_ports.erase(bprt_itr);
+		}
 	}
 }
 

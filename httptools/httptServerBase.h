@@ -1,11 +1,11 @@
 
 // ***************************************************************************
-//
+// 
 // HttpTools Project
 //// This file is a part of the HttpTools project. The project was created at
 // Reykjavik University, the Laboratory for Dependable Secure Systems (LDSS).
 // Its purpose is to create a set of OMNeT++ components to simulate browsing
-// behaviour in a high-fidelity manner along with a highly configurable
+// behaviour in a high-fidelity manner along with a highly configurable 
 // Web server component.
 //
 // Maintainer: Kristjan V. Jonsson (LDSS) kristjanvj@gmail.com
@@ -27,7 +27,7 @@
 // Foundation, Inc., 59 Temple Place - Suite 330, Boston, MA  02111-1307, USA.
 //
 // ***************************************************************************
-
+ 
 #ifndef __httptServerBase_H_
 #define __httptServerBase_H_
 
@@ -41,14 +41,14 @@
 #define MSGKIND_SCRIPT_EVENT  2
 
 // Log level definitions
-#define LL_NONE 0
+#define LL_NONE 0 
 #define LL_INFO 1
 #define LL_DEBUG 2
 
 using namespace std;
 
 /**
- * @brief Site definition data structure. Used for scripted sites.
+ * @brief Site definition data structure. Used for scripted sites. 
  */
 struct SITE_DEF_STRUCT
 {
@@ -57,21 +57,21 @@ struct SITE_DEF_STRUCT
 };
 
 /**
- * @brief Web server base class
+ * @brief Web server base class 
  *
  * This module implements a flexible Web server. It is part of the HttpTools project
  * and should be used in conjunction with a number of browsing clients.
  *
  * The server base class cannot be instantiated directly in a simulation. Use rather
  * the httptServer for INET TCP/IP appliations or httptServerDirect for direct message passing.
- * See those classes for details. See the INET documentation for details on the StandardHost
+ * See those classes for details. See the INET documentation for details on the StandardHost 
  * and the TCP/IP simulation.
  *
  * @see httptServer
  * @see httptServerDirect
  * @see DirectHost.
  *
- * @version 1.0
+ * @version 1.0 
  * @author  Kristjan V. Jonsson
  */
 class INET_API httptServerBase : public httptNodeBase
@@ -118,7 +118,7 @@ class INET_API httptServerBase : public httptNodeBase
 	//@}
 
 	protected:
-		virtual void updateDisplay(); //> Update the display string if running in GUI mode
+		void updateDisplay(); //> Update the display string if running in GUI mode
 
 	protected:
 		/** Generate a HTML document in response to a request. */
