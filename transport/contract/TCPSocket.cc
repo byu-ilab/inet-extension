@@ -16,7 +16,7 @@
 //
 
 #include "TCPSocket.h"
-
+#include <sstream>
 
 TCPSocket::TCPSocket()
 {
@@ -303,3 +303,26 @@ void TCPSocket::processMessage(cMessage *msg)
     }
 }
 
+std::string TCPSocket::toString(bool full_address)
+{
+	std::stringstream info;
+	info << "id: "<< connId << " state: "<<stateName(sockstate)<<" address: ";
+
+	switch((full_address) ? -1 : sockstate ) // trigger default if full_address is true
+	{
+	case NOT_BOUND:
+		info << " not specified";
+		break;
+	case BOUND:
+	case LISTENING:
+		info << localAddr.str() << ":" << localPrt;
+		break;
+	default:
+		// includes CONNECTING, CONNECTED, PEER_CLOSED, LOCALLY_CLOSED
+		// CLOSED, SOCKERROR
+		info << localAddr.str() << ":" << localPrt << " to "<<
+		remoteAddr.str() << ":"<<remotePrt;
+	}
+
+	return info.str();
+}

@@ -25,31 +25,41 @@
 #include "TCPSocketMap.h"
 #include "IPAddressResolver.h"
 #include "SocketTimeoutMsg_m.h"
+#include "TCPCommand_m.h"
 
 #include <string.h>
 #include <map>
+#include <set>
 
-/// Provides a convenient way of managing TCPSockets similar to the BSD socket
-/// API.
-/// @todo document usage
-/// @todo document that negative timeouts are not allowed
-/// @todo document that send won't work unless it is in the wait state
-///
-/// @todo build a send function that will take a translator and data to get the cMessage?
-/// @todo prevent copying, assignment, etc
-///
-/// @todo track listening ports because by the time TCP figures it out it is too late
-/// for the user to catch the error
-/// @todo track active ports because by the time TCP figures out a port collision it
-/// is too late for the user to catch the error
-/// @todo write a connect/listen collision detector? or just don't allow the reuse address
-/// socket option?
-/// @todo determine up to what port can be listened on, 60000 doesn't seem to work
-/// @todo continue testing bind and close with the addition of the port tracking
-/// see if you can't break it too by not intercepting something before the TCP core
+/**
+ * Provides a convenient way of managing TCPSockets similar to the BSD socket API.
+ *
+ * Notes to user:
+ *
+ * Notes to contributor:
+ * 		Assumptions:
+ * 		- Because the API forces close to be called before a port can be reused via the
+ * 		bind function, the close command will reach the TCP core before the new connect
+ * 		or listen command such that the port will be assigned for use successfully.
+ *
+ * 		To Document
+ * 		@todo document usage
+ *
+ * 		To Improve
+ * 		@todo intercept to represent receiving, accepting, timed out, etc. OR make
+ * 		an entirely new TCPSocket class
+ * 		@todo make different send modes, i.e. can invoke send whenever the underlying
+ *		socket is connected or connecting, OR lock-step sending and receiving
+ * 		@todo make a way to set error handling (i.e. throw or just return error codes and set an
+ * 		error message)
+ * 		@todo build a send function that will take a translator and data to get the cMessage
+ */
 class INET_API TCPSocketAPI : public cSimpleModule, TCPSocket::CallbackInterface
 {
 public:
+
+	/** @name Callback Information */
+	//@{
 
 	/// The type of callbacks expected by the socket API.
 	///
@@ -76,8 +86,6 @@ public:
 
 	/// Defines the functions that must be implemented to make the TCPSocketAPI's
 	/// callbacks work.
-	/// @todo add functions that will handle the deletion of data when it is no
-	/// longer needed
 	class CallbackInterface {
 	public:
 
@@ -88,6 +96,8 @@ public:
 		virtual bool hasCallback (CALLBACK_TYPE type) =0;
 
 		/// Handles the connection of the specified socket.
+		/// Corresponds to the CB_T_CONNECT value from the CALLBACK_TYPE enumeration.
+		/// Assumes responsibility for yourPtr (either to delete it or reuse it).
 		///
 		/// @param socket_id -- the descriptor for the connected socket
 		/// @param ret_status -- the status of the previously invoked connect method
@@ -96,11 +106,12 @@ public:
 		///
 		/// @details
 		/// On success: ret_status will be 0 (zero)
-		/// On error: ret_status will be CB_E_UNKNOWN if an error occurred
-		/// @todo return other error codes
+		/// On error: ret_status will be a value from the CALLBACK_ERROR enumeration
 		virtual void connectCallback (int socket_id, int ret_status, void * yourPtr) {}
 
 		/// Handles the acceptance of a new socket.
+		/// Corresponds to the CB_T_ACCEPT value from the CALLBACK_TYPE enumeration.
+		/// Assumes responsibility for yourPtr (either to delete it or reuse it).
 		///
 		/// @param socket_id -- the descriptor for the listening socket
 		/// @param ret_status -- the status of the previously invoked accept method or
@@ -114,6 +125,9 @@ public:
 		virtual void acceptCallback  (int socket_id, int ret_status, void * yourPtr) {}
 
 		/// Handles the reception of data on the specified socket.
+		/// Corresponds to the CB_T_RECV value from the CALLBACK_TYPE enumeration.
+		/// Assumes responsibility for msg (either to delete it or reuse it).
+		/// Assumes responsibility for yourPtr (either to delete it or reuse it).
 		///
 		/// @param socket_id -- the descriptor of the receiving socket
 		/// @param ret_status -- the status of the previously invoked recv method or
@@ -131,15 +145,22 @@ public:
 										void * yourPtr) {}
 	};
 
+	//@}
+
 protected:
 
+	/** @name Instance Members */
+	//@{
 	TCPSocketMap _socket_map;
 
-	// socket id -> timeout message
+	/// maps socket id to timeout message
 	std::map<int, SocketTimeoutMsg *> _timeout_timers;
 
 	IPAddressResolver _resolver;
 
+	///
+	/// maps port to socket id
+	std::map<int, std::set<int> > _bound_ports;
 
 	enum CALLBACK_STATE {CB_S_NONE, CB_S_CONNECT, CB_S_ACCEPT,
 			CB_S_RECV, CB_S_CLOSE, CB_S_TIMEOUT, CB_S_WAIT};
@@ -152,30 +173,46 @@ protected:
 		CallbackInterface * cbobj_for_accepted;
 	};
 
-	// port -> callback data
+	/// Tracks the callback data for listening sockets that are accepting.
+	///
+	/// maps port to callback data
 	std::map<int, CallbackData *> _accept_callbacks;
 
-	// socket id -> callback data
+	///
+	/// maps socket id to callback data
 	std::map<int, CallbackData *> _registered_callbacks;
 
-	// port -> socket id
-	std::map<int, int> _bound_ports;
+	//@}
 
 public:
 
 	TCPSocketAPI ();
-	~TCPSocketAPI ();
+	virtual ~TCPSocketAPI ();
 
+private: // prevent copying and assignment
+	TCPSocketAPI(const TCPSocketAPI & other);
+	TCPSocketAPI & operator=(const TCPSocketAPI & other);
+
+public:
+
+	/** @name TCPSocketAPI static functions */
+	//@{
 	static bool isCallbackError(int error);
 
-	static std::string getErrorName(int error);
+	static std::string getCallbackErrorName(int error);
 
 	static bool isCallbackType(int type);
 
-	static std::string getTypeName(int type);
+	static std::string getCallbackTypeName(int type);
+	//@}
 
-	/** @name TCPSocketAPI functions */
+	/** @name TCPSocketAPI member functions */
 	//@{
+
+	virtual int getLocalPort(int socket_id);
+	virtual int getRemotePort(int socket_id);
+	virtual IPvXAddress getLocalAddress(int socket_id);
+	virtual IPvXAddress getRemoteAddres(int socket_id);
 
 	/// Creates a new socket.
 	///
@@ -188,11 +225,15 @@ public:
 	virtual int socket (CallbackInterface * cbobj);
 
 	/// Binds the specified socket to the indicated local address and local port.
+	/// Via this function ports cannot be used concurrently (call close to free the port),
+	/// however, accepting sockets will correctly spin off sockets that are active on the
+	/// same port as the listening socket.
 	///
 	/// @param socket_id -- the descriptor to identify the socket to be bound
 	/// @param local_address -- the address to bind to, if it is empty (i.e. "") then
-	///		will bind to any available IP address
-	/// @param local_port -- the local port to bind to
+	///		the socket will be bound to any available IP address
+	/// @param local_port -- the local port to bind to, if it is -1 and local_address
+	/// 	is specified then the socket will be bound to any available port
 	///
 	/// @throws throws a cRuntimeError if an error occurs
 	virtual void bind (int socket_id, std::string local_address, int local_port);
@@ -212,7 +253,8 @@ public:
 	virtual void connect (int socket_id, std::string remote_address, int remote_port,
 				void * yourPtr=NULL);
 
-	/// Makes the specified socket a passive socket.
+	/// Makes the specified socket a passive socket.  The socket must be bound to
+	/// a specific port (call bind without -1) before it can be made passive.
 	///
 	/// @param socket_id -- the descriptor to identify the socket to be made into a
 	/// 	passive (listening) socket
@@ -224,14 +266,16 @@ public:
 	/// @throws throws a cRuntimeError if an error occurs
 	virtual void listen (int socket_id, CallbackInterface * cbobj_for_accepted=NULL);
 
-	/// Makes an active socket by invoking socket, bind, and connect.
+	/// Makes an active socket by invoking socket, bind, and connect.  It will skip
+	/// bind (i.e. let connect fill in the address) if local_address is empty AND
+	/// local_port is negative.
 	///
 	/// @param cbobj -- a pointer to an object implementing the callback interface
 	///		may not be NULL
 	/// @param local_address -- the address to bind to, if it is empty (i.e. "") then
 	///		will bind to any available IP address
-	/// @param local_port -- the local port to bind to, if it is -1 then the socket
-	/// 	will be bound to any available port
+	/// @param local_port -- the local port to bind to, if it is -1 and local_address
+	/// 	is specified then the socket will be bound to any available port
 	/// @param remote_address -- the remote address to connect to (module names are
 	/// 	allowed as addresses)
 	/// @param remote_port -- the remote port to connect to
@@ -275,7 +319,7 @@ public:
 	virtual void accept (int socket_id, void * yourPtr=NULL);
 
 	/// Sends the indicated message on the specified socket.  Currently the
-	/// whole message is sent so you don't need to check for how many bytes were
+	/// whole message is sent so there isn't a need to check for how many bytes were
 	/// sent.  Takes control of the message (see documentation for cOwnedObject for
 	/// more details on message taking).
 	///
@@ -298,12 +342,13 @@ public:
 	/// @throws throws a cRuntimeError if an error occurs
 	virtual void recv (int socket_id, void * yourPtr=NULL);
 
-	///  Sets a timeout on the indicated (active) socket.  The timeout is only
-	/// scheduled when the socket has been signalled to receive (see recv)
+	/// Sets a timeout on the indicated (active) socket.  Timeouts are currently
+	/// only supported on sockets that have been signaled to receive (see recv).
 	///
 	/// @param socket_id -- the descriptor to identify the (active) socket that should
 	/// 	have a timeout set.
-	/// @param timeout_interval -- the interval on which the socket should timeout
+	/// @param timeout_interval -- the interval on which the socket should timeout,
+	/// 	MUST NOT be negative
 	///
 	/// @throws throws a cRuntimeError if an error occurs
 	virtual void setTimeout(int socket_id, simtime_t timeout_interval);
@@ -317,7 +362,7 @@ public:
 	virtual bool removeTimeout(int socket_id);
 
 	/// Closes the specified socket.  The socket descriptor is now invalid for
-	/// all socket operations except getMyPtr.
+	/// all socket operations (including getMyPtr).
 	///
 	/// @param socket_id -- the descriptor to identify the socket to be closed
 	///
@@ -326,16 +371,15 @@ public:
 
 	/// Returns the pointer to the data/struct/object you specified in a connect,
 	/// listen, or recv invocation on the specified socket.  Provided to facilitate
-	/// tracking the data you associated with the socket and to delete that information
-	/// after it is no longer needed (i.e. when the socket has been closed).
+	/// tracking the data you associated with the socket outside callback invocations.
 	///
 	/// @param socket_id -- the descriptor to identify the socket whose associated
 	/// 	data/struct/object is to be returned
 	///
 	/// @return the void pointer to the data previously set in a connect, accept, or
-	/// recv call.  Returns NULL if socket_id doesn't pertain to a socket (current or
-	/// previous) or if the void pointer set in a previous connect, accept, or
-	/// recv call is NULL.
+	/// recv call.  Returns NULL if socket_id doesn't pertain to a current socket,
+	/// if the void pointer set in a previous connect, accept, or recv invocation
+	/// was NULL, or if the data was already returned in a callback invocation.
 	virtual void * getMyPtr (int socket_id);
 
 	//@}
@@ -344,7 +388,6 @@ protected:
 
 	/** @name Overridden functions from cSimpleModule */
 	//@{
-	// cSimpleModule functions
     virtual void initialize();
     virtual void handleMessage(cMessage *msg);
     virtual void finish();
@@ -352,16 +395,16 @@ protected:
 
 	 /** @name Overridden functions from TCPSocket::CallbackInterface */
 	//@{
-    // TCPSocket::CallbackInterface functions
     virtual void socketDataArrived(int connId, void *yourPtr, cPacket *msg, bool urgent);
 	virtual void socketEstablished(int connId, void *yourPtr);
 	virtual void socketPeerClosed(int connId, void *yourPtr);
 	virtual void socketClosed(int connId, void *yourPtr);
 	virtual void socketFailure(int connId, void *yourPtr, int code);
-	//@}
 
 	// implement if other things should be done other than delete the status info
 	//virtual void socketStatusArrived(int connId, void *yourPtr, TCPStatusInfo *status);
+
+	//@}
 
 	/** @name Utility / convenience functions */
 	//@{
@@ -374,8 +417,12 @@ protected:
 
 	virtual TCPSocket * findAndCheckSocket(int socket_id, const std::string & fname);
 
+	virtual std::string socketToString(int socket_id);
+
 	virtual CallbackData * makeCallbackData(int socket_id, CallbackInterface * cbobj,
 			void * function_data, CALLBACK_STATE type);
+
+	virtual CallbackData * getAcceptCallback(int port);
 
 	static std::string getStateName(CALLBACK_STATE state);
 
