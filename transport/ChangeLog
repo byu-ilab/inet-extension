@@ -1,0 +1,14 @@
+under contract
+toString add to TCPSocket
+
+under tcp_old
+in TCPConnectionEventProc changed variable names and types (short to int)
+in OPEN_PASSIVE and OPEN_ACTIVE
+
+under tcp
+in TCPConnectionEventProc changed variable names and types (short to int)
+in OPEN_PASSIVE and OPEN_ACTIVE
+
+under contract
+TCPSocketAPI .ned .h .cc all new
+SocketTimeoutMsg .msg _m.h _m.cc all new (used in the TCPSocketAPI)
