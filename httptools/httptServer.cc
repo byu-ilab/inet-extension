@@ -115,6 +115,7 @@ void httptServer::socketDataArrived(int connId, void *yourPtr, cPacket *msg, boo
 	cPacket *pckt = check_and_cast<cPacket *>(msg);
 	if ( reply!=NULL )
 	{
+		requestsReceived++;
 		socket->send(reply); // Send to socket if the reply is non-zero.
 	}
 	delete msg; // Delete the received message here. Must not be deleted in the handler!
@@ -174,6 +175,15 @@ void httptServer::socketFailure(int connId, void *yourPtr, int code)
 	// Cleanup
 	sockCollection.removeSocket(socket);
 	delete socket;
+}
+void httptServer::updateDisplay() {
+	httptServerBase::updateDisplay();
+	if ( ev.isGUI() )
+	{
+		char buf[1024];
+		sprintf( buf, "Req: %ld", requestsReceived );
+		getParentModule()->getDisplayString().setTagArg("t",0,buf);
+	}
 }
 
 

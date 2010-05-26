@@ -632,6 +632,7 @@ void TCPSocketAPI::socketTimeout(int connId, void * yourPtr) {
 }
 
 void TCPSocketAPI::cleanupSocket(int socket_id) {
+  removeTimeout(socket_id);
 	// delete socket
 	TCPSocket * socket = _socket_map.removeSocket(socket_id);
 	if (socket) {
@@ -645,6 +646,7 @@ void TCPSocketAPI::cleanupSocket(int socket_id) {
 			delete rcb_itr->second;
 		}
 		_registered_callbacks.erase(rcb_itr);
+
 	}
 }
 

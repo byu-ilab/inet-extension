@@ -33,10 +33,10 @@ Resource * LRUCache::has(Resource * r) {
 	LCM::iterator it;
 	it = resources.find(r);
 	if (it == resources.end()) {
-		cout<<"DontHave: "<<r->getID()<<endl;
+		//cout<<"DontHave: "<<r->getID()<<endl;
 		return NULL;
 	}
-	cout<<"Have: "<<r->getID()<<endl;
+	//cout<<"Have: "<<r->getID()<<endl;
 	return (*it).first;
 }
 /**
@@ -44,18 +44,18 @@ Resource * LRUCache::has(Resource * r) {
  */
 void LRUCache::add(Resource * r) {
 	if (has(r)) {
-		cout<<"RM(REPL): " <<r->getID()<<endl;
+		//cout<<"RM(REPL): " <<r->getID()<<endl;
 		resources.erase(r);
 		remaining += r->getSize();
 	}
 	pair<LCM::iterator,bool> ret =
 		resources.insert(pair<Resource *,simtime_t>(r,simulation.getSimTime()));
-		cout<<"Adding: "<<r->getID()<<endl;
+		//cout<<"Adding: "<<r->getID()<<endl;
 	while (r->getSize() > remaining) { // cache is full. free up space.
 		Resource * old = getOldestResource();
 		remaining += old->getSize();
 		resources.erase(old);
-		cout<<"Removing: "<<old->getID()<<endl;
+		//cout<<"Removing: "<<old->getID()<<endl;
 	}
 	remaining -= r->getSize();
 }

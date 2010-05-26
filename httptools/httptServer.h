@@ -54,6 +54,7 @@ class INET_API httptServer : public httptServerBase, public TCPSocket::CallbackI
 		unsigned long numBroken;
 		unsigned long socketsOpened;
 
+		virtual void updateDisplay(); //> Update the display string if running in GUI mode
 	/** @name cSimpleModule redefinitions */
 	//@{
 	protected:

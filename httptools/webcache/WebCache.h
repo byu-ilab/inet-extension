@@ -55,6 +55,7 @@ protected:
 	typedef std::set<int> TSet;
 	TSet serverConnections;  // Distinguish a server socket from a client socket
 
+	virtual void updateDisplay(); //> Update the display string if running in GUI mode
 public:
 	WebCache();
 	virtual ~WebCache();

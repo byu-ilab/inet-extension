@@ -57,6 +57,7 @@ void WebCache::initialize() {
 	WATCH(socketsOpened);
 
 	resourceCache = new LRUCache(par("cacheSize"));
+	updateDisplay();
 	//EV_INFO << "INITIALIZING LRUCache OF SIZE "<<par("cacheSize")<<endl;
 	controller = dynamic_cast<httptController*>(getParentModule()->getParentModule()->getSubmodule("controller")); // not sure if this is it
   if (controller == NULL) {
@@ -215,7 +216,7 @@ void WebCache::socketDataArrived(int connId, void * yourPtr, cPacket * msg, bool
   if (sockdata->sockType == SERVER) {
     // Should be a httptReplyMessage
     EV_DEBUG << "Socket data arrived on connection " << connId << ". Message=" << msg->getName() << ", kind=" << msg->getKind() << endl;
-
+    requestsReceived++;
     if (serverHasResource(msg) == true) {
       // call the message handler to process the message.
       cMessage *reply = handleReceivedMessage(msg);
@@ -439,8 +440,9 @@ void WebCache::receiveResource(cPacket * msg) {
   ClientMap::iterator i = pendingRequests.find(srvr);
   cPacket * m = i->second;
   TCPSocket * cli = sockCollection.findSocketFor(m);
-  if (!cli) { // client socket was closed or failed earlier
+  if (!cli || cli->getState() == 7) { // client socket was closed or f ailed earlier
 	  EV_INFO<<"Cache can not send to client, socket failed or was closed"<<endl;
+
   }
   else{
 	  httptRequestMessage * rm= check_and_cast<httptRequestMessage *>(m);
@@ -473,7 +475,6 @@ TCPSocket * WebCache::submitToSocket( const char* moduleName, int connectPort, M
 		EV_INFO << "Submitting to socket. No data to send to " << moduleName << ". Skipping connection." << endl;
 		return NULL;
 	}
-
 	EV_DEBUG << "Submitting to socket. Module: " << moduleName << ", port: " << connectPort << ". Total messages: " << queue.size() << endl;
 
 	// Create and initialize the socket
@@ -493,3 +494,24 @@ TCPSocket * WebCache::submitToSocket( const char* moduleName, int connectPort, M
   socket->connect(IPAddressResolver().resolve(moduleName), connectPort);
   return socket;
 }
+void WebCache::updateDisplay() {
+	if ( ev.isGUI() && resourceCache)
+	{
+		httptServerBase::updateDisplay();
+		char buf[1024];
+		float h = 0;
+		if (requestsReceived > 0)
+			h = 100.0 * hits / requestsReceived;
+		int cacheSize = (int)par("cacheSize");
+		int remaining = ((LRUCache *)resourceCache)->getRemainingCapacity();
+		float full =0;
+		if (cacheSize > 0)
+			full = 100.0 * (cacheSize-remaining) /cacheSize;
+		sprintf( buf, "Req: %ld\nHit: %.1f\%\nCap: %.1fKB\nFull: %.1f\%", requestsReceived,h,cacheSize/1000.0, full);
+		getParentModule()->getDisplayString().setTagArg("t",0,buf);
+	} else if (ev.isGUI() ){
+		httptServer::updateDisplay();
+	}
+
+}
+
