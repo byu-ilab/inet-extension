@@ -281,12 +281,38 @@ public:
 
 	//@}
 
+	/** @name TCPSocketAPI static functions */
+	//@{
+	/// @return true if the provided value corresponds to one of the
+	/// values from the CALLBACK_ERROR enumeration and false if it does not
+	static bool isCallbackError(int error);
+
+	/// @return the name of the error corresponding to the indicated
+	/// value from the CALLBACK_ERROR enumeration, default is UNDEFINED
+	static std::string getCallbackErrorName(int error);
+
+	/// @return true if the provided value corresponds to one of the
+	/// values from the CALLBACK_TYPE enumeration and false if it does not
+	static bool isCallbackType(int type);
+
+	/// @return the name of the type corresponding to the indicated
+	/// value from the CALLBACK_TYPE enumeration, default is UNDEFINED
+	static std::string getCallbackTypeName(int type);
+	//@}
+
 protected:
 
 	/** @name Instance Members */
 	//@{
-	/// Tracks the TCPSocket objects.
+	/// Tracks the current TCPSocket objects.
 	TCPSocketMap _socket_map;
+
+	/// Tracks the sockets that come with an TCP_I_ESTABLISHED message but
+	/// who are not already in the _socket_map and there is no passive
+	/// socket accepting on their port.  Close is called on the socket and
+	/// when the close sequence terminates then the socket can be deleted
+	/// from memory.
+	TCPSocketMap _rejected_sockets_map;
 
 	/// Tracks the timeout messages associated with a given socket.
 	///
@@ -363,7 +389,7 @@ protected:
 	/// socket's port.
 	///
 	/// maps port to callback data
-	std::map<int, CallbackData *> _accept_callbacks;
+	std::map<int, CallbackData *> _passive_callbacks;
 
 	/// Tracks the callback data associated with a given socket.
 	///
@@ -372,8 +398,19 @@ protected:
 
 	//@}
 
-public:
+	/** @name Protected Static Functions */
+	//@{
+	/// Returns the name of the indicated value from the CALLBACK_STATE
+	/// enumeration.
+	///
+	/// @param state -- the value from the CALLBACK_STATE enumeration
+	///		whose name is to be returned
+	///
+	/// @return the name of the CALLBACK_STATE value
+	static std::string getStateName(CALLBACK_STATE state);
+	//@}
 
+public:
 	TCPSocketAPI ();
 	virtual ~TCPSocketAPI ();
 
@@ -382,24 +419,35 @@ private: // prevent copying and assignment
 	TCPSocketAPI & operator=(const TCPSocketAPI & other);
 
 public:
-
-	/** @name TCPSocketAPI static functions */
-	//@{
-	static bool isCallbackError(int error);
-
-	static std::string getCallbackErrorName(int error);
-
-	static bool isCallbackType(int type);
-
-	static std::string getCallbackTypeName(int type);
-	//@}
-
 	/** @name TCPSocketAPI member functions */
 	//@{
 
+	/// Returns the local port number of the indicated socket.
+	///
+	/// @param socket_id -- the descriptor to identify the socket in question
+	///
+	/// @return the local port number, -1 if not specified
 	virtual int getLocalPort(int socket_id);
+
+	/// Returns the remote port number of the indicated socket.
+	///
+	/// @param socket_id -- the descriptor to identify the socket in question
+	///
+	/// @return the remote port number, -1 if not specified
 	virtual int getRemotePort(int socket_id);
+
+	/// Returns the local address of the indicated socket.
+	///
+	/// @param socket_id -- the descriptor to identify the socket in question
+	///
+	/// @return the local address
 	virtual IPvXAddress getLocalAddress(int socket_id);
+
+	/// Returns the remote address of the indicated socket.
+	///
+	/// @param socket_id -- the descriptor to identify the socket in question
+	///
+	/// @return the remote address
 	virtual IPvXAddress getRemoteAddres(int socket_id);
 
 	/// Creates a new socket.
@@ -573,6 +621,8 @@ public:
 	//@}
 
 protected:
+	/** @name Protected instance functions */
+	//@{
 
 	/** @name Overridden functions from cSimpleModule */
 	//@{
@@ -597,30 +647,49 @@ protected:
 	/** @name Utility / convenience functions */
 	//@{
 
+	/// Handles a timeout.
 	/// NOT part of the TCPSocket::CallbackInteface
 	virtual void socketTimeout(int connId, void * yourPtr);
 
+	/// Cleans up all data associated with a socket
 	virtual void cleanupSocket(int socket_id);
+
+	/// Removes the indicated socket_id from the set of sockets
+	/// associated with the socket's local port
 	virtual void freePort(int socket_id);
 
+	/// Finds the socket associated with the indicated id in the socket map
+	/// and verifies that it is valid, if it is not it signals a function error
+	/// using the indicated function name
 	virtual TCPSocket * findAndCheckSocket(int socket_id, const std::string & fname);
 
+	// Returns a string representing the indicated socket as a string.  Because
+	// of the pseudo TIMED_OUT state we don't want the user to worry about this
+	// string representation -- could intercept it and rewrite it.
 	virtual std::string socketToString(int socket_id);
 
+	/// Makes a new CallbackData object with the indicated values.  cbobj_for_accepted
+	/// is always NULL.
 	virtual CallbackData * makeCallbackData(int socket_id, CallbackInterface * cbobj,
-			void * function_data, CALLBACK_STATE type);
+			void * userptr, CALLBACK_STATE type);
 
+	/// Looks up the passive callback data associated with the indicated port.
+	/// @return the callback data if it exists and NULL if there is no passive
+	/// socket on the indicated port, or if the passive socket is not in the accept
+	/// state
 	virtual CallbackData * getAcceptCallback(int port);
 
-	static std::string getStateName(CALLBACK_STATE state);
-
+	// throws cRuntimeError
 	virtual void signalFunctionError(const std::string & fname, const std::string & details);
 	virtual void signalCBNullError(const std::string & fname);
 	virtual void signalCBStateReceptionError(const std::string & fname, CALLBACK_STATE state);
 	virtual void signalCBStateInconsistentError(const std::string & fname, CALLBACK_STATE state);
 
+	// prints a notice on the simulation environment output
 	virtual void printFunctionNotice(const std::string & fname, const std::string & notice);
 	virtual void printCBStateReceptionNotice(const std::string & fname, CALLBACK_STATE state);
+	//@}
+
 	//@}
 };
 
