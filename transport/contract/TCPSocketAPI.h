@@ -32,27 +32,161 @@
 #include <set>
 
 /**
- * Provides a convenient way of managing TCPSockets similar to the BSD socket API.
- *
- * Notes to user:
- *
- * Notes to contributor:
- * 		Assumptions:
- * 		- Because the API forces close to be called before a port can be reused via the
- * 		bind function, the close command will reach the TCP core before the new connect
- * 		or listen command such that the port will be assigned for use successfully.
- *
- * 		To Document
- * 		@todo document usage
- *
- * 		To Improve
- * 		@todo intercept to represent receiving, accepting, timed out, etc. OR make
- * 		an entirely new TCPSocket class
- * 		@todo make different send modes, i.e. can invoke send whenever the underlying
- *		socket is connected or connecting, OR lock-step sending and receiving
- * 		@todo make a way to set error handling (i.e. throw or just return error codes and set an
- * 		error message)
- * 		@todo build a send function that will take a translator and data to get the cMessage
+Provides a convenient way of managing TCPSockets.
+
+NOTES TO USER:
+	OVERVIEW:
+	This TCP socket API is similar to the BSD socket API.  It provides
+	functions like socket, bind, connect, send, recv, listen, accept,
+	and close.  A socket descriptor is returned from the function socket
+	which can thereafter be used to perform other operations on that socket.
+	Convenience functions to make and active or passive socket are also
+	provided.  Timeouts currently only work with the recv operation.
+
+	The major difference from the BSD API is that this API is completely
+	asynchronous so as to fit into the asynchronous architecture of OMNET++.
+	Traditionally the functions connect, accept, and recv are blocking
+	system calls, meaning that they do not return until a socket is connected,
+ 	accepted, or data received respectively.  To make these operations
+ 	work in an asynchronous environment a callback must be used.
+
+	CALLBACK INTERFACE:
+ 	The callback interface specified by this API defines a corresponding
+ 	callback function for the functions connect, accept, and recv.  When you
+ 	first create a socket you must provide a pointer to an object implementing
+ 	the interface.  Thereafter, when you call connect, accept, or recv you
+ 	are only indicating to the API that you want that operation to be simulated
+ 	and/or the function's corresponding callback to be invoked when the
+ 	simulation of that operation is finished.  After calling connect, accept,
+ 	or recv your code should then surrender control back to the simulator (i.e.
+ 	return from the function) so that the simulation can continue.
+
+ 	When a socket is finally connected (or fails to connect) the connectCallback
+ 	is invoked.  When a new connection is accepted on a listening socket the
+ 	acceptCallback is invoked.  When data is received on a connection (or the
+ 	connection closes or times out) the recvCallback is invoked.
+
+ 	Your implementation of the callback should handle the event and then invoke
+ 	the next socket calls so that operation will continue smoothly.  The functions
+ 	accept and recv are not persistent, meaning that you may not invoke them once
+ 	and expect the corresponding callback to be invoked whenever a connection is
+ 	accepted or reception occurs on a connection. Thus, if you need to do repeated
+ 	accept or recv operations remember to reinvoke them in the acceptCallback and
+ 	recvCallback functions you define; in a synchronous environment this is in
+ 	essence what a loop in an accepting or receiving thread does.
+
+	When you invoke	connect, accept, or recv you can hand in a pointer to whatever
+	data/struct/object that you want to (cast it as a void pointer).  The API will
+ 	not modify the element pointed to in any way.  When the simulation of a
+ 	connect, accept, or recv event is complete the corresponding callback will
+ 	be invoked and the void pointer previously provided will be returned.
+ 	If desired, this approach can be used to store context associated with a
+ 	specific socket instead of maintaining a context mapping.
+
+	EXAMPLE:
+	In a synchronous environment a common sequence of socket operations is as
+	follows (without specific regard to the BSD API):
+
+	<pre>
+	some thread ...
+		fd = socket()
+		bind(fd, local_address, local_port)
+		connect(fd, remote_address, remote_port)
+		send(fd, some_data)
+		repeat until some condition
+			data = recv(fd)
+			# process the data #
+			send(fd, some_more_data)
+	</pre>
+
+	Using this asynchronous API, the same functionality can be achieved as
+	follows:
+
+	<pre>
+	function: connectionInitializer
+		fd = socket(pointer to callback interface object)
+		bind(fd, local_address, local_port)
+		connect(fd, remote_address, remote_port, context_data)
+	# end of connectionInitializer #
+
+	function: connectCallback(fd, status, context_data)
+		send(fd, some_data)
+		recv(fd, context_data)
+		// indicate that we want the recvCallback to be invoked when response
+		// data is received
+	# end of connectCallback #
+
+	function: recvCallback(fd, status, data, context_data)
+ 		# process the data #
+ 		send(fd, some_more_data)
+		recv(fd, context_data)
+		// indicate that we want the recvCallback to be invoked when response
+		// data is received
+ 	# end of recvCallback #
+ 	</pre>
+
+ 	MEMORY MANAGEMENT:
+ 	The API never assumes responsibility for deleting (from heap space) any
+ 	information provided in a connect, accept, or recv invocation.  The API will,
+ 	however, track the provided pointer until a connect, accept, or recv event
+ 	occurs and hand back the pointer in the corresponding callback.  When the
+ 	callback is	invoked the API stops tracking the pointer (internally it sets
+ 	its pointers to NULL).  It is thus your	responsibility to handle the pointer
+ 	-- either reusing it in a subsequent connect, accept, or recv invocation or
+ 	to delete it.  When a socket is	closed it will return a void pointer; in the
+ 	event that close is invoked	after a connect, accept, or recv invocation but
+ 	before such an event occurs then the pointer provided in that function
+ 	invocation will	be returned, otherwise NULL will be returned.
+
+
+
+NOTES TO CONTRIBUTOR:
+	OVERVIEW:
+	The API was constructed taking advantage of the already existent TCPSocket
+	and TCPSocketMap classes.  The TCPSocket's callback interface is based on
+	events more than on socket operations, so one thing that this API does is
+	to interpret those events back to the appropriate operations (e.g. the
+	socketEstablished callback could be either for a connect or accept operation).
+	One operation that the TCPSocket doesn't have is recv, but it does define a
+	socketDataArrived callback.  This API interprets the socketDataArrived event
+	as a recv operation.
+
+	To support the connect, accept, and recv operations, this API uses and
+	manages callback state data to track what operation the user has most recently
+	requested.  Not all of the enumerated callback states pertain to an operation's
+	callback function (e.g. CB_S_WAIT), rather they indicate whether an operation
+	that requires a callback can be validly invoked as well as indicating how an
+	event signaled by the TCPSocket's callback interface should be handled.  For
+	example recv cannot be invoked on a socket before connect, this is enforced
+	by not setting the socket's associated callback data state to CB_S_WAIT until
+	the socket is actually connected.  In addition, this API imposes a timed out
+	state on sockets using the CB_S_TIMEOUT value while the underlying TCPSocket's
+	actual state is still CONNECTED.  This is a messy approach conceptually but
+	required because the TCPSocket is not a cSimpleModule so it can't schedule
+	timeout events.  This API itself could be improved by making a new TCP socket
+	class that would have access to scheduling events through the API and which
+	could then be tasked with keeping track of a TIMED_OUT state, provide a recv
+	operation, and which demultiplex TCP message events directly to opertions.
+
+
+  	ASSUMPTIONS:
+  	- Because the API forces close to be called before a port can be reused via the
+  	bind function, the close command will reach the TCP core before the new connect
+  	or listen command such that the port will successfully be reused.
+
+  	TO DOCUMENT:
+  	@todo document design decisions/considerations
+
+  	TO IMPROVE:
+  	@todo intercept to represent receiving, accepting, timed out, etc. OR make
+  	an entirely new TCPSocket class
+  	@todo make different send modes, i.e. can invoke send whenever the underlying
+ 	socket is connected or connecting, OR lock-step sending and receiving
+  	@todo make a way to set error handling (i.e. throw or just return error codes and set an
+  	error message)
+  	@todo build a send function that will take a translator and data to get the cMessage
+
+  	@see TCPSocket, TCPSocketMap
  */
 class INET_API TCPSocketAPI : public cSimpleModule, TCPSocket::CallbackInterface
 {
@@ -151,33 +285,87 @@ protected:
 
 	/** @name Instance Members */
 	//@{
+	/// Tracks the TCPSocket objects.
 	TCPSocketMap _socket_map;
 
+	/// Tracks the timeout messages associated with a given socket.
+	///
 	/// maps socket id to timeout message
 	std::map<int, SocketTimeoutMsg *> _timeout_timers;
 
+	/// Used to resolve provided string addresses to IPvXAddress
+	/// objects.
 	IPAddressResolver _resolver;
 
+	/// Tracks the ports that are being used (bound) and which
+	/// socket(s) is using it.
 	///
 	/// maps port to socket id
 	std::map<int, std::set<int> > _bound_ports;
 
+	/// Values to control socket operation sequence, and to indicate
+	/// which callback should be invoked and how to interpret events
+	/// defined by the TCPSocket::CallbackInterface.
+	///
+	/// CB_S_NONE -- no callback requiring operation invoked and/or
+	///		an invalid state
+	/// CB_S_CONNECT -- the connect operation was invoked and the
+	///		connectCallback should be called when a connection is
+	///		established or an error occurs
+	/// CB_S_ACCEPT -- the accept operation was invoked and the
+	///		acceptCallback should be called when a connection is
+	///		accepted
+	/// CB_S_RECV -- the recv operation was invoked and the
+	///		recvCallback should be called when data is received on
+	///		the connection, the connection closes or times out
+	///		or an error occurs
+	/// CB_S_CLOSE -- the close operation was invoked so no other
+	///		socket calls are valid and/or the connection was closed
+	///		so only the close operation can be invoked
+	/// CB_S_TIMEOUT -- the connection is timed out, no socket
+	///		operations are valid except close
+	///	CB_S_WAIT -- the socket is waiting for an accept or
+	///		recv operation to be invoked and/or a connection was
+	///		accepted or data was received but the user didn't
+	///		reinvoke accept or recv
 	enum CALLBACK_STATE {CB_S_NONE, CB_S_CONNECT, CB_S_ACCEPT,
 			CB_S_RECV, CB_S_CLOSE, CB_S_TIMEOUT, CB_S_WAIT};
 
+	/// Data necessary to execute callbacks associated with a given
+	/// socket.
 	struct CallbackData {
+		/// The socket this callback data pertains to and the socket
+		/// id to be returned in the callback
 		int socket_id;
+
+		/// The callback state of the socket.  See CALLBACK_STATE.
 		CALLBACK_STATE state;
+
+		/// The CallbackInterface assigned to handle events on this
+		/// socket.
 		CallbackInterface * cbobj;
+
+		/// The data/struct/object the user provides.
 		void * userptr;
+
+		/// The CallbackInterface to be used by accepted connections.
+		/// Useful if the user defines different handlers for active
+		/// and passive sockets.  May be NULL in which case cbobj
+		/// is used.
 		CallbackInterface * cbobj_for_accepted;
 	};
 
-	/// Tracks the callback data for listening sockets that are accepting.
+	/// Tracks the callback data for passive sockets.
+	///
+	/// Note that this separate map is needed because the the _bound_ports
+	/// map doesn't have a feature to distinguish passive sockets
+	/// from the active sockets that have been accepted on the listening
+	/// socket's port.
 	///
 	/// maps port to callback data
 	std::map<int, CallbackData *> _accept_callbacks;
 
+	/// Tracks the callback data associated with a given socket.
 	///
 	/// maps socket id to callback data
 	std::map<int, CallbackData *> _registered_callbacks;
