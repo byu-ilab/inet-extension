@@ -22,7 +22,7 @@
 
 Define_Module(TCPSocketAPI);
 
-TCPSocketAPI::TCPSocketAPI() : _socket_map(), _rejected_sockets_map(),
+TCPSocketAPI::TCPSocketAPI() : _socket_map(), /* _rejected_sockets_map(), */
 	_timeout_timers(), _resolver(), _bound_ports(),
 	_passive_callbacks(), _registered_callbacks() {
 
@@ -102,18 +102,18 @@ void TCPSocketAPI::handleMessage(cMessage *msg)
 			EV_WARNING << __fname << " received message for connection " <<
 				socket->getConnectionId() << " on non-listening port" <<
 				" OR received a message for a closed socket" <<endl;
-			if (msg->getKind() == TCP_I_ESTABLISHED)
-			{
-				// close the socket so the other end will close too
-				//_socket_map.addSocket(socket);
-				_rejected_sockets_map.addSocket(socket);
-				socket->setCallbackObject(this, NULL);
-				socket->close();
-			}
-			else
-			{
+//			if (msg->getKind() == TCP_I_ESTABLISHED)
+//			{
+//				// close the socket so the other end will close too
+//				//_socket_map.addSocket(socket);
+//				_rejected_sockets_map.addSocket(socket);
+//				socket->setCallbackObject(this, NULL);
+//				socket->close();
+//			}
+//			else
+//			{
 				delete socket;
-			}
+//			}
 			//delete msg // @todo do we have to cast to a cPacket?
 			if (msg->getKind() == TCP_I_DATA || msg->getKind() == TCP_I_URGENT_DATA)
 			{
@@ -693,6 +693,7 @@ void TCPSocketAPI::socketPeerClosed(int connId, void *yourPtr)
 	CallbackData * cbdata = static_cast<CallbackData *>(yourPtr);
 	void * userPtr = cbdata->userptr;
 	cbdata->userptr = NULL;
+	//cbdata->state = CB_S_CLOSE;
 
 	// invoke the recv callback or just handle the close operation?
 	// assume that the application will close the socket
@@ -702,6 +703,9 @@ void TCPSocketAPI::socketPeerClosed(int connId, void *yourPtr)
 		cbdata->state = CB_S_CLOSE;
 		cbdata->cbobj->recvCallback(connId, CB_E_CLOSED, NULL, userPtr);
 		break;
+//	default:
+//		cbdata->cbobj->closeNotice(connId, userPtr);
+
 	case CB_S_CLOSE:
 	case CB_S_WAIT:
 		printCBStateReceptionNotice(__fname, cbdata->state);
@@ -821,14 +825,14 @@ void TCPSocketAPI::cleanupSocket(int socket_id) {
 	{
 		delete socket;
 	}
-	else
-	{
-		socket = _rejected_sockets_map.removeSocket(socket_id);
-		if (socket)
-		{
-			delete socket;
-		}
-	}
+//	else
+//	{
+//		socket = _rejected_sockets_map.removeSocket(socket_id);
+//		if (socket)
+//		{
+//			delete socket;
+//		}
+//	}
 
 	// delete callback data
 	std::map<int, CallbackData *>::iterator rcb_itr = _registered_callbacks.find(socket_id);

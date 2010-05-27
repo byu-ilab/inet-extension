@@ -185,6 +185,8 @@ NOTES TO CONTRIBUTOR:
   	@todo make a way to set error handling (i.e. throw or just return error codes and set an
   	error message)
   	@todo build a send function that will take a translator and data to get the cMessage
+  	@todo determine how to handle connections "accepted" by the TCP core but not
+  	by the API
 
   	@see TCPSocket, TCPSocketMap
  */
@@ -258,7 +260,8 @@ public:
 		/// On error: ret_status will be CB_E_UNKNOWN from the CALLBACK_ERROR enumeration
 		virtual void acceptCallback  (int socket_id, int ret_status, void * yourPtr) {}
 
-		/// Handles the reception of data on the specified socket.
+		/// Handles the reception of data on the specified socket.  By default just
+		/// deletes the received cPacket.
 		/// Corresponds to the CB_T_RECV value from the CALLBACK_TYPE enumeration.
 		/// Assumes responsibility for msg (either to delete it or reuse it).
 		/// Assumes responsibility for yourPtr (either to delete it or reuse it).
@@ -275,8 +278,10 @@ public:
 		///		the number of bytes in the message
 		/// On error: msg will point to NULL and ret_status will be a value from the
 		/// 	CALLBACK_ERROR enumeration
-		virtual void recvCallback    (int socket_id, int ret_status, cPacket * msg,
-										void * yourPtr) {}
+		virtual void recvCallback(int socket_id, int ret_status, cPacket * msg,
+										void * yourPtr) {delete msg;}
+
+		//virtual void closeNotice (int socket_id, void * yourPtr) {};
 	};
 
 	//@}
@@ -312,7 +317,7 @@ protected:
 	/// socket accepting on their port.  Close is called on the socket and
 	/// when the close sequence terminates then the socket can be deleted
 	/// from memory.
-	TCPSocketMap _rejected_sockets_map;
+	//TCPSocketMap _rejected_sockets_map;
 
 	/// Tracks the timeout messages associated with a given socket.
 	///
