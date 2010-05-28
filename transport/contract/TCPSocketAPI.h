@@ -30,6 +30,7 @@
 #include <string.h>
 #include <map>
 #include <set>
+#include <deque>
 
 /** Provides a convenient way of managing TCPSockets.
 
@@ -173,34 +174,53 @@ NOTES TO CONTRIBUTOR:
   	bind() function, the close command will reach the TCP core before the new connect
   	or listen command such that the port will successfully be reused.
 
+  	- The TCP core will always (seemingly - I haven't checked) accept incoming
+  	connections to a listening socket.  However, the socket may not be accepting
+  	at the moment.  This API keeps a list of pending connections such that the
+  	next time the application invokes accept() a connection from the pending
+  	queue will be accepted.  This seems consistent with what the BSD socket API
+  	does (it specifies the queue size for pending connections and only returns
+  	a connection when accept is called once a connection is established).
+
+	- This API creates a receive buffer (of cPacket not bytes) in the event that
+	packets are received when the application has not invoked recv().
+
   	TO DOCUMENT:
 
-  	TO IMPROVE:
-  	@todo make a new TCPSocket class which has a TIMED_OUT state and has recv, accept,
-  	and timeout options
+  	TO IMPROVE: (priority levels: low number = high priority, high number = low priority)
 
-  	@todo make different send modes, currently the user may call send whenever the
+  	@todo Level 1 remove the hasCallback function from the callback interface, it isn't
+  	used and none of the callback functions will be invoked unless the user
+  	has previously invoked the corresponding operation
+
+  	@todo Level 1 make a way to signal to the application that the socket has been closed
+  	on a PEER_CLOSED message so that the application will not use that socket
+  	anymore
+
+  	@todo Level 2 determine whether pending connections may become invalidated as they wait in
+  	the pending queue.  If they do take appropriate action to remove them from
+  	the pending connections queue.
+
+  	@todo Level 2 assign ports when not specified in bind or connect since the underlying
+  	TCP core only assigns ports within the range 1025-5000
+
+  	@todo Level 3 build a translator that will take in essential message parameters and return
+  	an appropriately encapsulated cMessage that can be sent, and then receive a cMessage
+  	and extract out the essential parameters
+
+  	@todo Level 4 make a way to set error handling, different error handling options are to
+  	throw exceptions (which it does currently) or to return error codes and set an
+  	error description string
+
+  	@todo Level 5 make a new TCPSocket class which has a TIMED_OUT state and has recv, accept,
+  	and timeout options, it could be a friend of the API or be given a pointer to the
+  	API so that it can schedule events (i.e. timeouts)
+
+  	@todo Level 5 make different send modes, currently the user may call send whenever the
   	underlying TCPSocket is in the TCPSocket::CONNECTED or TCPSocket::CONNECTING or
   	TCPSocket::PEER_CLOSED state, perhaps
   	it would be nice to have a lock step mode such that messages could only be sent when
   	the socket is actually connected
-
-  	@todo make a way to set error handling, different error handling options are to
-  	throw exceptions (which it does currently) or to return error codes and set an
-  	error description string
-
-  	@todo build a translator that will take in essential message parameters and return
-  	an appropriately encapsulated cMessage that can be sent, and then receive a cMessage
-  	and extract out the essential parameters
-
-  	@todo build lists of accepted sockets for sockets that are listening, when the user
-  	calls accept check the list and invoke the acceptCallback if there is a socket, otherwise
-  	wait till a connection comes in, if the passive socket closes keep note of so connections
-  	after the fact will not be queued.  Research what TCP is expected to do with passive
-  	sockets.
-
-  	@todo assign ports when not specified in bind or connect since the undlying
-  	TCP core only assigns ports within the range 1025-5000
 
   	@see TCPSocket, TCPSocketMap, IPAddressResolver, SocketTimeoutMsg, TCPCommand
  */
@@ -252,6 +272,7 @@ public:
 		///
 		/// @details
 		/// On success: ret_status will be 0 (zero)
+		///
 		/// On error: ret_status will be a value from the CALLBACK_ERROR enumeration
 		virtual void connectCallback (int socket_id, int ret_status, void * yourPtr) {}
 
@@ -267,6 +288,7 @@ public:
 		///
 		/// @details
 		/// On success: ret_status will be the descriptor of the accepted socket
+		///
 		/// On error: ret_status will be CB_E_UNKNOWN from the CALLBACK_ERROR enumeration
 		virtual void acceptCallback  (int socket_id, int ret_status, void * yourPtr) {}
 
@@ -286,6 +308,7 @@ public:
 		/// @details
 		/// On success: msg will point to the received message and ret_status will be
 		///		the number of bytes in the message
+		///
 		/// On error: msg will point to NULL and ret_status will be a value from the
 		/// 	CALLBACK_ERROR enumeration
 		virtual void recvCallback(int socket_id, int ret_status, cPacket * msg,
@@ -323,11 +346,11 @@ protected:
 	/// Tracks the current TCPSocket objects.
 	TCPSocketMap _socket_map;
 
-	/// Tracks the sockets that come with an TCP_I_ESTABLISHED message but
-	/// which are not already in the _socket_map and there is no passive
-	/// socket accepting on their port.  Close is called on the socket and
-	/// when the close sequence terminates then the socket can be deleted
-	/// from memory.
+	// Tracks the sockets that come with an TCP_I_ESTABLISHED message but
+	// which are not already in the _socket_map and there is no passive
+	// socket accepting on their port.  Close is called on the socket and
+	// when the close sequence terminates then the socket can be deleted
+	// from memory.
 	//TCPSocketMap _rejected_sockets_map;
 
 	/// Tracks the timeout messages associated with a given socket.
@@ -340,7 +363,7 @@ protected:
 	IPAddressResolver _resolver;
 
 	/// Tracks the ports that are being used (bound) and which
-	/// socket(s) is using it.
+	/// socket(s) is (are) using it.
 	///
 	/// maps port to socket id
 	std::map<int, std::set<int> > _bound_ports;
@@ -413,6 +436,19 @@ protected:
 	///
 	/// maps socket id to callback data
 	std::map<int, CallbackData *> _registered_callbacks;
+
+	/// Tracks the pending connections awaiting acceptance by passive sockets.
+	TCPSocketMap _pending_sockets_map;
+
+	/// Tracks the pending connections awaiting acceptance by passive sockets.
+	///
+	/// maps passive socket id to id of pending TCPSocket in _pending_sockets_map
+	std::map<int, std::deque<int> > _pending_connections;
+
+	/// Tracks received data not yet requested by the application.
+	///
+	/// maps active socket id to a list of cPacket pointers
+	std::map<int, std::deque<cPacket *> > _reception_buffers;
 
 	//@}
 
@@ -678,11 +714,13 @@ protected:
 	/// using the indicated function name
 	virtual TCPSocket * findAndCheckSocket(int socket_id, const std::string & fname);
 
+public:
 	// Returns a string representing the indicated socket as a string.  Because
 	// of the pseudo TIMED_OUT state we don't want the user to worry about this
 	// string representation -- could intercept it and rewrite it.
 	virtual std::string socketToString(int socket_id);
 
+protected:
 	/// Makes a new CallbackData object with the indicated values.  cbobj_for_accepted
 	/// is always NULL.
 	virtual CallbackData * makeCallbackData(int socket_id, CallbackInterface * cbobj,
@@ -693,6 +731,11 @@ protected:
 	/// socket on the indicated port, or if the passive socket is not in the accept
 	/// state
 	virtual CallbackData * getAcceptCallback(int port);
+
+	/// Looks up the passive callback data associated with the indicated port.
+	/// @return the callback data if it exists and NULL if there is no passive
+	/// socket on the indicated port
+	virtual CallbackData * getPassiveCallback(int port);
 
 	// throws cRuntimeError
 	virtual void signalFunctionError(const std::string & fname, const std::string & details);

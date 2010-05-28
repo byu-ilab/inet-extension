@@ -24,13 +24,14 @@ Define_Module(TCPSocketAPI);
 
 TCPSocketAPI::TCPSocketAPI() : _socket_map(), /* _rejected_sockets_map(), */
 	_timeout_timers(), _resolver(), _bound_ports(),
-	_passive_callbacks(), _registered_callbacks() {
+	_passive_callbacks(), _registered_callbacks(),
+	_pending_sockets_map(), _pending_connections(), _reception_buffers() {
 
 }
 
 TCPSocketAPI::~TCPSocketAPI() {
-//	std::cout << "~TCPSocketAPI()..."<<endl;
 	_socket_map.deleteSockets();
+	_pending_sockets_map.deleteSockets();
 
 	std::map<int, CallbackData *>::iterator rcb_itr = _registered_callbacks.begin();
 	while (rcb_itr != _registered_callbacks.end())
@@ -46,7 +47,6 @@ TCPSocketAPI::~TCPSocketAPI() {
 		}
 		tmr_itr++;
 	}
-//	std::cout << "~TCPSocketAPI()!"<<endl;
 }
 
 //==============================================================================
@@ -95,7 +95,8 @@ void TCPSocketAPI::handleMessage(cMessage *msg)
 		socket = new TCPSocket(msg);
 		socket->setOutputGate(gate("tcpOut"));
 
-		CallbackData * cbdata = getAcceptCallback(socket->getLocalPort());
+//		CallbackData * cbdata = getAcceptCallback(socket->getLocalPort());
+		CallbackData * cbdata = getPassiveCallback(socket->getLocalPort());
 
 		if (!cbdata)
 		{
@@ -114,25 +115,17 @@ void TCPSocketAPI::handleMessage(cMessage *msg)
 //			{
 				delete socket;
 //			}
-			//delete msg // @todo do we have to cast to a cPacket?
-			if (msg->getKind() == TCP_I_DATA || msg->getKind() == TCP_I_URGENT_DATA)
-			{
-				cPacket * p = check_and_cast<cPacket *>(msg);
-				delete p;
-			}
-			else
-			{
-				delete msg;
-			}
+			delete msg;
 			return;
 		}
-		 // assume that the message type is TCP_I_ESTABLISHED
+		// assert that the message type is TCP_I_ESTABLISHED
 		if (msg->getKind() != TCP_I_ESTABLISHED)
 		{
 			signalFunctionError(__fname, "message is not TCP_I_ESTABLISHED");
 		}
+
 		socket->setCallbackObject(this, cbdata);
-		_socket_map.addSocket(socket);
+		_pending_sockets_map.addSocket(socket);
 	}
 	EV_DEBUG << "on the socket: "<<socket->toString()<<endl;
 	EV_DEBUG << "Process the message " << msg->getName() << endl;
@@ -432,6 +425,14 @@ void TCPSocketAPI::accept (int socket_id, void * yourPtr) {
 	cbdata->userptr = yourPtr;
 	cbdata->state = CB_S_ACCEPT;
 
+	if (!_pending_connections[socket_id].empty())
+	{
+		int pending_socket_fd = _pending_connections[socket_id].front();
+		_pending_connections[socket_id].pop_front();
+		//TCPSocket * pending_socket = _pending_sockets_map.getSocket(pending_socket_fd);
+		socketEstablished(pending_socket_fd, cbdata);
+	}
+
 	//_passive_callbacks[socket->getLocalPort()] = cbdata;
 
 	printFunctionNotice(__fname, socket->toString());
@@ -499,13 +500,22 @@ void TCPSocketAPI::recv (int socket_id, void * yourPtr) {
 	cbdata->userptr = yourPtr;
 	cbdata->state = CB_S_RECV;
 
-	// schedule a timeout if set
-	SocketTimeoutMsg * timer = _timeout_timers[socket_id];
-	if (timer) {
-		if (timer->isScheduled()) {
-			cancelEvent(timer);
+	if (!_reception_buffers[socket_id].empty())
+	{
+		cPacket * msg = _reception_buffers[socket_id].front();
+		_reception_buffers[socket_id].pop_front();
+		socketDataArrived(socket_id, cbdata, msg, false);
+	}
+	else
+	{
+		// schedule a timeout if set
+		SocketTimeoutMsg * timer = _timeout_timers[socket_id];
+		if (timer) {
+			if (timer->isScheduled()) {
+				cancelEvent(timer);
+			}
+			scheduleAt(simTime()+timer->getTimeoutInterval(), timer);
 		}
-		scheduleAt(simTime()+timer->getTimeoutInterval(), timer);
 	}
 
 	printFunctionNotice(__fname, socket->toString());
@@ -619,13 +629,13 @@ void TCPSocketAPI::socketEstablished(int connId, void *yourPtr)
 	cbdata->userptr = NULL;
 
 	CallbackData * new_cbdata = NULL;
-
-	int port = _socket_map.getSocket(connId)->getLocalPort();
-	_bound_ports[port].insert(connId); // inserting into a SET
+	TCPSocket * socket = NULL;
 
 	// invoke the "connect" or "accept" callback
 	switch (cbdata->state){
 	case CB_S_CONNECT:
+		socket = _socket_map.getSocket(connId);
+		_bound_ports[socket->getLocalPort()].insert(connId); // inserting into a SET
 		EV_DEBUG << "connected socket " << connId << endl;
 		cbdata->state = CB_S_WAIT;
 		cbdata->cbobj->connectCallback(connId, 0, userPtr);
@@ -634,7 +644,10 @@ void TCPSocketAPI::socketEstablished(int connId, void *yourPtr)
 		// set the spawned socket's callback data to match itself now
 		new_cbdata = makeCallbackData(connId, cbdata->cbobj_for_accepted, NULL, CB_S_WAIT);
 		_registered_callbacks[connId] = new_cbdata;
-		_socket_map.getSocket(connId)->setCallbackObject(this, new_cbdata);
+		socket = _pending_sockets_map.removeSocket(connId);
+		socket->setCallbackObject(this, new_cbdata);
+		_socket_map.addSocket(socket);
+		_bound_ports[socket->getLocalPort()].insert(connId);
 
 		EV_DEBUG << "accepted socket with id=" << connId << endl;
 
@@ -644,8 +657,11 @@ void TCPSocketAPI::socketEstablished(int connId, void *yourPtr)
 		cbdata->cbobj->acceptCallback(cbdata->socket_id, connId, userPtr);
 		break;
 	case CB_S_CLOSE:
-	case CB_S_WAIT:
+		_pending_sockets_map.removeSocket(connId);
 		printCBStateReceptionNotice(__fname, cbdata->state);
+		break;
+	case CB_S_WAIT:
+		_pending_connections[cbdata->socket_id].push_back(connId);
 		break;
 	default:
 		signalCBStateReceptionError(__fname, cbdata->state);
@@ -672,9 +688,11 @@ void TCPSocketAPI::socketDataArrived(int connId, void *yourPtr, cPacket *msg, bo
 		cbdata->state = CB_S_WAIT;
 		cbdata->cbobj->recvCallback(connId, msg->getByteLength(), msg, userPtr);
 		break;
+	case CB_S_WAIT:
+		_reception_buffers[connId].push_back(msg);
+		break;
 	case CB_S_CLOSE:
 	case CB_S_TIMEOUT:
-	case CB_S_WAIT:
 		delete msg;
 		printCBStateReceptionNotice(__fname, cbdata->state);
 		break;
@@ -902,6 +920,21 @@ TCPSocketAPI::CallbackData * TCPSocketAPI::getAcceptCallback(int port)
 	}
 
 	if (pcb_itr->second->state != CB_S_ACCEPT)
+	{
+		return NULL;
+	}
+
+	return pcb_itr->second;
+}
+
+TCPSocketAPI::CallbackData * TCPSocketAPI::getPassiveCallback(int port)
+{
+	// IMPORTANT can't do it through _bound_ports since the accepted
+	// sockets have the same port as the passive listening socket
+
+	std::map<int, CallbackData *>::iterator pcb_itr = _passive_callbacks.find(port);
+
+	if (pcb_itr == _passive_callbacks.end())
 	{
 		return NULL;
 	}
