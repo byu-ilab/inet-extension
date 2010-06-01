@@ -35,7 +35,9 @@
 /** Provides a convenient way of managing TCPSockets.
 
 NOTES TO USER:
+
 	OVERVIEW:
+
 	This socket API for TCPSockets is similar to the BSD socket API.  It provides
 	functions like socket, bind, connect, send, recv, listen, accept,
 	and close.  A socket descriptor is returned from the function socket()
@@ -84,6 +86,7 @@ NOTES TO USER:
  	specific socket instead of maintaining a context mapping.
 
 	EXAMPLE:
+
 	In a synchronous environment a common sequence of socket operations is as
 	follows (without specific regard to the BSD API):
 
@@ -112,20 +115,21 @@ NOTES TO USER:
 	function: connectCallback(fd, status, context_data)
 		send(fd, some_data)
 		recv(fd, context_data)
-		// indicate that we want the recvCallback to be invoked when response
-		// data is received
+		# indicate that we want the recvCallback to be
+		invoked when response data is received #
 	# end of connectCallback #
 
 	function: recvCallback(fd, status, data, context_data)
  		# process the data #
  		send(fd, some_more_data)
 		recv(fd, context_data)
-		// indicate that we want the recvCallback to be invoked when response
-		// data is received
+		# indicate that we want the recvCallback to be
+		invoked when response data is received #
  	# end of recvCallback #
  	</pre>
 
  	MEMORY MANAGEMENT:
+
  	The API never assumes responsibility for deleting (from heap space) any
  	information provided in a connect(), accept(), or recv() invocation.  The API will,
  	however, track the provided pointer until a connect, accept, or recv event
@@ -141,7 +145,9 @@ NOTES TO USER:
 
 
 NOTES TO CONTRIBUTOR:
+
 	OVERVIEW:
+
 	The API was constructed taking advantage of the already existent TCPSocket
 	and TCPSocketMap classes.  The TCPSocket's callback interface is based on
 	events more than on socket operations, so one thing that this API does is
@@ -170,11 +176,13 @@ NOTES TO CONTRIBUTOR:
 
 
   	ASSUMPTIONS:
+
   	- Because the API forces close() to be called before a port can be reused via the
   	bind() function, the close command will reach the TCP core before the new connect
   	or listen command such that the port will successfully be reused.
 
-  	- The TCP core will always (seemingly - I haven't checked) accept incoming
+  	- The TCP core will always (seemingly -- I haven't checked if there are options
+  	to control this) accept incoming
   	connections to a listening socket.  However, the socket may not be accepting
   	at the moment.  This API keeps a list of pending connections such that the
   	next time the application invokes accept() a connection from the pending
@@ -189,13 +197,9 @@ NOTES TO CONTRIBUTOR:
 
   	TO IMPROVE: (priority levels: low number = high priority, high number = low priority)
 
-  	@todo Level 1 remove the hasCallback function from the callback interface, it isn't
+  	@todo Level 1 (DONE) remove the hasCallback function from the callback interface, it isn't
   	used and none of the callback functions will be invoked unless the user
   	has previously invoked the corresponding operation
-
-  	@todo Level 1 make a way to signal to the application that the socket has been closed
-  	on a PEER_CLOSED message so that the application will not use that socket
-  	anymore
 
   	@todo Level 2 determine whether pending connections may become invalidated as they wait in
   	the pending queue.  If they do take appropriate action to remove them from
@@ -211,6 +215,12 @@ NOTES TO CONTRIBUTOR:
   	@todo Level 4 make a way to set error handling, different error handling options are to
   	throw exceptions (which it does currently) or to return error codes and set an
   	error description string
+
+  	@todo Level 4 make a way to signal to the application that the socket has been closed
+  	on a PEER_CLOSED message so that the application will not use that socket
+  	anymore?  Alternatively return an error code indicating that the socket is closed when
+  	an invalid operation is requested (i.e. recv).  In this case send will still be okay
+  	but recv will not be.
 
   	@todo Level 5 make a new TCPSocket class which has a TIMED_OUT state and has recv, accept,
   	and timeout options, it could be a friend of the API or be given a pointer to the
@@ -255,14 +265,15 @@ public:
 	class CallbackInterface {
 	public:
 
-		/// Indicates which callback functions are implemented.
-		///
-		/// @return true if the callback type's corresponding function is implemented
-		/// and false if it is not.
-		virtual bool hasCallback (CALLBACK_TYPE type) =0;
+		// Indicates which callback functions are implemented.
+		//
+		// @return true if the callback type's corresponding function is implemented
+		// and false if it is not.
+		//virtual bool hasCallback (CALLBACK_TYPE type) =0;
 
 		/// Handles the connection of the specified socket.
-		/// Corresponds to the CB_T_CONNECT value from the CALLBACK_TYPE enumeration.
+		/// Corresponds to the TCPSocketAPI::CB_T_CONNECT value from the
+		/// TCPSocketAPI::CALLBACK_TYPE enumeration.
 		/// Assumes responsibility for yourPtr (either to delete it or reuse it).
 		///
 		/// @param socket_id -- the descriptor for the connected socket
@@ -273,11 +284,13 @@ public:
 		/// @details
 		/// On success: ret_status will be 0 (zero)
 		///
-		/// On error: ret_status will be a value from the CALLBACK_ERROR enumeration
+		/// On error: ret_status will be a value from the TCPSocketAPI::CALLBACK_ERROR
+		/// enumeration
 		virtual void connectCallback (int socket_id, int ret_status, void * yourPtr) {}
 
 		/// Handles the acceptance of a new socket.
-		/// Corresponds to the CB_T_ACCEPT value from the CALLBACK_TYPE enumeration.
+		/// Corresponds to the TCPSocketAPI::CB_T_ACCEPT value from the
+		/// TCPSocketAPI::CALLBACK_TYPE enumeration.
 		/// Assumes responsibility for yourPtr (either to delete it or reuse it).
 		///
 		/// @param socket_id -- the descriptor for the listening socket
@@ -289,12 +302,14 @@ public:
 		/// @details
 		/// On success: ret_status will be the descriptor of the accepted socket
 		///
-		/// On error: ret_status will be CB_E_UNKNOWN from the CALLBACK_ERROR enumeration
+		/// On error: ret_status will be TCPSocketAPI::CB_E_UNKNOWN from the
+		/// 	TCPSocketAPI::CALLBACK_ERROR enumeration
 		virtual void acceptCallback  (int socket_id, int ret_status, void * yourPtr) {}
 
 		/// Handles the reception of data on the specified socket.  By default just
 		/// deletes the received cPacket.
-		/// Corresponds to the CB_T_RECV value from the CALLBACK_TYPE enumeration.
+		/// Corresponds to the TCPSocketAPI::CB_T_RECV value from the
+		/// TCPSocketAPI::CALLBACK_TYPE enumeration.
 		/// Assumes responsibility for msg (either to delete it or reuse it).
 		/// Assumes responsibility for yourPtr (either to delete it or reuse it).
 		///
@@ -310,7 +325,7 @@ public:
 		///		the number of bytes in the message
 		///
 		/// On error: msg will point to NULL and ret_status will be a value from the
-		/// 	CALLBACK_ERROR enumeration
+		/// 	TCPSocketAPI::CALLBACK_ERROR enumeration
 		virtual void recvCallback(int socket_id, int ret_status, cPacket * msg,
 										void * yourPtr) {delete msg;}
 
