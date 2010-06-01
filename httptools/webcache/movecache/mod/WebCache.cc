@@ -434,7 +434,7 @@ void WebCache::receiveResource(cPacket * msg) {
 	  EV_DEBUG<<"Resource not added to cache it is an error message."<<endl;
   }
   // send message to approp. client
-  httptReplyMessage *appmsg2 = new httptReplyMessage(*appmsg);
+  httptReplyMessage *appmsg2 = new httptReplyMessage(*appmsg); // use dup() here?
 
   TCPSocket * srvr = sockCollection.findSocketFor(msg);
   ClientMap::iterator i = pendingRequests.find(srvr);
@@ -446,7 +446,7 @@ void WebCache::receiveResource(cPacket * msg) {
   }
   else{
 	  httptRequestMessage * rm= check_and_cast<httptRequestMessage *>(m);
-	  appmsg2->setTargetUrl(rm->originatorUrl());
+	  appmsg2->setTargetUrl(rm->originatorUrl());  // maybe not what httptserver does.
 	  appmsg2->setOriginatorUrl(par("www"));
 	  cli->send(appmsg2);
 	  //htmlDocsServed++;

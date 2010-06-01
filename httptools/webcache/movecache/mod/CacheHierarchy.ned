@@ -13,7 +13,7 @@
 // along with this program.  If not, see http://www.gnu.org/licenses/.
 // 
 
-package inet.httptools.webcache;
+package inet.httptools.webcache.movecache.mod;
 
 import inet.networklayer.autorouting.FlatNetworkConfigurator;
 import inet.nodes.inet.Router;
