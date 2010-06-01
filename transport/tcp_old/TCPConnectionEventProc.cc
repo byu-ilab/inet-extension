@@ -34,8 +34,10 @@ using namespace tcp_old;
 void TCPConnection::process_OPEN_ACTIVE(TCPEventCode& event, TCPCommand *tcpCommand, cMessage *msg)
 {
     TCPOpenCommand *openCmd = check_and_cast<TCPOpenCommand *>(tcpCommand);
-    IPvXAddress localAddr, remoteAddr;
-    short localPort, remotePort;
+    //IPvXAddress localAddr, remoteAddr; // original
+    IPvXAddress tmp_localAddr, tmp_remoteAddr; // rename so as not to clash with instance members
+    //short localPort, remotePort; // original (but wrong data type)
+    int tmp_localPort, tmp_remotePort; // rename so as not to clash with instance members
 
     switch(fsm.getState())
     {
@@ -44,23 +46,23 @@ void TCPConnection::process_OPEN_ACTIVE(TCPEventCode& event, TCPCommand *tcpComm
 
             // store local/remote socket
             state->active = true;
-            localAddr = openCmd->getLocalAddr();
-            remoteAddr = openCmd->getRemoteAddr();
-            localPort = openCmd->getLocalPort();
-            remotePort = openCmd->getRemotePort();
+            tmp_localAddr = openCmd->getLocalAddr();
+            tmp_remoteAddr = openCmd->getRemoteAddr();
+            tmp_localPort = openCmd->getLocalPort();
+            tmp_remotePort = openCmd->getRemotePort();
 
-            if (remoteAddr.isUnspecified() || remotePort==-1)
+            if (tmp_remoteAddr.isUnspecified() || tmp_remotePort==-1)
                 opp_error("Error processing command OPEN_ACTIVE: remote address and port must be specified");
 
-            if (localPort==-1)
+            if (tmp_localPort==-1)
             {
-                localPort = tcpMain->getEphemeralPort();
-                tcpEV << "Assigned ephemeral port " << localPort << "\n";
+                tmp_localPort = tcpMain->getEphemeralPort();
+                tcpEV << "Assigned ephemeral port " << tmp_localPort << "\n";
             }
 
-            tcpEV << "OPEN: " << localAddr << ":" << localPort << " --> " << remoteAddr << ":" << remotePort << "\n";
+            tcpEV << "OPEN: " << tmp_localAddr << ":" << tmp_localPort << " --> " << tmp_remoteAddr << ":" << tmp_remotePort << "\n";
 
-            tcpMain->addSockPair(this, localAddr, remoteAddr, localPort, remotePort);
+            tcpMain->addSockPair(this, tmp_localAddr, tmp_remoteAddr, tmp_localPort, tmp_remotePort);
 
             // send initial SYN
             selectInitialSeqNum();
@@ -80,8 +82,10 @@ void TCPConnection::process_OPEN_ACTIVE(TCPEventCode& event, TCPCommand *tcpComm
 void TCPConnection::process_OPEN_PASSIVE(TCPEventCode& event, TCPCommand *tcpCommand, cMessage *msg)
 {
     TCPOpenCommand *openCmd = check_and_cast<TCPOpenCommand *>(tcpCommand);
-    IPvXAddress localAddr;
-    short localPort;
+    //IPvXAddress localAddr; // original
+    IPvXAddress tmp_localAddr; // rename so as not to clash with instance members
+    //short localPort; // original (but wrong data type)
+    int tmp_localPort; // rename so as not to clash with instance members
 
     switch(fsm.getState())
     {
@@ -91,15 +95,15 @@ void TCPConnection::process_OPEN_PASSIVE(TCPEventCode& event, TCPCommand *tcpCom
             // store local/remote socket
             state->active = false;
             state->fork = openCmd->getFork();
-            localAddr = openCmd->getLocalAddr();
-            localPort = openCmd->getLocalPort();
+            tmp_localAddr = openCmd->getLocalAddr();
+            tmp_localPort = openCmd->getLocalPort();
 
-            if (localPort==-1)
+            if (tmp_localPort==-1)
                 opp_error("Error processing command OPEN_PASSIVE: local port must be specified");
 
-            tcpEV << "Starting to listen on: " << localAddr << ":" << localPort << "\n";
+            tcpEV << "Starting to listen on: " << tmp_localAddr << ":" << tmp_localPort << "\n";
 
-            tcpMain->addSockPair(this, localAddr, IPvXAddress(), localPort, -1);
+            tcpMain->addSockPair(this, tmp_localAddr, IPvXAddress(), tmp_localPort, -1);
             break;
 
         default:

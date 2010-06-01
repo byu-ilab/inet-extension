@@ -341,6 +341,14 @@ class INET_API TCPSocket
     void renewSocket();
     //@}
 
+    /** @name String representation of the socket */
+    //@{
+    /// if full_address is true then will display the full address
+    /// otherwise it will only display relevant address information
+    /// the default is false
+    std::string toString(bool full_address=false);
+    //@}
+
     /** @name Handling of messages arriving from TCP */
     //@{
     /**
