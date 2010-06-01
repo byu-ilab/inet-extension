@@ -859,6 +859,7 @@ void TCPSocketAPI::cleanupSocket(int socket_id) {
 			delete rcb_itr->second;
 		}
 		_registered_callbacks.erase(rcb_itr);
+
 	}
 }
 

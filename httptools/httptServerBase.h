@@ -89,6 +89,7 @@ class INET_API httptServerBase : public httptNodeBase
 		long imgResourcesServed;
 		long textResourcesServed;
 		long badRequests;
+		long requestsReceived;
 
 		/** @name The random objects for content generation */
 		//@{

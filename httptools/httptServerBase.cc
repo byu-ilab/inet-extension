@@ -33,6 +33,7 @@
 
 void httptServerBase::initialize()
 {
+	requestsReceived=0;
 	ll = par("logLevel");
 
 	EV_DEBUG << "Initializing server component\n";
@@ -144,16 +145,21 @@ void httptServerBase::updateDisplay()
 {
 	if ( ev.isGUI() )
 	{
-		char buf[1024];
-		sprintf( buf, "%ld", htmlDocsServed + imgResourcesServed + textResourcesServed );
-		getParentModule()->getDisplayString().setTagArg("t",0,buf);
-
-		if ( activationTime<=simTime() )
-    	{
-			getParentModule()->getDisplayString().setTagArg("i2",0,"status/up");
-			getParentModule()->getDisplayString().setTagArg("i2",1,"green");
-		}
-		else
+//		char buf[1024];
+////		sprintf( buf, "%ld", htmlDocsServed + imgResourcesServed + textResourcesServed );
+//		sprintf( buf, "Req: %ld", requestsReceived );
+//		getParentModule()->getDisplayString().setTagArg("t",0,buf);
+//		if ( activationTime<=simTime() )
+//    	{
+//			getParentModule()->getDisplayString().setTagArg("i2",0,"status/up");
+//			getParentModule()->getDisplayString().setTagArg("i2",1,"green");
+//		}
+//		else
+//		{
+//			getParentModule()->getDisplayString().setTagArg("i2",0,"status/down");
+//			getParentModule()->getDisplayString().setTagArg("i2",1,"red");
+//		}
+		if ( activationTime>simTime() )
 		{
 			getParentModule()->getDisplayString().setTagArg("i2",0,"status/down");
 			getParentModule()->getDisplayString().setTagArg("i2",1,"red");
@@ -185,7 +191,6 @@ cMessage* httptServerBase::handleReceivedMessage( cMessage *msg )
 		error("Received message indended for '%s'", request->targetUrl()); // TODO: DEBUG HERE
 		return NULL;
 	}
-
 	httptReplyMessage* replymsg;
 
 	// Parse the request string on spaces
