@@ -217,6 +217,7 @@ void WebCache::socketDataArrived(int connId, void * yourPtr, cPacket * msg, bool
     // Should be a httptReplyMessage
     EV_DEBUG << "Socket data arrived on connection " << connId << ". Message=" << msg->getName() << ", kind=" << msg->getKind() << endl;
     requestsReceived++;
+    updateDisplay();
     if (serverHasResource(msg) == true) {
       // call the message handler to process the message.
       cMessage *reply = handleReceivedMessage(msg);
@@ -237,6 +238,7 @@ void WebCache::socketDataArrived(int connId, void * yourPtr, cPacket * msg, bool
   } else if (sockdata->sockType == CLIENT) {
     //handleDataMessage(msg);
     receiveResource(msg); // only one type of resource: move content.
+    updateDisplay();
 
     if ( --sockdata->pendingReplies==0 )
     {
@@ -449,8 +451,6 @@ void WebCache::receiveResource(cPacket * msg) {
 	  appmsg2->setTargetUrl(rm->originatorUrl());  // maybe not what httptserver does.
 	  appmsg2->setOriginatorUrl(par("www"));
 	  cli->send(appmsg2);
-	  //htmlDocsServed++;
-	  //updateDisplay();
   }
   delete msg;
 }
