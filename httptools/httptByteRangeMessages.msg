@@ -16,8 +16,9 @@
 cplusplus {{
 #include "httptMessages_m.h"
 }}
+
 message httptRequestMessage;
-message httptResponseMessage;
+message httptReplyMessage;
 
 // use of int gives index capacity up to 2GB
 
@@ -38,7 +39,7 @@ packet httptByteRangeRequestMessage extends httptRequestMessage
 // that include a Content-Range header, specified by
 // the first and last byte and the instance length
 // see section 14.16 of RFC 2616
-packet httptByteRangeResponseMessage extends httptResponseMessage
+packet httptByteRangeResponseMessage extends httptReplyMessage
 {
     @omitGetVerb(true);
     // a negative value here can be interpreted as an "*"

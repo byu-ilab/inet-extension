@@ -1,5 +1,5 @@
 //
-// Generated file, do not edit! Created by opp_msgc 4.0 from ./httptByteRangeMessages.msg.
+// Generated file, do not edit! Created by opp_msgc 4.0 from httptools/httptByteRangeMessages.msg.
 //
 
 // Disable warnings about unused variables, empty switch stmts, etc:
@@ -274,14 +274,14 @@ void *httptByteRangeRequestMessageDescriptor::getFieldStructPointer(void *object
 
 Register_Class(httptByteRangeResponseMessage);
 
-httptByteRangeResponseMessage::httptByteRangeResponseMessage(const char *name, int kind) : httptResponseMessage(name,kind)
+httptByteRangeResponseMessage::httptByteRangeResponseMessage(const char *name, int kind) : httptReplyMessage(name,kind)
 {
     this->firstBytePos_var = 0;
     this->lastBytePos_var = 0;
     this->instanceLength_var = 0;
 }
 
-httptByteRangeResponseMessage::httptByteRangeResponseMessage(const httptByteRangeResponseMessage& other) : httptResponseMessage()
+httptByteRangeResponseMessage::httptByteRangeResponseMessage(const httptByteRangeResponseMessage& other) : httptReplyMessage()
 {
     setName(other.getName());
     operator=(other);
@@ -294,7 +294,7 @@ httptByteRangeResponseMessage::~httptByteRangeResponseMessage()
 httptByteRangeResponseMessage& httptByteRangeResponseMessage::operator=(const httptByteRangeResponseMessage& other)
 {
     if (this==&other) return *this;
-    httptResponseMessage::operator=(other);
+    httptReplyMessage::operator=(other);
     this->firstBytePos_var = other.firstBytePos_var;
     this->lastBytePos_var = other.lastBytePos_var;
     this->instanceLength_var = other.instanceLength_var;
@@ -303,7 +303,7 @@ httptByteRangeResponseMessage& httptByteRangeResponseMessage::operator=(const ht
 
 void httptByteRangeResponseMessage::parsimPack(cCommBuffer *b)
 {
-    httptResponseMessage::parsimPack(b);
+    httptReplyMessage::parsimPack(b);
     doPacking(b,this->firstBytePos_var);
     doPacking(b,this->lastBytePos_var);
     doPacking(b,this->instanceLength_var);
@@ -311,7 +311,7 @@ void httptByteRangeResponseMessage::parsimPack(cCommBuffer *b)
 
 void httptByteRangeResponseMessage::parsimUnpack(cCommBuffer *b)
 {
-    httptResponseMessage::parsimUnpack(b);
+    httptReplyMessage::parsimUnpack(b);
     doUnpacking(b,this->firstBytePos_var);
     doUnpacking(b,this->lastBytePos_var);
     doUnpacking(b,this->instanceLength_var);
@@ -371,7 +371,7 @@ class httptByteRangeResponseMessageDescriptor : public cClassDescriptor
 
 Register_ClassDescriptor(httptByteRangeResponseMessageDescriptor);
 
-httptByteRangeResponseMessageDescriptor::httptByteRangeResponseMessageDescriptor() : cClassDescriptor("httptByteRangeResponseMessage", "httptResponseMessage")
+httptByteRangeResponseMessageDescriptor::httptByteRangeResponseMessageDescriptor() : cClassDescriptor("httptByteRangeResponseMessage", "httptReplyMessage")
 {
 }
 

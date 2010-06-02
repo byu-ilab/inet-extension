@@ -1,5 +1,5 @@
 //
-// Generated file, do not edit! Created by opp_msgc 4.0 from ./httptByteRangeMessages.msg.
+// Generated file, do not edit! Created by opp_msgc 4.0 from httptools/httptByteRangeMessages.msg.
 //
 
 #ifndef _HTTPTBYTERANGEMESSAGES_M_H_
@@ -21,7 +21,7 @@
 
 
 /**
- * Class generated from <tt>./httptByteRangeMessages.msg</tt> by opp_msgc.
+ * Class generated from <tt>httptools/httptByteRangeMessages.msg</tt> by opp_msgc.
  * <pre>
  * packet httptByteRangeRequestMessage extends httptRequestMessage
  * {
@@ -62,9 +62,9 @@ inline void doPacking(cCommBuffer *b, httptByteRangeRequestMessage& obj) {obj.pa
 inline void doUnpacking(cCommBuffer *b, httptByteRangeRequestMessage& obj) {obj.parsimUnpack(b);}
 
 /**
- * Class generated from <tt>./httptByteRangeMessages.msg</tt> by opp_msgc.
+ * Class generated from <tt>httptools/httptByteRangeMessages.msg</tt> by opp_msgc.
  * <pre>
- * packet httptByteRangeResponseMessage extends httptResponseMessage
+ * packet httptByteRangeResponseMessage extends httptReplyMessage
  * {
  *     @omitGetVerb(true);
  *     
@@ -75,7 +75,7 @@ inline void doUnpacking(cCommBuffer *b, httptByteRangeRequestMessage& obj) {obj.
  * }
  * </pre>
  */
-class httptByteRangeResponseMessage : public httptResponseMessage
+class httptByteRangeResponseMessage : public httptReplyMessage
 {
   protected:
     int firstBytePos_var;
