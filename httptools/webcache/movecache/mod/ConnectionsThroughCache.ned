@@ -19,7 +19,7 @@ import inet.networklayer.autorouting.FlatNetworkConfigurator;
 import inet.nodes.inet.Router;
 import inet.nodes.inet.StandardHost;
 import ned.DatarateChannel;
-import inet.httptools.*;
+import inet.httptools.base.*;
 import inet.httptools.webcache.movecache.mod.WebCache;
 
 network ConnectionsThroughCache

@@ -1,0 +1,268 @@
+//
+// This program is free software: you can redistribute it and/or modify
+// it under the terms of the GNU Lesser General Public License as published by
+// the Free Software Foundation, either version 3 of the License, or
+// (at your option) any later version.
+//
+// This program is distributed in the hope that it will be useful,
+// but WITHOUT ANY WARRANTY; without even the implied warranty of
+// MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+// GNU Lesser General Public License for more details.
+//
+// You should have received a copy of the GNU Lesser General Public License
+// along with this program.  If not, see http://www.gnu.org/licenses/.
+//
+
+#include "httptServerBase.h"
+
+void httptServerBase::initialize()
+{
+	badRequests = 0;
+	EV_DEBUG << "Initializing server base component\n";
+
+	wwwName = (const char*)par("www");
+	if ( wwwName.size() == 0 )
+	{
+		wwwName = "www.";
+		wwwName += getParentModule()->getFullName();
+		wwwName += ".com";
+	}
+	EV_DEBUG << "Initializing HTTP server. Using WWW name " << wwwName << endl;
+	port = par("port");
+		ASSERT(0 <= port && port < 65536);
+
+	httpProtocol = par("httpProtocol");
+		ASSERT(httpProtocol == 10 || httpProtocol == 11);
+
+	// logging parameters
+	ll = par("logLevel");
+	logFileName = (const char*)par("logFile");
+	enableLogging = logFileName!="";
+	outputFormat = lf_short;
+
+	/*// In the event that we want to use a random object instead of omnet's random functions
+	cXMLElement *rootelement = par("config").xmlValue();
+	if ( rootelement==NULL ) error("Configuration file is not defined");
+
+	// Initialize the distribution objects for random browsing
+ 	// @todo Skip initialization of random objects for scripted servers?
+	cXMLAttributeMap attributes;
+	cXMLElement *element;
+	rdObjectFactory rdFactory;
+
+	// Error message size
+	element = rootelement->getFirstChildWithTag("errorMessageSize");
+	if ( element==NULL ) error("Error message size parameter undefined in XML configuration");
+	attributes = element->getAttributes();
+	rdErrorMsgSize = rdFactory.create(attributes);
+	if ( rdErrorMsgSize==NULL) error("Error message size random object could not be created");
+	*/
+
+	/*// not currently supported
+	activationTime = par("activationTime");
+	EV_INFO << "Activation time is " << activationTime << endl;
+	*/
+
+    // Register the server with the controller object
+   	registerWithController();
+
+	updateDisplay();
+}
+
+void httptServerBase::finish()
+{
+	EV_SUMMARY << "Bad requests " << badRequests << "\n";
+    recordScalar("bad.requests", badRequests);
+}
+
+void httptServerBase::updateDisplay()
+{
+	if ( ev.isGUI() )
+	{
+//		char buf[1024];
+////		sprintf( buf, "%ld", htmlDocsServed + imgResourcesServed + textResourcesServed );
+//		sprintf( buf, "Req: %ld", requestsReceived );
+//		getParentModule()->getDisplayString().setTagArg("t",0,buf);
+//		if ( activationTime<=simTime() )
+//    	{
+//			getParentModule()->getDisplayString().setTagArg("i2",0,"status/up");
+//			getParentModule()->getDisplayString().setTagArg("i2",1,"green");
+//		}
+//		else
+//		{
+//			getParentModule()->getDisplayString().setTagArg("i2",0,"status/down");
+//			getParentModule()->getDisplayString().setTagArg("i2",1,"red");
+//		}
+//		if ( activationTime>simTime() )
+//		{
+//			getParentModule()->getDisplayString().setTagArg("i2",0,"status/down");
+//			getParentModule()->getDisplayString().setTagArg("i2",1,"red");
+//		}
+	}
+}
+
+void httptServerBase::registerWithController()
+{
+	// Find controller object and register
+	cModule * controller = simulation.getSystemModule()->getSubmodule(par("controller"));
+	if ( controller == NULL )
+		error("Controller module not found");
+	((httptController*)controller)->registerWWWserver(getParentModule()->getFullName(),wwwName.c_str(),port,INSERT_END); //,activationTime);
+}
+
+void httptServerBase::handleMessage(cMessage *msg)
+{
+	// Override in derived classes
+	updateDisplay();
+}
+
+httptReplyMessage * httptServerBase::handleReceivedMessage( cMessage *msg ) //, int reply_interface_num)
+{
+	httptRequestMessage *request = check_and_cast<httptRequestMessage *>(msg);
+
+	EV_DEBUG << "Handling received message " << msg->getName() << ". Target URL: " << request->targetUrl() << endl;
+
+	logRequest(request);
+
+	// @todo figure out what these do and/or implement them
+	//simtime_t processingDelay = 0;
+	//bool recipientError=false;
+
+	// This should never happen but lets check
+	if ( extractServerName(request->targetUrl()) != wwwName )
+	{
+		// TODO: KVJ left a "DEBUG HERE" notice
+		error("Received message intended for '%s'", request->targetUrl());
+	}
+
+	httptReplyMessage* replymsg;
+
+	// Verify that the header string has the correct number of parameters
+		// Parse the request string on spaces
+	cStringTokenizer tokenizer = cStringTokenizer(request->heading()," ");
+	std::vector<string> res = tokenizer.asVector();
+	if ( res.size() != 3 )
+	{
+		EV_ERROR << "Invalid request string: " << request->heading() << endl;
+		replymsg = generateErrorReply(request,400);
+		logResponse(replymsg);
+		return replymsg;
+	}
+
+	// Send a bad request response if requested
+	if ( request->badRequest() )
+	{
+		// Bad requests get a 404 reply.
+		EV_ERROR << "Bad request - bad flag set. Message: " << request->getName() << endl;
+		replymsg = generateErrorReply(request,404);
+	}
+	// handle the request method
+	else if ( res[0] == "GET" )
+	{
+		EV_DEBUG << "Handling GET request " << request->getName() << " resource: " << res[1] << endl;
+		replymsg = handleGetRequest(request,res[1]); // Pass in the resource string part
+	}
+	else
+	{
+		EV_ERROR << "Unsupported request type " << res[0] << " for " << request->heading() << endl;
+		replymsg = generateErrorReply(request,400);
+	}
+
+	if ( replymsg!=NULL )
+		logResponse(replymsg);
+
+	return replymsg;
+}
+
+httptReplyMessage * httptServerBase::handleGetRequest( httptRequestMessage *request, string resource )
+{
+	EV_ERROR << "Unknown or unsupported resource requested in " << request->heading() << endl;
+	return generateErrorReply(request,404);
+}
+
+httptReplyMessage* httptServerBase::generateErrorReply( httptRequestMessage *request, int code )
+{
+	httptReplyMessage * reply = new httptReplyMessage();
+	fillinReplyMessage(reply, request, "", code, par("errorReplySize"), rt_none);
+	badRequests++;
+	return reply;
+}
+
+void httptServerBase::fillinReplyMessage(httptReplyMessage * reply, httptRequestMessage * request,
+		string resource, int code, int size, int content_type)
+{
+	ASSERT(reply && request);
+	ASSERT(100 <= code && code <= 505);// TODO replace with constants or #define
+	ASSERT(0 <= size);
+
+	string header = "HTTP/1.";
+	switch(httpProtocol)
+	{
+	case 10: header + "0"; break;
+	case 11: header + "1"; break;
+	default:
+		error("fillinReplyMessage(): Unknown HTTP protocol");
+	}
+	header = header + " " + httpCodeAsString(code) + " " + httpPhraseFromCode(code);
+
+	reply->setHeading(header.c_str());
+
+	if (!resource.empty())
+	{
+		header = header + " " + resource; // to identify the resource in question
+	}
+	reply->setName(header.c_str());
+
+	reply->setOriginatorUrl(wwwName.c_str());
+	reply->setTargetUrl(request->originatorUrl());
+	reply->setProtocol(request->protocol());  // MIGRATE40: kvj
+	reply->setSerial(request->serial());
+	reply->setResult(code);
+	reply->setContentType(content_type);
+	reply->setByteLength(size);
+	reply->setKind(HTTPT_RESPONSE_MESSAGE);
+}
+
+/// @see RFC 2616, sections 10.2.7, 10.4.17, 14.16, 14.35.1
+httptReplyMessage * httptServerBase::generateByteRangeReply(
+		httptByteRangeRequestMessage * request, string resource, int resource_size, int content_type)
+{
+	ASSERT(request);
+	ASSERT(resource_size > 0);
+
+	int fbp = request->firstBytePos();
+	int lbp = request->lastBytePos();
+
+	// check for invalid syntax
+	if ( fbp < 0 || (lbp >= 0 && lbp < fbp) )
+	{
+		// ignore the error and just return the whole entity with a 200 OK
+		httptReplyMessage * reply = new httptReplyMessage();
+		fillinReplyMessage(reply, request, resource, 200, resource_size, content_type);//TODO replace 200 with constant or #define
+		return reply;
+	}
+
+	// check if is unsatisfiable
+	if ( resource_size < fbp )
+	{
+		// send a 416 error
+		httptByteRangeReplyMessage * reply = new httptByteRangeReplyMessage();
+		fillinReplyMessage(reply, request, resource, 416, par("errorReplySize"), content_type);// TODO replace 416 with constant or #define
+		reply->setFirstBytePos(-1);
+		reply->setInstanceLength(resource_size);
+		badRequests++;
+		return reply;
+	}
+
+	// else is satisfiable, send back a 206 response
+	httptByteRangeReplyMessage * reply = new httptByteRangeReplyMessage();
+	if ( resource_size < lbp )
+	{
+		lbp = resource_size - 1;
+	}
+	fillinReplyMessage(reply, request, resource, 206, lbp - fbp, content_type); // TODO replace 206 with constant or #define
+	reply->setFirstBytePos(fbp);
+	reply->setLastBytePos(lbp);
+	reply->setInstanceLength(resource_size);
+	return reply;
+}
