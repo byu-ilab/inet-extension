@@ -10,6 +10,7 @@
 #include <list>
 #include <map>
 #include <string>
+#include <iostream>
 using namespace std;
 
 typedef pair<int,string> Request;

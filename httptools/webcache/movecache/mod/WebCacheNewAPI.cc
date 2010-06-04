@@ -261,6 +261,8 @@ void WebCacheNewAPI::processDownstreamRequest(int socket_id, cPacket * msg, Conn
 		if (reply)
 		{
 			tcp_api->send(socket_id, reply);
+		} else {
+			opp_error("WebCacheNewAPI::processDownstreamRequest: handleReceivedMessage returns NULL");
 		}
 	} else {
 		misses++;
@@ -273,10 +275,12 @@ void WebCacheNewAPI::processDownstreamRequest(int socket_id, cPacket * msg, Conn
 			openUpstreamSocket(us_cinfo);
 		}
 	}
+	// ask client for anything else it might send:
+	tcp_api->recv(socket_id,data);
 	updateDisplay(); // draw.
 	delete request;
 	delete wr;
-	delete data;
+	//delete data;
 }
 /**
  * takes a URL from a request message.  for now, this must be a correctly formatted one.

@@ -6,7 +6,6 @@
  */
 
 #include "CacheRequestMgr.h"
-
 CacheRequestMgr::CacheRequestMgr() {
 }
 
@@ -25,7 +24,20 @@ list<int> CacheRequestMgr::clientsAskingForResource(string uri) {
 	return clients;
 }
 void CacheRequestMgr::removeRequestsForResource(string uri) {
+	// make list of requests to be "erased"
+	list<Request> gonners;
+	list<Request>::iterator it;
+	for (it = requests.begin();it != requests.end(); it++) {
+		if ((*it).second == uri) {
+			gonners.push_back(*it);
+			//cout<<"removed request from client "<<(*it).first<<endl;
+		}
+	}
+	// remove them from requests
 	requests.remove_if(uri_named(uri));
+
+	// erase those that were deleted.
+	gonners.erase(gonners.begin(),gonners.end());
 }
 bool CacheRequestMgr::addRequest(int socket_id,string uri) {
 	// first, search for an occurrence of the uri
