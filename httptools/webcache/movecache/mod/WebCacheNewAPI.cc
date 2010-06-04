@@ -92,6 +92,7 @@ void WebCacheNewAPI::handleMessage(cMessage * msg) {
     	//opp_error("WebCacheNewAPI::handleMessage(): received a non self message");
     }
 	httptServerBase::handleMessage(msg);
+	delete msg;
 }
 
 bool WebCacheNewAPI::hasCallback(TCPSocketAPI::CALLBACK_TYPE type){
@@ -198,6 +199,7 @@ void WebCacheNewAPI::makeUpstreamRequest(int socket_id, ConnInfo * data) {
 
 	tcp_api->send(socket_id,us_request);
 	tcp_api->recv(socket_id,ci);
+	delete ds_request;
 	delete data;
 }
 
