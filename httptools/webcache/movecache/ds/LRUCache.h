@@ -36,7 +36,7 @@ private:
 public:
 	LRUCache(int capacity);
 	virtual ~LRUCache();
-	int getRemainingCapacity();
+	virtual int getRemainingCapacity();
 protected:
 	/**
 	 * Indicates whether the cache holds a resource.
@@ -52,6 +52,8 @@ protected:
 	 * Clears the cache.
 	 */
 	virtual void empty();
+	virtual int getCapacity();
+	virtual void renew(Resource *);
 };
 
 #endif /* LRUCACHE_H_ */

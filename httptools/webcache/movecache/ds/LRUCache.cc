@@ -79,3 +79,13 @@ Resource * LRUCache::getOldestResource() {
 int LRUCache::getRemainingCapacity() {
 	return remaining;
 }
+int LRUCache::getCapacity() {
+	return capacity;
+}
+void LRUCache::renew(Resource * res) {
+	Resource * existing = has(res);
+	if (!existing) {
+		opp_error("LRUCache::renew: resource not already in cache.");
+	}
+	add(existing);
+}
