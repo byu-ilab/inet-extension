@@ -36,6 +36,10 @@ public:
 	 * Clears the cache.
 	 */
 	virtual void empty() = 0;
+
+	virtual int getCapacity() = 0;
+	virtual int getRemainingCapacity() = 0;
+	virtual void renew(Resource *) = 0;
 };
 
 #endif /* CACHE_H_ */

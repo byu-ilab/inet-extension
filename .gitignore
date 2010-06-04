@@ -1,8 +1,8 @@
 # ignore generated files
+Makefile
 *_m.h
 *_m.cc
 src/Makefile
-
 # ignore binary files
 out/
 *.so
@@ -24,3 +24,4 @@ backups
 *~
 xxx
 /3rdparty
+.gitignore

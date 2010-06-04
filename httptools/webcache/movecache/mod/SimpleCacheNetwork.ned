@@ -22,7 +22,7 @@ import ned.DatarateChannel;
 import inet.httptools.*;
 import inet.httptools.webcache.movecache.mod.WebCache;
 
-network ConnectionsThroughCache
+network SimpleCacheNetwork
 {
     parameters:
         //int numClients;
