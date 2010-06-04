@@ -83,7 +83,7 @@ void WebCacheNewAPI::handleMessage(cMessage * msg) {
 	if (msg->getKind() == START) {
 		int port = par("port");
 	    int fd = tcp_api->socket(this);
-	    tcp_api->bind(fd,par("www"),port);
+	    tcp_api->bind(fd,"",port);
 	    tcp_api->listen(fd);
 
 	    tcp_api->accept (fd);
@@ -198,6 +198,7 @@ void WebCacheNewAPI::makeUpstreamRequest(int socket_id, ConnInfo * data) {
 
 	tcp_api->send(socket_id,us_request);
 	tcp_api->recv(socket_id,ci);
+	delete data;
 }
 
 // Receive a response containing move data from an upstream cache or server.
@@ -215,7 +216,7 @@ void WebCacheNewAPI::processUpstreamResponse(int socket_id, cPacket * msg, ConnI
 	if (!isErrorMessage(reply)) {
 		// add resource to cache
 		Resource * wr = new WebResource(extractURLFromResponse(reply),reply->getByteLength());
-		if (wr->getSize() <= ((int)par("cacheSize"))) {
+		if (wr->getSize() <= resourceCache->getCapacity()) {
 		  resourceCache->add(wr);
 		}
 
@@ -230,8 +231,10 @@ void WebCacheNewAPI::processUpstreamResponse(int socket_id, cPacket * msg, ConnI
 		}
 		pendingRequests.removeRequestsForResource(wr->getID());
 	}
+	updateDisplay();
 	closeSocket(socket_id); // close the socket to upstream server.
 	delete reply;
+	delete data;
 }
 bool WebCacheNewAPI::isErrorMessage(httptReplyMessage *msg)
 {
@@ -266,13 +269,14 @@ void WebCacheNewAPI::processDownstreamRequest(int socket_id, cPacket * msg, Conn
 		if (isNew) {
 			ConnInfo * us_cinfo = new ConnInfo;
 			us_cinfo->sockType = CLIENT;
-			us_cinfo->ds_request = request;
+			us_cinfo->ds_request = request->dup();
 			openUpstreamSocket(us_cinfo);
 		}
 	}
 	updateDisplay(); // draw.
-	delete msg;
+	delete request;
 	delete wr;
+	delete data;
 }
 /**
  * takes a URL from a request message.  for now, this must be a correctly formatted one.
