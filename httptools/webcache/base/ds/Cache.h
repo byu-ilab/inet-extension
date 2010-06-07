@@ -24,7 +24,7 @@ public:
 	virtual ~Cache();
 	/**
 	 * Indicates whether the cache holds a resource.
-	 * Returns true if hit, false if miss.
+	 * Returns the resource if it exists, and NULL if it does not.
 	 */
 	virtual Resource * has(Resource *)=0;
 	/**

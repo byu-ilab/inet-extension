@@ -11,9 +11,24 @@
 #include <map>
 #include <string>
 #include <iostream>
+#include "httptMessages_m.h"
 using namespace std;
 
-typedef pair<int,string> Request;
+//typedef pair<int,string> RequestRecord;
+
+struct RequestRecord
+{
+	int interface_id;
+	string resource_id;
+	httptRequestMessage * request_msg_ptr;
+
+	RequestRecord(int interface, string resouce, httptRequestMessage * request)
+	{
+		interface_id = interface;
+		resource_id = resouce;
+		request_msg_ptr = request;
+	}
+};
 
 class uri_named
 {
@@ -21,19 +36,22 @@ private:
 	string uri;
 public:
 	uri_named(string uri): uri(uri){}
-  bool operator() (const Request & value) {return (value.second == uri);}
+  bool operator() (const RequestRecord & value) { return (value.resource_id == uri); }
+  //{return (value.second == uri);}
 };
 
 class CacheRequestMgr {
 private:
-	list<Request> requests;
+	list<RequestRecord> requests;
 
 public:
 	CacheRequestMgr();
 	virtual ~CacheRequestMgr();
 	list<int> clientsAskingForResource(string);
+	list<RequestRecord> getRequestsForResource(string);
 	void removeRequestsForResource(string);
-	bool addRequest(int,string);
+	void removeAndDeleteRequestsForResource(string);
+	bool addRequest(int,string, httptRequestMessage *);
 };
 
 #endif /* CACHEREQUESTMGR_H_ */

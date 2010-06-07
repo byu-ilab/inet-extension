@@ -220,7 +220,7 @@ void WebCache::socketDataArrived(int connId, void * yourPtr, cPacket * msg, bool
     updateDisplay();
     if (serverHasResource(msg) == true) {
       // call the message handler to process the message.
-      cMessage *reply = handleReceivedMessage(msg);
+      cMessage *reply = handleRequestMessage(msg);
       if ( reply!=NULL )
       {
         socket->send(reply); // Send to socket if the reply is non-zero.
@@ -510,7 +510,7 @@ void WebCache::updateDisplay() {
 		sprintf( buf, "Req: %ld\nHit: %.1f\%\nCap: %.1fKB\nFull: %.1f\%", requestsReceived,h,cacheSize/1000.0, full);
 		getParentModule()->getDisplayString().setTagArg("t",0,buf);
 	} else if (ev.isGUI() ){
-		httptServer::updateDisplay();
+		httptHTMLServer::updateDisplay();
 	}
 
 }

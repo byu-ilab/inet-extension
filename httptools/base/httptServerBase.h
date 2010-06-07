@@ -31,7 +31,8 @@
 class httptServerBase: public httptNodeBase
 {
 protected:
-	long badRequests;
+	unsigned long badRequests;
+	simtime_t activationTime;
 
 public:
 	/** Overridden from cSimpleModule */
@@ -60,13 +61,13 @@ protected:
 	 * @param msg -- the message pointer
 	 * @param reply_interface -- the interface to send replies on
 	 */
-	httptReplyMessage * handleReceivedMessage( cMessage *msg );//, int reply_interface_num );
+	httptReplyMessage * handleRequestMessage( cMessage *msg );//, int reply_interface_num );
 
 	/**
 	 * Handles HTTP GET requests.  By default it just deletes the message, thus acting
 	 * as a sink.
 	 */
-	virtual httptReplyMessage * handleGetRequest( httptRequestMessage *request, string resource);//, int reply_interface_num );
+	virtual httptReplyMessage * handleGetRequest( httptRequestMessage *request, string resource_url);//, int reply_interface_num );
 
 	// add other HTTP method handlers here if needed, and modify handleReceivedMessage to
 	// correctly redirect to that handler

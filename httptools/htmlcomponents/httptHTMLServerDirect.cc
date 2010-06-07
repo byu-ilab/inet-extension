@@ -67,7 +67,7 @@ void httptHTMLServerDirect::handleMessage(cMessage *msg)
 
 		EV_DEBUG << "Sender is " << senderModule->getFullName()
 				 << " in host " << senderModule->getParentModule()->getFullName() << endl;
-		cMessage* reply = handleReceivedMessage(msg);
+		cMessage* reply = handleRequestMessage(msg);
 		// Echo back to the requester
 		if ( reply!=NULL )
 			sendDirectToModule(senderModule,reply,0.0,rdReplyDelay);

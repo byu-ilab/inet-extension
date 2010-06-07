@@ -52,6 +52,7 @@ protected:
 	CacheRequestMgr pendingRequests;
 
 	// stats
+	unsigned long requestsReceived;
 	unsigned long numBroken;
 	unsigned long socketsOpened;
 	unsigned long serverSocketsBroken;
@@ -63,29 +64,32 @@ protected:
 
 	virtual void updateDisplay(); //> Update the display string if running in GUI mode
 
-	string extractURLFromRequest(httptRequestMessage * request);
-	string extractURLFromResponse(httptReplyMessage * response);
-
-	// cModule methods
+	// cSimpleModule methods
 	virtual void initialize();
 	virtual void finish();
 	virtual void handleMessage(cMessage *msg);
 
 	// TCPSocketAPI::CallbackInterface functions
-	virtual bool hasCallback(TCPSocketAPI::CALLBACK_TYPE type); // is this in CB interface?
+	//virtual bool hasCallback(TCPSocketAPI::CALLBACK_TYPE type); // is this in CB interface?
 	virtual void acceptCallback  (int socket_id, int ret_status, void * yourPtr); // this happens after each call  to accept.
 	virtual void connectCallback(int socket_id, int ret_status, void * myPtr); // this happens after each call to connect
 	virtual void recvCallback(int socket_id, int ret_status, cPacket * msg, void * myPtr); // this happens after each call to recv
 
 	// cache's methods
+		// overriden from httptServerBase_u
+	virtual httptReplyMessage * handleGetRequest(httptRequestMessage * msg, string resource_url);
+
 	virtual void makeUpstreamRequest(int socket_id, ConnInfo * data); // cache send req. to upper-level cache or server.
 	virtual void processUpstreamResponse(int socket_id, cPacket * msg, ConnInfo * data); // get response from upper-level server.
 	virtual void processDownstreamRequest(int socket_id, cPacket * msg, ConnInfo * data); // handle request from client (or cache)
 	virtual int openUpstreamSocket(ConnInfo *data);
 	virtual void handleTimeout(int socket_id);
 	virtual void closeSocket(int socket_id);
+	virtual void respondToClientRequest(int socket_id, httptRequestMessage * request, Resource * resouce);
 
 	bool isErrorMessage(httptReplyMessage *msg);
+	string extractURLFromRequest(httptRequestMessage * request);
+	string extractURLFromResponse(httptReplyMessage * response);
 
 };
 

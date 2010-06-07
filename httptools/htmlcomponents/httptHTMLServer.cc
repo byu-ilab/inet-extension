@@ -111,7 +111,7 @@ void httptHTMLServer::socketDataArrived(int connId, void *yourPtr, cPacket *msg,
 	EV_DEBUG << "Socket data arrived on connection " << connId << ". Message=" << msg->getName() << ", kind=" << msg->getKind() << endl;
 
 	// call the message handler to process the message.
-	cMessage *reply = handleReceivedMessage(msg);
+	cMessage *reply = handleRequestMessage(msg);
 	cPacket *pckt = check_and_cast<cPacket *>(msg);
 	if ( reply!=NULL )
 	{

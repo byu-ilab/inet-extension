@@ -40,6 +40,8 @@ void httptServerBase::initialize()
 	enableLogging = logFileName!="";
 	outputFormat = lf_short;
 
+	activationTime = par("activationTime");
+
 	/*// In the event that we want to use a random object instead of omnet's random functions
 	cXMLElement *rootelement = par("config").xmlValue();
 	if ( rootelement==NULL ) error("Configuration file is not defined");
@@ -79,20 +81,21 @@ void httptServerBase::updateDisplay()
 {
 	if ( ev.isGUI() )
 	{
-//		char buf[1024];
-////		sprintf( buf, "%ld", htmlDocsServed + imgResourcesServed + textResourcesServed );
+		char buf[1024];
+//		sprintf( buf, "%ld", htmlDocsServed + imgResourcesServed + textResourcesServed ); // TODO move this to httptHTMLServerBase
 //		sprintf( buf, "Req: %ld", requestsReceived );
-//		getParentModule()->getDisplayString().setTagArg("t",0,buf);
-//		if ( activationTime<=simTime() )
-//    	{
-//			getParentModule()->getDisplayString().setTagArg("i2",0,"status/up");
-//			getParentModule()->getDisplayString().setTagArg("i2",1,"green");
-//		}
-//		else
-//		{
-//			getParentModule()->getDisplayString().setTagArg("i2",0,"status/down");
-//			getParentModule()->getDisplayString().setTagArg("i2",1,"red");
-//		}
+		sprintf(buf, "Bad req: %ld", badRequests);
+		getParentModule()->getDisplayString().setTagArg("t",0,buf);
+		if ( activationTime<=simTime() )
+    	{
+			getParentModule()->getDisplayString().setTagArg("i2",0,"status/up");
+			getParentModule()->getDisplayString().setTagArg("i2",1,"green");
+		}
+		else
+		{
+			getParentModule()->getDisplayString().setTagArg("i2",0,"status/down");
+			getParentModule()->getDisplayString().setTagArg("i2",1,"red");
+		}
 //		if ( activationTime>simTime() )
 //		{
 //			getParentModule()->getDisplayString().setTagArg("i2",0,"status/down");
@@ -107,7 +110,7 @@ void httptServerBase::registerWithController()
 	cModule * controller = simulation.getSystemModule()->getSubmodule(par("controller"));
 	if ( controller == NULL )
 		error("Controller module not found");
-	((httptController*)controller)->registerWWWserver(getParentModule()->getFullName(),wwwName.c_str(),port,INSERT_END); //,activationTime);
+	((httptController*)controller)->registerWWWserver(getParentModule()->getFullName(),wwwName.c_str(),port,INSERT_END,activationTime);
 }
 
 void httptServerBase::handleMessage(cMessage *msg)
@@ -116,7 +119,7 @@ void httptServerBase::handleMessage(cMessage *msg)
 	updateDisplay();
 }
 
-httptReplyMessage * httptServerBase::handleReceivedMessage( cMessage *msg ) //, int reply_interface_num)
+httptReplyMessage * httptServerBase::handleRequestMessage( cMessage *msg ) //, int reply_interface_num)
 {
 	httptRequestMessage *request = check_and_cast<httptRequestMessage *>(msg);
 
@@ -174,7 +177,7 @@ httptReplyMessage * httptServerBase::handleReceivedMessage( cMessage *msg ) //, 
 	return replymsg;
 }
 
-httptReplyMessage * httptServerBase::handleGetRequest( httptRequestMessage *request, string resource )
+httptReplyMessage * httptServerBase::handleGetRequest( httptRequestMessage *request, string resource_url )
 {
 	EV_ERROR << "Unknown or unsupported resource requested in " << request->heading() << endl;
 	return generateErrorReply(request,404);

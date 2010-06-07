@@ -24,11 +24,22 @@ package inet.httptools.base;
 moduleinterface httptServerBaseInterface
 {
     parameters:
+        // the domain name for this server
         string www;
+        // the port this server is listening on
         int port;
+        // the httptController to be used by this server
         string controller;
+        // the HTTP protocol to use: 10 for 1.0 and 11 for 1.1
         int httpProtocol;
+        // the size of a reply message indicating an error
         volatile int errorReplySize;
+        // the level of logging to be used: 2: Debug, 1: Info; 0: Errors and warnings only
         int logLevel;
+        // the file to log events in
         string logFile;
+        // the time it takes for the server to be activated
+        double activationTime @unit(s);
 } 
+
+
