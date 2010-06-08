@@ -110,6 +110,7 @@ void httptServerBase::registerWithController()
 	cModule * controller = simulation.getSystemModule()->getSubmodule(par("controller"));
 	if ( controller == NULL )
 		error("Controller module not found");
+	EV_DEBUG << "registerWithController: parent module's full name: "<<getParentModule()->getFullName()<<endl;
 	((httptController*)controller)->registerWWWserver(getParentModule()->getFullName(),wwwName.c_str(),port,INSERT_END,activationTime);
 }
 
@@ -201,8 +202,8 @@ void httptServerBase::fillinReplyMessage(httptReplyMessage * reply, httptRequest
 	string header = "HTTP/1.";
 	switch(httpProtocol)
 	{
-	case 10: header + "0"; break;
-	case 11: header + "1"; break;
+	case 10: header = header + "0"; break;
+	case 11: header = header + "1"; break;
 	default:
 		error("fillinReplyMessage(): Unknown HTTP protocol");
 	}
@@ -212,7 +213,7 @@ void httptServerBase::fillinReplyMessage(httptReplyMessage * reply, httptRequest
 
 	if (!resource.empty())
 	{
-		header = header + " " + resource; // to identify the resource in question
+		header = header + " (" + resource + ")"; // to identify the resource in question
 	}
 	reply->setName(header.c_str());
 

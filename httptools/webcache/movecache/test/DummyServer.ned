@@ -13,33 +13,31 @@
 // along with this program.  If not, see http://www.gnu.org/licenses/.
 // 
 
-package inet.httptools.base;
+package inet.httptools.webcache.movecache.test;
 
-// It is anticipated that a module implementing this interface,
-// and therefore the httptServerBase, will also extend some sort
-// of TCP application interface so as to plug into a StandardHost's
-// tcp applications array.
+import inet.applications.tcpapp.socketapi.TCPSocketAPIApp;
+import inet.httptools.base.httptServerBaseInterface;
 
-// defines the parameters which the httptServerBase requires
-moduleinterface httptServerBaseInterface
+simple DummyServer like TCPSocketAPIApp, httptServerBaseInterface
 {
     parameters:
+        string socketapi;
+        int fileSize @unit(KB) = default(1KB);
+        
         // the domain name for this server
-        string www;
+        string www = default("server.omnet.net");
         // the port this server is listening on
-        int port;
+        int port = default(1000);
         // the httptController to be used by this server
-        string controller;
+        string controller = default("controller");
         // the HTTP protocol to use: 10 for 1.0 and 11 for 1.1
-        int httpProtocol;
+        int httpProtocol = default(11);
         // the size of a reply message indicating an error
-        volatile int errorReplySize @unit(B);
+        volatile int errorReplySize = default(200);
         // the level of logging to be used: 2: Debug, 1: Info; 0: Errors and warnings only
-        int logLevel;
+        int logLevel = default(0);
         // the file to log events in
-        string logFile;
+        string logFile = default("");
         // the time it takes for the server to be activated
-        double activationTime @unit(s);
-} 
-
-
+        double activationTime @unit(s) = default(0s);
+}

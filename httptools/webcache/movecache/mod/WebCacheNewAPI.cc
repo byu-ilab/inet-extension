@@ -14,6 +14,7 @@
 //
 
 #include "WebCacheNewAPI.h"
+#include "TCPSocketAPIAppUtils.h"
 
 Define_Module(WebCacheNewAPI);
 
@@ -30,8 +31,10 @@ WebCacheNewAPI::~WebCacheNewAPI() {
 void WebCacheNewAPI::initialize() {
 	httptServerBase::initialize();
 
-    /*controller = dynamic_cast<httptController*>(getParentModule()->getParentModule()->getSubmodule("controller")); // not sure if this is it
-	if (controller == NULL) {
+	controller = check_and_cast<httptController *>(simulation.getSystemModule()->getSubmodule(par("controller")));
+
+    //controller = dynamic_cast<httptController*>(getParentModule()->getParentModule()->getSubmodule("controller")); // not sure if this is it
+	/*if (controller == NULL) {
 		error("Controller module not found");
 	}
 	*/
@@ -51,11 +54,11 @@ void WebCacheNewAPI::initialize() {
 	WATCH(socketsOpened);
 
 	// get socket api
-	std::string api_obj_name = par("socketapi").stringValue();
-	if (api_obj_name.empty()) {
-		throw cRuntimeError(this, "initialize(): no tcp socket api specified!");
-	}
-	tcp_api = check_and_cast<TCPSocketAPI *>(getParentModule()->getSubmodule(api_obj_name.c_str()));
+//	std::string api_obj_name = par("socketapi").stringValue();
+//	if (api_obj_name.empty()) {
+//		throw cRuntimeError(this, "initialize(): no tcp socket api specified!");
+//	}
+	tcp_api = findTCPSocketAPI(this); //check_and_cast<TCPSocketAPI *>(getParentModule()->getSubmodule(api_obj_name.c_str()));
     cMessage * start = new cMessage("START",START);
     scheduleAt(simTime()+activationTime,start);
 }
@@ -119,7 +122,7 @@ bool WebCacheNewAPI::hasCallback(TCPSocketAPI::CALLBACK_TYPE type){
 /// On error: ret_status will be TCPSocketAPI::CB_E_UNKNOWN from the
 /// 	TCPSocketAPI::CALLBACK_ERROR enumeration
 void WebCacheNewAPI::acceptCallback(int socket_id, int ret_status, void * yourPtr) {
-
+	Enter_Method_Silent();
 	// signal next accept
 	tcp_api->accept(socket_id);
 
@@ -140,7 +143,7 @@ void WebCacheNewAPI::acceptCallback(int socket_id, int ret_status, void * yourPt
 // @param ret_status -- the status of the previously invoked connect method
 // @param yourPtr -- the pointer to the data passed to the connect method
 void WebCacheNewAPI::connectCallback(int socket_id, int ret_status, void * myPtr){
-
+	Enter_Method_Silent();
 	// check that socket_id is valid socket, i.e. in the set?
 	ConnInfo * data = static_cast<ConnInfo *>(myPtr);
 	if (!data) {
@@ -158,7 +161,7 @@ void WebCacheNewAPI::connectCallback(int socket_id, int ret_status, void * myPtr
 // @param yourPtr -- the pointer to the data passed to the accept method
 void WebCacheNewAPI::recvCallback(int socket_id, int ret_status,
 	cPacket * msg, void * myPtr){
-
+	Enter_Method_Silent();
 	// recv is called on downstream connections to receive requests,
 	// and it is called on upstream connections to receive the replies for requests.
 
@@ -420,7 +423,9 @@ int WebCacheNewAPI::openUpstreamSocket(ConnInfo * data) {
 	// find module for server.
 	int connect_port;
 	char szModuleName[127];
+
 	controller->getServerInfo(upstream_cache.c_str(),szModuleName,connect_port);
+	EV << "detain it right here\n";
 	tcp_api->connect(fd , szModuleName, connect_port, (void *) data);
 	return fd;
 }

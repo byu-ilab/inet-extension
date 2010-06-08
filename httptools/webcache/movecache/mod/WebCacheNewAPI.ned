@@ -33,6 +33,8 @@ simple WebCacheNewAPI like TCPSocketAPIApp, httptServerBaseInterface
         string controller = default("controller");
         	// the protocl to be used
         int httpProtocol=default(11);					// The http protocol: 10 for http/1.0, 11 for http/1.1. Not used at the present time.
+        	// the size of a reply message indicating an error
+        volatile int errorReplySize @unit(B) = default(200B);
         	// the level of logging to be used
         int logLevel = default(0);						// The log level: 2: Debug, 1: Info; 0: Errors and warnings only
         	// the file to write the log to

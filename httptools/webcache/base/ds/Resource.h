@@ -19,9 +19,9 @@
 using namespace std;
 class Resource {
 public:
-	Resource();
-	Resource(const Resource &);
-	virtual ~Resource();
+//	Resource();
+//	Resource(const Resource &);
+//	virtual ~Resource();
 	virtual string getID()=0;
 	virtual int getSize()=0;
 };

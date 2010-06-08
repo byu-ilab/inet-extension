@@ -3,27 +3,35 @@
 // it under the terms of the GNU Lesser General Public License as published by
 // the Free Software Foundation, either version 3 of the License, or
 // (at your option) any later version.
-// 
+//
 // This program is distributed in the hope that it will be useful,
 // but WITHOUT ANY WARRANTY; without even the implied warranty of
 // MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
 // GNU Lesser General Public License for more details.
-// 
+//
 // You should have received a copy of the GNU Lesser General Public License
 // along with this program.  If not, see http://www.gnu.org/licenses/.
-// 
+//
 
-package inet.applications.tcpapp.socketapi;
+#ifndef __DUMMYSERVER_H__
+#define __DUMMYSERVER_H__
 
-//import inet.applications.tcpapp.TCPApp;
+#include <omnetpp.h>
+#include "httptServerBase.h"
+#include "TCPSocketAPI.h"
+#include "TCPSocketAPIAppUtils.h"
 
-// See TCPSocketAPIAppUtils for a function that will take in a
-// cSimpleModule pointer, verify that the parameter "socketapi"
-// is specified, and find the referenced TCPSocketAPI module
-// in its parent's module.
-
-moduleinterface TCPSocketAPIApp
+class DummyServer : public httptServerBase, TCPSocketAPI::CallbackInterface
 {
-    parameters:
-        string socketapi;
-}
+protected:
+	TCPSocketAPI * _socketapi;
+	int _listening_fd;
+protected:
+    virtual void initialize();
+    virtual void handleMessage(cMessage *msg);
+
+    virtual void acceptCallback(int socket_id, int ret_status, void * myPtr);
+    virtual void recvCallback(int socket_id, int ret_status, cPacket * msg, void * myPtr);
+};
+
+#endif
