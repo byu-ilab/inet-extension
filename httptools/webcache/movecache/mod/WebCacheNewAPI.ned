@@ -45,7 +45,7 @@ simple WebCacheNewAPI like TCPSocketAPIApp, httptServerBaseInterface
         // attributes specific to the WebCacheNewAPI
         	// cache capacity
         	// TODO make it TB, need to change LRU to use long
-        int cacheSize = default(10000);// @unit(TB) = default(10TB);  // capacity of cache in terabytes
+        int cacheSize @unit(KB)= default(10KB);// @unit(TB) = default(10TB);  // capacity of cache in terabytes
         	// domain name of upstream server/cache
         string serverwww = default(""); // domain name of upstream server/cache.
         	// time an upstream connection should wait without any activity

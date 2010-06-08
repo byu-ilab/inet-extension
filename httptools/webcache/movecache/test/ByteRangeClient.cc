@@ -25,7 +25,7 @@ void ByteRangeClient::initialize()
 		wwwName += getParentModule()->getFullName();
 		wwwName += ".omnet.net";
 	}
-	EV_DEBUG << "Initializing HTTP server. Using WWW name " << wwwName << endl;
+	BR_INFO << "Initializing HTTP server. Using WWW name " << wwwName << endl;
 	port = par("port");
 		ASSERT(0 <= port && port < 65536);
 
@@ -42,6 +42,10 @@ void ByteRangeClient::initialize()
 	_socketapi = findTCPSocketAPI(this);
 
 	_controller = check_and_cast<httptController *>(simulation.getSystemModule()->getSubmodule(par("controller")));
+
+	_num_requests_to_make = par("numRequests");
+	_num_requests_made = 0;
+	_request_round = 0;
 
 	_file_size = par("requestFileSize");
 	_file_size *= 1024;
@@ -62,7 +66,7 @@ void ByteRangeClient::handleMessage(cMessage *msg)
 		// create one socket for each range to be requested
 		for (int i = 0; i < _num_ranges; i++)
 		{
-			createSocket(i);
+			createSocket(_num_requests_made, i);
 		}
 	}
 	delete msg;
@@ -70,51 +74,71 @@ void ByteRangeClient::handleMessage(cMessage *msg)
 
 void ByteRangeClient::connectCallback(int socket_id, int ret_status, void * myPtr)
 {
-	int * rid_ptr = static_cast<int *>(myPtr);
-	if (!rid_ptr)
+	RangeRequestInfo * rri_ptr = static_cast<RangeRequestInfo *>(myPtr);
+	if (!rri_ptr)
 	{
 		throw cRuntimeError(this, "NULL value for connect callback");
 	}
 
-	int range_id = *rid_ptr;
+//	int * rid_ptr = static_cast<int *>(myPtr);
+//	if (!rid_ptr)
+//	{
+//		throw cRuntimeError(this, "NULL value for connect callback");
+//	}
+//
+//	int range_id = *rid_ptr;
 
 	if (TCPSocketAPI::isCallbackError(ret_status))
 	{
-		EV_DEBUG << "Error connecting to request byte range "<<range_id<<endl;
+		BR_INFO << "Error connecting on request "<<rri_ptr->request_id<<
+			" to request byte range "<<rri_ptr->range_id<<endl;
+		delete rri_ptr;
 		_socketapi->close(socket_id);
 		//createSocket(range_id);
 		return;
 	}
 
-	httptByteRangeRequestMessage * request = NULL;
-
-	if (range_id == _num_ranges -1)
-	{
-		request = generateBRRequest("somefile", range_id * _range_size, -1);
-	}
-	else
-	{
-		request = generateBRRequest("somefile", range_id * _range_size, (range_id+1)*_range_size - 1);
-	}
-
-	_socketapi->send(socket_id, request);
+	sendBRRequest(socket_id, rri_ptr->request_id, rri_ptr->range_id);
+//
+//	int range_id = rri_ptr->range_id;//*rid_ptr;
+//
+//	httptByteRangeRequestMessage * request = NULL;
+//
+//	if (range_id == _num_ranges -1)
+//	{
+//		request = generateBRRequest("somefile", range_id * _range_size, -1);
+//	}
+//	else
+//	{
+//		request = generateBRRequest("somefile", range_id * _range_size, (range_id+1)*_range_size - 1);
+//	}
+//
+//	_socketapi->send(socket_id, request);
 	_socketapi->recv(socket_id, myPtr);
 }
 
 void ByteRangeClient::recvCallback(int socket_id, int ret_status, cPacket * msg, void * myPtr)
 {
-	int * rid_ptr = static_cast<int *>(myPtr);
-	if (!rid_ptr)
+	RangeRequestInfo * rri_ptr = static_cast<RangeRequestInfo *>(myPtr);
+	if (!rri_ptr)
 	{
-		throw cRuntimeError(this, "NULL value for recv callback");
+		throw cRuntimeError(this, "NULL value for connect callback");
 	}
 
-	int range_id = *rid_ptr;
+
+//	int * rid_ptr = static_cast<int *>(myPtr);
+//	if (!rid_ptr)
+//	{
+//		throw cRuntimeError(this, "NULL value for recv callback");
+//	}
+//
+//	int range_id = *rid_ptr;
 
 	if (TCPSocketAPI::isCallbackError(ret_status))
 	{
-		EV_DEBUG << "Error receiving byte range "<<range_id<<endl;
-		delete rid_ptr;
+		BR_INFO << "Error receiving on request "<<rri_ptr->request_id<<
+					" to request byte range "<<rri_ptr->range_id<<endl;
+		delete rri_ptr;//id_ptr;
 		_socketapi->close(socket_id);
 		return;
 	}
@@ -122,56 +146,84 @@ void ByteRangeClient::recvCallback(int socket_id, int ret_status, cPacket * msg,
 	httptByteRangeReplyMessage * br_reply = dynamic_cast<httptByteRangeReplyMessage *>(msg);
 	if (!br_reply)
 	{
-		throw cRuntimeError(this, "received message for byte range %d is not a byte range reply message.", range_id);
+		delete rri_ptr;//id_ptr;
+		throw cRuntimeError(this, "received message on request %d for byte range %d is not a byte range reply message.",
+				rri_ptr->request_id, rri_ptr->range_id);
 	}
 
 	if (br_reply->result() != 206)
 	{
-		EV_DEBUG << "result code: "<<br_reply->result()<<"\nexpected: 206\n";
+		BR_INFO << "result code: "<<br_reply->result()<<"\nexpected: 206\n";
 	}
+
+	int range_id = rri_ptr->range_id;
 
 	if (br_reply->firstBytePos() != range_id * _range_size)
 	{
-		EV_DEBUG << "first byte of returned message is: "<<br_reply->firstBytePos()<<
+		BR_INFO << "first byte of returned message is: "<<br_reply->firstBytePos()<<
 			"\nexpected: "<<range_id*_range_size<<endl;
 	}
 
 	if (range_id == _num_ranges - 1)
 	{
-		if (br_reply->lastBytePos() != (range_id+1) * _range_size -1 )
+		if (br_reply->lastBytePos() != _file_size -1 )
 		{
-			EV_DEBUG << "last byte of returned message is: "<<br_reply->lastBytePos()<<
-						"\nexpected: "<<(range_id+1)*_range_size-1<<endl;
+			BR_INFO << "last byte of returned message is: "<<br_reply->lastBytePos()<<
+				"\nexpected: "<<_file_size-1<<endl;
 		}
 	}
-	else if (br_reply->lastBytePos() != _file_size -1 )
+	else if (br_reply->lastBytePos() !=  (range_id+1) * _range_size - 1 )
 	{
-		EV_DEBUG << "last byte of returned message is: "<<br_reply->lastBytePos()<<
-								"\nexpected: "<<_file_size-1<<endl;
+		BR_INFO << "last byte of returned message is: "<<br_reply->lastBytePos()<<
+			"\nexpected: "<<(range_id+1)*_range_size-1<<endl;
+
 	}
 
 	if (br_reply->instanceLength() != _file_size)
 	{
-		EV_DEBUG << "instance length is: "<<br_reply->instanceLength()<<
+		BR_INFO << "instance length is: "<<br_reply->instanceLength()<<
 			"\nexpected: "<<_file_size<<endl;
 	}
 
-	delete rid_ptr;
-	_socketapi->close(socket_id);
+	delete br_reply;
+
+	if (rri_ptr->request_id < _num_requests_to_make -1)
+	{
+		sendBRRequest(socket_id, rri_ptr->request_id+1, rri_ptr->range_id);
+		rri_ptr->request_id = rri_ptr->request_id+1;
+		_socketapi->recv(socket_id, (void *) rri_ptr);
+	}
+	else if (_request_round == 0)
+	{
+		sendBRRequest(socket_id, 0, rri_ptr->range_id);
+		rri_ptr->request_id = 0;
+		_socketapi->recv(socket_id, (void *) rri_ptr);
+
+		if (_num_requests_made - (_num_requests_to_make*_num_ranges) == _num_ranges)
+		{
+			_request_round++;
+		}
+	}
+	else
+	{
+		delete rri_ptr;//id_ptr;
+		_socketapi->close(socket_id);
+	}
 }
 
-int ByteRangeClient::createSocket(int range_id)
+int ByteRangeClient::createSocket(int request_id, int range_id)
 {
-	int * rid = new int(range_id);
+	RangeRequestInfo * rri = new RangeRequestInfo(request_id, range_id);
+
 	//char * serverhostname = new char[512];
 	char serverhostname[512];
 	int serverport = 0;
 	_controller->getServerInfo(par("serverwww").stringValue(), serverhostname, serverport);
 
 	//std::string servername = _controller->getServerModule(par("serverwww"))->getName();
-	EV_DEBUG << "extracted server name: "<<serverhostname<<endl;
+	BR_INFO << "extracted server name: "<<serverhostname<<endl;
 	return _socketapi->makeActiveSocket(this, "", -1,
-			serverhostname, serverport /*par("serverport")*/, (void *) rid);
+			serverhostname, serverport /*par("serverport")*/, (void *) rri);
 }
 
 httptByteRangeRequestMessage * ByteRangeClient::generateBRRequest(const std::string & uri, int fbp, int lbp)
@@ -181,7 +233,7 @@ httptByteRangeRequestMessage * ByteRangeClient::generateBRRequest(const std::str
 	{
 	case 10: header = header + "0"; break;
 	case 11: header = header + "1"; break;
-	defualt:
+	default:
 		error("Unknown HTTP protocol");
 	}
 
@@ -197,6 +249,27 @@ httptByteRangeRequestMessage * ByteRangeClient::generateBRRequest(const std::str
 	request->setLastBytePos(lbp);
 
 	return request;
+}
+
+void ByteRangeClient::sendBRRequest(int socket_id, int request_id, int range_id)
+{
+	httptByteRangeRequestMessage * request = NULL;
+
+	std::stringstream filename;
+	filename << "somefile" << request_id;
+
+	if (range_id == _num_ranges - 1)
+	{
+		request = generateBRRequest(filename.str(), range_id * _range_size, -1);
+	}
+	else
+	{
+		request = generateBRRequest(filename.str(), range_id * _range_size, (range_id+1)*_range_size - 1);
+	}
+
+	_num_requests_made++;
+	BR_INFO << "sending request "<<_num_requests_made<<endl;
+	_socketapi->send(socket_id, request);
 }
 
 

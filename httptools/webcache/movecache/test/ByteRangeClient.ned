@@ -24,6 +24,7 @@ simple ByteRangeClient like TCPSocketAPIApp
         string controller = default("controller");
         string serverwww = default("server.omnet.net");
         //int serverport = default(1000);
+        int numRequests = default(1);
         int numRanges = default(3);
         int requestFileSize @unit(KB) = default(1KB);
         

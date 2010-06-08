@@ -59,7 +59,7 @@ void CacheRequestMgr::removeAndDeleteRequestsForResource(string uri)
 			{
 				delete (*it).request_msg_ptr;
 			}
-			requests.erase(it);
+			it = requests.erase(it);
 		}
 	}
 }

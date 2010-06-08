@@ -41,7 +41,9 @@ void WebCacheNewAPI::initialize() {
 	upstream_cache = par("serverwww").stringValue();
 	request_timeout = par("request_timeout");
 
-	resourceCache = new LRUCache(par("cacheSize"));
+	int cache_size = par("cacheSize");
+	cache_size *= 1024;
+	resourceCache = new LRUCache(cache_size);
 	updateDisplay();
 	requestsReceived = 0;
 	serverSocketsBroken=0;
@@ -53,12 +55,7 @@ void WebCacheNewAPI::initialize() {
 	WATCH(numBroken);
 	WATCH(socketsOpened);
 
-	// get socket api
-//	std::string api_obj_name = par("socketapi").stringValue();
-//	if (api_obj_name.empty()) {
-//		throw cRuntimeError(this, "initialize(): no tcp socket api specified!");
-//	}
-	tcp_api = findTCPSocketAPI(this); //check_and_cast<TCPSocketAPI *>(getParentModule()->getSubmodule(api_obj_name.c_str()));
+	tcp_api = findTCPSocketAPI(this);
     cMessage * start = new cMessage("START",START);
     scheduleAt(simTime()+activationTime,start);
 }
@@ -96,20 +93,12 @@ void WebCacheNewAPI::handleMessage(cMessage * msg) {
 
 	    tcp_api->accept (fd);
 	}
-	if (msg->isSelfMessage()){
-    	//opp_error("WebCacheNewAPI::handleMessage(): received a non self message");
-    }
-	httptServerBase::handleMessage(msg);
+//	if (msg->isSelfMessage()){
+//    	//opp_error("WebCacheNewAPI::handleMessage(): received a non self message");
+//    }
+	httptServerBase::handleMessage(msg); // update the display
 	delete msg;
 }
-
-/*
-bool WebCacheNewAPI::hasCallback(TCPSocketAPI::CALLBACK_TYPE type){
-	return (type == TCPSocketAPI::CB_T_CONNECT ||
-			type == TCPSocketAPI::CB_T_RECV ||
-			type == TCPSocketAPI::CB_T_ACCEPT);
-}
-*/
 
 /// Handles the acceptance of a new socket.
 /// @param socket_id -- the descriptor for the listening socket
@@ -173,66 +162,68 @@ void WebCacheNewAPI::recvCallback(int socket_id, int ret_status,
 		return;
 	}
 
-	bool actAsClient = data->sockType == CLIENT;
+	if (TCPSocketAPI::isCallbackError(ret_status))
+	{
+		// msg is NULL so don't call delete
+		closeSocket(socket_id);
+		return;
+	}
 
-//	if (TCPSocketAPI::isCallbackError(ret_status))
-//	{
+	if (data->sockType == CLIENT)
+	{
+		processUpstreamResponse(socket_id, msg, data);
+		return;
+	}
+
+	// handleReceivedMessage will return an error reply if there is a problem with the
+	// message, otherwise control will get passed to handleGetRequest which will return
+	// NULL
+	httptReplyMessage * errorReply = handleRequestMessage(msg);
+	if (errorReply)
+	{
+		delete msg;
+		tcp_api->send(socket_id, errorReply);
+	}
+	else
+	{
+		processDownstreamRequest(socket_id, msg, data);
+	}
+
+	// Use the switch if different actions should be taken for a given error
+//	bool actAsClient = data->sockType == CLIENT;
+//	switch(ret_status) {
+//	case TCPSocketAPI::CB_E_TIMEOUT:
+//		handleTimeout(socket_id);
+//		break;
+//	case TCPSocketAPI::CB_E_UNKNOWN:
+//		// do nothing special
+//		break;
+//	case TCPSocketAPI::CB_E_REFUSED:
+//	case TCPSocketAPI::CB_E_RESET:
+//	case TCPSocketAPI::CB_E_CLOSED:
 //		closeSocket(socket_id);
-//		return;
-//	}
-//
-//
-//	if (actAsClient)
-//	{
-//		processUpstreamResponse(socket_id, msg, data);
-//	}
-//	else
-//	{
-//		// handleReceivedMessage will return an error reply if there is a problem with the
-//		// message, otherwise control will get passed to handleGetRequest which will return
-//		// NULL
-//		httptReplyMessage * errorReply = handleRequestMessage(msg);
-//		if (errorReply)
-//		{
-//			tcp_api->send(socket_id, errorReply);
-//		}
+//		break;
+//	default: // positive # of bytes received
+//		if (actAsClient)
+//			processUpstreamResponse(socket_id, msg, data);
 //		else
 //		{
-//			processDownstreamRequest(socket_id, msg, data);
+//			// handleReceivedMessage will return an error reply if there is a problem with the
+//			// message, otherwise control will get passed to handleGetRequest which will return
+//			// NULL
+//			httptReplyMessage * errorReply = handleRequestMessage(msg);
+//			if (errorReply)
+//			{
+//				delete msg;
+//				tcp_api->send(socket_id, errorReply);
+//			}
+//			else
+//			{
+//				processDownstreamRequest(socket_id, msg, data);
+//			}
 //		}
+//		break;
 //	}
-	switch(ret_status) {
-	case TCPSocketAPI::CB_E_TIMEOUT:
-		handleTimeout(socket_id);
-		break;
-	case TCPSocketAPI::CB_E_UNKNOWN:
-		// do nothing special
-		break;
-	case TCPSocketAPI::CB_E_REFUSED:
-	case TCPSocketAPI::CB_E_RESET:
-	case TCPSocketAPI::CB_E_CLOSED:
-		closeSocket(socket_id);
-		break;
-	default: // positive # of bytes received
-		if (actAsClient)
-			processUpstreamResponse(socket_id, msg, data);
-		else
-		{
-			// handleReceivedMessage will return an error reply if there is a problem with the
-			// message, otherwise control will get passed to handleGetRequest which will return
-			// NULL
-			httptReplyMessage * errorReply = handleRequestMessage(msg);
-			if (errorReply)
-			{
-				tcp_api->send(socket_id, errorReply);
-			}
-			else
-			{
-				processDownstreamRequest(socket_id, msg, data);
-			}
-		}
-		break;
-	}
 }
 
 /**
@@ -288,14 +279,6 @@ void WebCacheNewAPI::processUpstreamResponse(int socket_id, cPacket * msg, ConnI
 			respondToClientRequest((*it).interface_id, (*it).request_msg_ptr, wr);
 		}
 
-//		list<int> recipients = pendingRequests.clientsAskingForResource(wr->getID());
-//		list<int>::iterator it;
-//		for (it = recipients.begin(); it != recipients.end(); it++) {
-//			httptReplyMessage *cliReply = reply->dup();
-//			//cliReply->setTargetUrl(rm->originatorUrl());  // maybe not what httptserver does.
-//			cliReply->setOriginatorUrl(wwwName.c_str());
-//			tcp_api->send(*it, cliReply);
-//		}
 		pendingRequests.removeAndDeleteRequestsForResource(wr->getID());
 	}
 	updateDisplay();
@@ -346,28 +329,7 @@ void WebCacheNewAPI::processDownstreamRequest(int socket_id, cPacket * msg, Conn
 		hits++;
 
 		respondToClientRequest(socket_id, request, wr_incache);
-
-//		httptReplyMessage * reply = NULL;
-//		httptByteRangeRequestMessage * br_request = dynamic_cast<httptByteRangeRequestMessage *>(request);
-//		if (br_request)
-//		{
-//			reply  = generateByteRangeReply(br_request, url, wr_incache->getSize(), rt_text); // TODO add type extractor from extension? or add type to web resource?
-//		}
-//		else
-//		{
-//			reply = new httptReplyMessage();
-//			fillinReplyMessage(reply, request, url, 200, wr_incache->getSize(), rt_text);
-//		}
-//		tcp_api->send(socket_id, reply);
-
-		// call the message handler to process the message.
-//		cMessage *reply = handleRequestMessage(msg);
-//		if (reply)
-//		{
-//			tcp_api->send(socket_id, reply);
-//		} else {
-//			opp_error("WebCacheNewAPI::processDownstreamRequest: handleReceivedMessage returns NULL");
-//		}
+		delete request;
 	} else {
 		misses++;
 		// request resource, only if it is the first request of its type
@@ -443,7 +405,7 @@ void WebCacheNewAPI::closeSocket(int socket_id) {
 void WebCacheNewAPI::updateDisplay() {
 	if ( ev.isGUI() && resourceCache)
 	{
-		httptServerBase::updateDisplay();
+		//httptServerBase::updateDisplay(); // DON'T do this if you don't want ugly arrows
 		char buf[1024];
 		float h = 0;
 		if (requestsReceived > 0)
@@ -455,7 +417,7 @@ void WebCacheNewAPI::updateDisplay() {
 			full = 100.0 * (cacheSize-remaining) /cacheSize;
 		sprintf( buf, "Req: %ld\nHit: %.1f\%\nCap: %.1fKB\nFull: %.1f\%", requestsReceived,h,cacheSize/1000.0, full);
 		getParentModule()->getDisplayString().setTagArg("t",0,buf);
-	} else if (ev.isGUI() ){
+	} /*else if (ev.isGUI() ){
 		httptServerBase::updateDisplay();
-	}
+	}*/
 }

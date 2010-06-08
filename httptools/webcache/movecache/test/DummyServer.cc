@@ -52,7 +52,10 @@ void DummyServer::recvCallback(int socket_id, int ret_status, cPacket * msg, voi
 	}
 	httptRequestMessage * request = check_and_cast<httptRequestMessage *>(msg);
 	httptReplyMessage * reply = new httptReplyMessage();
-	fillinReplyMessage(reply, request, "", 200, par("fileSize"), rt_unknown);
+	cStringTokenizer tokenizer = cStringTokenizer(request->heading()," ");
+	vector<string> res = tokenizer.asVector();
+	int filesize = par("fileSize");
+	fillinReplyMessage(reply, request, res[1], 200, 1024*filesize, rt_unknown);
 	_socketapi->send(socket_id, reply);
 	_socketapi->recv(socket_id, NULL);
 	delete msg;

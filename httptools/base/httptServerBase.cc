@@ -260,7 +260,7 @@ httptReplyMessage * httptServerBase::generateByteRangeReply(
 
 	// else is satisfiable, send back a 206 response
 	httptByteRangeReplyMessage * reply = new httptByteRangeReplyMessage();
-	if ( resource_size < lbp )
+	if ( lbp < 0 || resource_size < lbp )
 	{
 		lbp = resource_size - 1;
 	}
