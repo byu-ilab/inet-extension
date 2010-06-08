@@ -20,12 +20,15 @@
 
 #include "httptServerBase.h"
 #include "TCPSocketAPI.h"
+#include "VideoTitleWorkloadGenerator.h"
 
 /**
  *
  * @version 1.0
  * @author  Travis Andelin
  */
+
+enum VSMessageType { START = 1 };
 class INET_API videoServer :
 	public httptServerBase, TCPSocketAPI::CallbackInterface {
 
@@ -36,10 +39,10 @@ class INET_API videoServer :
 		VideoTitleWorkloadGenerator * workload_generator;
 
 		// stats
-		unsigned long numBroken;
+		unsigned long socketsBroken;
 		unsigned long socketsOpened;
+		unsigned long requestsReceived;
 
-		virtual void updateDisplay(); //> Update the display string if running in GUI mode
 	/** @name cSimpleModule redefinitions */
 	//@{
 	protected:
@@ -64,13 +67,10 @@ class INET_API videoServer :
 		/** @name httptServerBase redefinitions */
 		//@ {
 		virtual httptReplyMessage* handleGetRequest( httptRequestMessage *request, string resource );
-		virtual void updateDisplay(); //> Update the display string if running in GUI mode
+		virtual void updateDisplay();
 		//@ }
 
-		/** @name videoServer methods */
-		//@ {
-		virtual void processDownstreamRequest(int socket_id, cPacket * msg, ConnInfo * data); // handle request from client (or cache)
-		//@ }
+		virtual void closeSocket(int socket_id);
 };
 
 #endif

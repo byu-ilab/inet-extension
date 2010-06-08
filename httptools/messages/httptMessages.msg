@@ -90,6 +90,3 @@ packet httptReplyMessage extends httptBaseMessage
     int result = 0; 				// e.g. 200 for OK, 404 for NOT FOUND.
     int contentType = 0;			// The content type: HTML pages, text or image resources.
 }
-
-
-

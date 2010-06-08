@@ -15,7 +15,7 @@
 
 
 import inet.applications.tcpapp.socketapi.TCPSocketAPIApp;
-package inet.httptools.videoserver;
+package inet.httptools.videocomponents;
 //
 // videoServer
 //

@@ -31,9 +31,10 @@ void videoServer::initialize()
 	if (!workload_generator) {
 		error("workload generator module not found");
 	}
-	updateDisplay();
 	socketsBroken=0;
 	socketsOpened=0;
+	requestsReceived = 0;
+	updateDisplay();
 
 	// get socket api
 	std::string api_obj_name = par("socketapi").stringValue();
@@ -51,13 +52,13 @@ void videoServer::finish()
 	httptServerBase::finish();
 
 	EV_SUMMARY << "Sockets opened: " << socketsOpened << endl;
-	EV_SUMMARY << "Broken connections: " << numBroken << endl;
+	EV_SUMMARY << "Broken connections: " << socketsBroken << endl;
 
 	recordScalar("sock.opened", socketsOpened);
-	recordScalar("sock.broken", numBroken);
+	recordScalar("sock.broken", socketsBroken);
 }
 
-void httptServer::handleMessage(cMessage *msg)
+void videoServer::handleMessage(cMessage *msg)
 {
 	// setup listener socket.
 	if (msg->getKind() == START) {
@@ -114,46 +115,48 @@ void videoServer::acceptCallback(int socket_id, int ret_status, void * yourPtr) 
 void videoServer::recvCallback(int socket_id, int ret_status,
 	cPacket * msg, void * myPtr){
 
+	Enter_Method_Silent();
 
-	switch(ret_status) {
-	case TCPSocketAPI::CB_E_TIMEOUT:
-		handleTimeout(socket_id);
-		break;
-	case TCPSocketAPI::CB_E_UNKNOWN:
-		// do nothing special
-		break;
-	case TCPSocketAPI::CB_E_CLOSED:
-		closeSocket(socket_id);
-		break;
-	default: // positive # of bytes received
-		processDownstreamRequest(socket_id, msg);
-		break;
-	}
-}
-// A client (or cache) requests a file from me.
-// If I have it, send it along.  Otherwise, initiate a request from an upstream host.
-void videoServer::processDownstreamRequest(int socket_id, cPacket * msg) {
-
-	httptRequestMessage * request = dynamic_cast<httptRequestMessage *>(msg);
-	if (!request) {
-		opp_error("videoServer::processDownstreamRequest: msg not a httptRequest.");
-	}
-	requestsReceived++;
-
-	// call the message handler to process the message.
-	cMessage *reply = handleReceivedMessage(msg);
-	if (reply)
+	if (TCPSocketAPI::isCallbackError(ret_status))
 	{
-		tcp_api->send(socket_id, reply);
-	} else {
-		opp_error("videoServer::processDownstreamRequest: handleReceivedMessage returns NULL");
+		// msg is NULL so don't call delete
+		closeSocket(socket_id);
+		return;
 	}
 
-	// ask client for anything else it might send:
-	tcp_api->recv(socket_id,NULL);
-	updateDisplay(); // draw.
-	delete request;
-	delete wr;
+	// handleReceivedMessage will return an error reply if there is a problem with the
+	// message, otherwise control will get passed to handleGetRequest which will return
+	// NULL
+	httptReplyMessage * response = handleRequestMessage(msg);
+	delete msg;
+	tcp_api->send(socket_id, response);
+	tcp_api->recv(socket_id);
+
+	requestsReceived++;
+	updateDisplay();
+}
+
+void videoServer::closeSocket(int socket_id) {
+	tcp_api->close(socket_id);
+}
+httptReplyMessage* videoServer::handleGetRequest( httptRequestMessage *request, string resource ) {
+	// error if this resource is not a video title in workload generator
+	if (workload_generator->getVideoTitleAsInt(resource) == -1) {
+		return generateErrorReply(request,404);
+	}
+
+	// get metadata
+	workload_generator->getMetaData(resource);
+/*
+	int quality =...
+	int res_size = metadata->quality_interval *
+	// if it is a byte range request, service it.
+	if (static_cast<httptByteRangeRequestMessage *>(request)) {
+		return generateByteRangeReply(request, resource, )
+	}
+	// service normal request
+	 */
+	return NULL;
 }
 
 void videoServer::updateDisplay() {
