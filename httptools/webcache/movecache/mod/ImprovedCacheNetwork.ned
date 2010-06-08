@@ -20,7 +20,7 @@ import inet.nodes.inet.Router;
 import inet.nodes.inet.StandardHost;
 import ned.DatarateChannel;
 import inet.nodes.inet.StandardHostWithTCPSocketAPI;
-import inet.httptools.*;
+import inet.httptools.base.*;
 import inet.httptools.webcache.movecache.mod.WebCache;
 
 network ImprovedCacheNetwork

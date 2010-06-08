@@ -15,7 +15,7 @@
 
 #ifndef WEBCACHE_H_
 #define WEBCACHE_H_
-#include "httptServer.h"
+#include "httptHTMLServer.h"
 #include "LRUCache.h"
 #include "TCPSocket.h"
 #include "TCPSocketMap.h"
@@ -38,7 +38,7 @@ struct CACHE_SOCK_DS
 //			return lhs->getConnectionId() < rhs->getConnectionId();
 //		}
 //};
-class WebCache: public httptServer {
+class WebCache: public httptHTMLServer {
 protected:
 	httptController *controller; // Reference to central controller object.
 	TCPSocket * listensocket;

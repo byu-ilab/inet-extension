@@ -1,3 +1,17 @@
+June 4, 2010
+Refactored all of the servers to be httptHTMLServer...
+Moved the Servers and Browsers into the htmlcomponents
+directory.
+Moved all message related files to the messages
+directory.
+Moved remaining elements to the base directory.
+The documentation generator files may now be invalid.
+Refactored httptByteRangeResponseMessage to
+httptByteRangeReplyMessage.
+Factored out httptServerBase to be just the generic
+server base functions.  The original ServerBase is
+now the httptHTMLServerBase
+
 June 1, 2010
 Added the httptByteRangeMessages.
 

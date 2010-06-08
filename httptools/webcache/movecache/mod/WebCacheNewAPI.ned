@@ -13,21 +13,41 @@
 // along with this program.  If not, see http://www.gnu.org/licenses/.
 // 
 import inet.applications.tcpapp.socketapi.TCPSocketAPIApp;
+import inet.httptools.base.httptServerBaseInterface;
 
 package inet.httptools.webcache.movecache.mod;
-simple WebCacheNewAPI like TCPSocketAPIApp
+
+simple WebCacheNewAPI like TCPSocketAPIApp, httptServerBaseInterface
 {
     parameters:
-        string socketapi;									// the socketAPI name.
+        // From TCPSocketAPIApp
+        	// the socketAPI name
+        string socketapi;								// the socketAPI name.
+        
+        // From httptServerBaseInterface
+        	// domain name of the server
         string www = default("");						// The WWW name of the server
+        	// the port the server listens on
         int port = default(80);							// The listening port number
+        	// the httptController with which this server should register
+        string controller = default("controller");
+        	// the protocl to be used
         int httpProtocol=default(11);					// The http protocol: 10 for http/1.0, 11 for http/1.1. Not used at the present time.
+        	// the size of a reply message indicating an error
+        volatile int errorReplySize @unit(B) = default(200B);
+        	// the level of logging to be used
         int logLevel = default(0);						// The log level: 2: Debug, 1: Info; 0: Errors and warnings only
+        	// the file to write the log to
         string logFile = default("");					// Name of server log file. Events are appended, allowing sharing of file for multiple servers.
-        string siteDefinition = default("");			// The site script file. Blank to disable.
-        double activationTime @unit("s") = default(0s);	// The initial activation delay. Zero to disable.
-        xml config;										// The XML configuration file for random sites
-        int cacheSize = default(10000);  // capacity of cache in bytes
+        	// the time it takes to activate
+        double activationTime @unit(s) = default(0s);	// The initial activation delay. Zero to disable.
+        
+        // attributes specific to the WebCacheNewAPI
+        	// cache capacity
+        	// TODO make it TB, need to change LRU to use long
+        int cacheSize @unit(KB)= default(10KB);// @unit(TB) = default(10TB);  // capacity of cache in terabytes
+        	// domain name of upstream server/cache
         string serverwww = default(""); // domain name of upstream server/cache.
+        	// time an upstream connection should wait without any activity
         int request_timeout = default(10); // time for an upstream connection to wait.
 }
