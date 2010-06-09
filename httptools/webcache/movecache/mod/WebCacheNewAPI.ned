@@ -12,12 +12,12 @@
 // You should have received a copy of the GNU Lesser General Public License
 // along with this program.  If not, see http://www.gnu.org/licenses/.
 // 
-import inet.applications.tcpapp.socketapi.TCPSocketAPIApp;
+import inet.applications.tcpapp.socketapi.TCPSocketAPIAppInterface;
 import inet.httptools.base.httptServerBaseInterface;
 
 package inet.httptools.webcache.movecache.mod;
 
-simple WebCacheNewAPI like TCPSocketAPIApp, httptServerBaseInterface
+simple WebCacheNewAPI like TCPSocketAPIAppInterface, httptServerBaseInterface
 {
     parameters:
         // From TCPSocketAPIApp

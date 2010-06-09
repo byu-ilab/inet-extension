@@ -13,24 +13,24 @@
 //
 // ----------------------------------------------------------------------------
 
-
-import inet.applications.tcpapp.socketapi.TCPSocketAPIApp;
 package inet.httptools.videocomponents;
+
+import inet.applications.tcpapp.socketapi.TCPSocketAPIAppInterface;
+
 //
-// videoServer
+// VideoServer
 //
-// A video server that streams content like a MOVE videoserver. This module is intended for use with the
-// INET StandardHost module and plugs in as a tcpApp. The INET TCP/IP stack modeling is
-// used for transport. See the INET documentation for more details.
-//
-// NEW: The module has been migrated to OMNeT++ 4.0 and the latest INET version.
+// A video server that streams content like a MOVE videoserver. This module
+// is intended for use with the INET StandardHostWithTCPSocketAPI module and
+// plugs in as a tcpApp. The INET TCP/IP stack modeling is used for transport.
+// See the INET documentation for more details.
 //
 // @see httptServerBase
 //
 // @version 1.0 
 // @author  Travis Andelin
 //
-simple videoServer like inet.applications.tcpapp.socketapi.TCPSocketAPIApp
+simple VideoServer like TCPSocketAPIAppInterface
 {
     parameters:
         string socketapi;									// the socketAPI name.

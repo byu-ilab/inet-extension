@@ -31,13 +31,6 @@ WebCacheNewAPI::~WebCacheNewAPI() {
 void WebCacheNewAPI::initialize() {
 	httptServerBase::initialize();
 
-	controller = check_and_cast<httptController *>(simulation.getSystemModule()->getSubmodule(par("controller")));
-
-    //controller = dynamic_cast<httptController*>(getParentModule()->getParentModule()->getSubmodule("controller")); // not sure if this is it
-	/*if (controller == NULL) {
-		error("Controller module not found");
-	}
-	*/
 	upstream_cache = par("serverwww").stringValue();
 	request_timeout = par("request_timeout");
 

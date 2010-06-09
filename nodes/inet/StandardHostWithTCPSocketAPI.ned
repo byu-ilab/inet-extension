@@ -87,7 +87,7 @@ module StandardHostWithTCPSocketAPI
             parameters:
                 @display("p=186,102");
         }
-        tcpApp[numTcpApps]: <tcpAppType> like TCPSocketAPIApp {
+        tcpApp[numTcpApps]: <tcpAppType> like TCPSocketAPIAppInterface {
             parameters:
                 @display("p=186,33");
                 socketapi = "tcpsocketapi";
