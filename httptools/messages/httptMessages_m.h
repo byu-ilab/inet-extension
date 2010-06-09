@@ -1,5 +1,5 @@
 //
-// Generated file, do not edit! Created by opp_msgc 4.0 from httptools/httptMessages.msg.
+// Generated file, do not edit! Created by opp_msgc 4.0 from httptools/messages/httptMessages.msg.
 //
 
 #ifndef _HTTPTMESSAGES_M_H_
@@ -16,7 +16,7 @@
 
 
 /**
- * Class generated from <tt>httptools/httptMessages.msg</tt> by opp_msgc.
+ * Class generated from <tt>httptools/messages/httptMessages.msg</tt> by opp_msgc.
  * <pre>
  * packet httptBaseMessage
  * {
@@ -75,7 +75,7 @@ inline void doPacking(cCommBuffer *b, httptBaseMessage& obj) {obj.parsimPack(b);
 inline void doUnpacking(cCommBuffer *b, httptBaseMessage& obj) {obj.parsimUnpack(b);}
 
 /**
- * Class generated from <tt>httptools/httptMessages.msg</tt> by opp_msgc.
+ * Class generated from <tt>httptools/messages/httptMessages.msg</tt> by opp_msgc.
  * <pre>
  * packet httptRequestMessage extends httptBaseMessage
  * {
@@ -110,7 +110,7 @@ inline void doPacking(cCommBuffer *b, httptRequestMessage& obj) {obj.parsimPack(
 inline void doUnpacking(cCommBuffer *b, httptRequestMessage& obj) {obj.parsimUnpack(b);}
 
 /**
- * Class generated from <tt>httptools/httptMessages.msg</tt> by opp_msgc.
+ * Class generated from <tt>httptools/messages/httptMessages.msg</tt> by opp_msgc.
  * <pre>
  * packet httptReplyMessage extends httptBaseMessage
  * {

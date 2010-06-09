@@ -1,5 +1,5 @@
 //
-// Generated file, do not edit! Created by opp_msgc 4.0 from ./httptByteRangeMessages.msg.
+// Generated file, do not edit! Created by opp_msgc 4.0 from httptools/messages/httptByteRangeMessages.msg.
 //
 
 // Disable warnings about unused variables, empty switch stmts, etc:

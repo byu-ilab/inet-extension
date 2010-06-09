@@ -1,5 +1,5 @@
 //
-// Generated file, do not edit! Created by opp_msgc 4.0 from httptools/httptEventMessages.msg.
+// Generated file, do not edit! Created by opp_msgc 4.0 from httptools/messages/httptEventMessages.msg.
 //
 
 #ifndef _HTTPTEVENTMESSAGES_M_H_
@@ -16,7 +16,7 @@
 
 
 /**
- * Class generated from <tt>httptools/httptEventMessages.msg</tt> by opp_msgc.
+ * Class generated from <tt>httptools/messages/httptEventMessages.msg</tt> by opp_msgc.
  * <pre>
  * packet httptServerStatusUpdateMsg
  * {
