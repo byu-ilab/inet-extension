@@ -72,7 +72,7 @@
 #define HTTP_PHRASE_416 "REQUESTED RANGE NOT SATISFIABLE"
 
 /** @brief type of returned content. Used in http responses. */
-enum CONTENT_TYPE_ENUM {rt_unknown,rt_none,rt_html_page,rt_image,rt_text,rt_vtmd, rt_vidseg};
+enum CONTENT_TYPE_ENUM {rt_unknown,rt_html_page,rt_image,rt_text,rt_vtmd, rt_vidseg};
 
 using namespace std;
 

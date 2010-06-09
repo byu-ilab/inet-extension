@@ -189,6 +189,11 @@ CONTENT_TYPE_ENUM getResourceCategory(string resourceExt)
 		return rt_image;
 	else if (resourceExt=="css" || resourceExt=="txt" || resourceExt=="js")
 		return rt_text;
+	else if (resourceExt=="vtmd")
+		return rt_vtmd;
+	else if (resourceExt=="vid" || resourceExt=="vidseg" || resourceExt=="vs")
+		return rt_vidseg;
+
 	return rt_unknown;
 }
 

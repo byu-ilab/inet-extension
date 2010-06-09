@@ -1,10 +1,10 @@
 // Author: Kevin Black
 //
-// Based off of the original httptServerBase class (which was refactored
-// to httptHTMLServerBase and then modified to extend this class).  Provides
-// generic HTTP server functions, such as generating error messages, parsing
-// request options, validating byte range requests, and generating byte
-// range reply messages.
+// Based off of the original httptServerBase class by Kristjan V. Jonsson
+// (which was refactored to httptHTMLServerBase and then modified to extend
+// this class).  Provides generic HTTP server functions, such as generating
+// error messages, parsing request options, validating byte range requests,
+// and generating byte range reply messages.
 //
 //*****************************************************************************
 //
@@ -51,6 +51,7 @@ protected:
 	/**
 	 * Register the server object with the controller.
 	 * Called at initialization (simulation startup).
+	 * Perhaps would be useful in the future for a server to be able to register with different controllers
 	 */
 	//void registerWithController();
 

@@ -14,7 +14,6 @@
 //
 
 #include "httptServerBase.h"
-#include <iostream>
 
 void httptServerBase::initialize()
 {
@@ -97,7 +96,7 @@ void httptServerBase::updateDisplay()
 		}
 	}
 }
-/*
+/*//OLD CODE
 void httptServerBase::registerWithController()
 {
 	EV_DEBUG << "registerWithController: parent module's full name: "<<getParentModule()->getFullName()<<endl;
@@ -137,7 +136,6 @@ httptReplyMessage * httptServerBase::handleRequestMessage( cMessage *msg )
 
 	if (method == RM_NONE || uri.empty())
 	{
-		cout << "ServerBase: parsing from heading"<<endl;
 		// Verify that the header string has the correct number of parameters
 			// Parse the request string on spaces
 		cStringTokenizer tokenizer = cStringTokenizer(request->heading()," ");
@@ -189,13 +187,13 @@ httptReplyMessage * httptServerBase::handleGetRequest( httptRequestMessage *requ
 httptReplyMessage* httptServerBase::generateErrorReply( httptRequestMessage *request, string resource_uri, int code )
 {
 	badRequests++;
-	return generateStandardReply(request, resource_uri, code, par("errorReplySize"), rt_none);
+	return generateStandardReply(request, resource_uri, code, par("errorReplySize"), rt_unknown);
 }
 
 void httptServerBase::fillinErrorReply(httptReplyMessage * reply, httptRequestMessage *request, string resource_uri, int code)
 {
 	badRequests++;
-	fillinStandardReply(reply, request, resource_uri, code, par("errorReplySize"), rt_none);
+	fillinStandardReply(reply, request, resource_uri, code, par("errorReplySize"), rt_unknown);
 }
 
 httptReplyMessage * httptServerBase::generateStandardReply(httptRequestMessage * request,
@@ -245,7 +243,6 @@ void httptServerBase::fillinStandardReply(httptReplyMessage * reply, httptReques
 	reply->setKind(HTTPT_RESPONSE_MESSAGE);
 }
 
-/// @see RFC 2616, sections 10.2.7, 10.4.17, 14.16, 14.35.1
 httptReplyMessage * httptServerBase::generateByteRangeReply(
 		httptRequestMessage * request, string resource_uri, int resource_size, int content_type)
 {
@@ -254,6 +251,7 @@ httptReplyMessage * httptServerBase::generateByteRangeReply(
 	return reply;
 }
 
+/// @see RFC 2616, sections 10.2.7, 10.4.17, 14.16, 14.35.1
 void httptServerBase::fillinByteRangeReply(httptReplyMessage * reply, httptRequestMessage * request,
 		string resource_uri, int resource_size, int content_type)
 {
