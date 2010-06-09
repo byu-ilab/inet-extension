@@ -23,10 +23,6 @@ void VideoServer::initialize()
 {
 	httptServerBase::initialize();
 
-    controller = dynamic_cast<httptController*>(getParentModule()->getParentModule()->getSubmodule("controller"));
-	if (controller == NULL) {
-		error("Controller module not found");
-	}
 	workload_generator = dynamic_cast<VideoTitleWorkloadGenerator*>(getParentModule()->getParentModule()->getSubmodule("workloadGenerator"));
 	if (!workload_generator) {
 		error("workload generator module not found");
@@ -141,13 +137,17 @@ void VideoServer::closeSocket(int socket_id) {
 }
 httptReplyMessage* VideoServer::handleGetRequest( httptRequestMessage *request, string resource ) {
 	// error if this resource is not a video title in workload generator
+	VideoSegmentRequestMessage * v_request = static_cast<VideoSegmentRequestMessage *>(request);
+	if (!v_request) {
+		opp_error("VideoServer::handleGetRequest: did not receive VideoSegmentRequestMessage");
+	}
+
 	if (workload_generator->getVideoTitleAsInt(resource) == -1) {
 		return generateErrorReply(request, resource, 404);
 	}
 
-	// get metadata
-	workload_generator->getMetaData(resource);
-/*
+	v_request->
+
 	int quality =...
 	int res_size = metadata->quality_interval *
 	// if it is a byte range request, service it.
@@ -155,7 +155,6 @@ httptReplyMessage* VideoServer::handleGetRequest( httptRequestMessage *request, 
 		return generateByteRangeReply(request, resource, )
 	}
 	// service normal request
-	 */
 	return NULL;
 }
 
