@@ -1,5 +1,5 @@
 //
-// Generated file, do not edit! Created by opp_msgc 4.0 from httptools/messages/httptMessages.msg.
+// Generated file, do not edit! Created by opp_msgc 4.0 from ./httptMessages.msg.
 //
 
 // Disable warnings about unused variables, empty switch stmts, etc:
@@ -30,13 +30,40 @@ void doUnpacking(cCommBuffer *, T& t) {
 
 
 
+EXECUTE_ON_STARTUP(
+    cEnum *e = cEnum::find("HTTPProtocol");
+    if (!e) enums.getInstance()->add(e = new cEnum("HTTPProtocol"));
+    e->insert(HTTP_10, "HTTP_10");
+    e->insert(HTTP_11, "HTTP_11");
+);
+
+EXECUTE_ON_STARTUP(
+    cEnum *e = cEnum::find("RequestMethod");
+    if (!e) enums.getInstance()->add(e = new cEnum("RequestMethod"));
+    e->insert(RM_OPTIONS, "RM_OPTIONS");
+    e->insert(RM_GET, "RM_GET");
+    e->insert(RM_HEAD, "RM_HEAD");
+    e->insert(RM_POST, "RM_POST");
+    e->insert(RM_PUT, "RM_PUT");
+    e->insert(RM_DELETE, "RM_DELETE");
+    e->insert(RM_TRACE, "RM_TRACE");
+    e->insert(RM_CONNECT, "RM_CONNECT");
+);
+
+EXECUTE_ON_STARTUP(
+    cEnum *e = cEnum::find("ByteRangeState");
+    if (!e) enums.getInstance()->add(e = new cEnum("ByteRangeState"));
+    e->insert(BRS_UNSPECIFIED, "BRS_UNSPECIFIED");
+    e->insert(BRS_ASTERISK, "BRS_ASTERISK");
+);
+
 Register_Class(httptBaseMessage);
 
 httptBaseMessage::httptBaseMessage(const char *name, int kind) : cPacket(name,kind)
 {
     this->targetUrl_var = 0;
     this->originatorUrl_var = "";
-    this->protocol_var = 11;
+    this->protocol_var = HTTP_11;
     this->keepAlive_var = true;
     this->serial_var = 0;
     this->heading_var = "";
@@ -280,6 +307,9 @@ const char *httptBaseMessageDescriptor::getFieldProperty(void *object, int field
         field -= basedesc->getFieldCount(object);
     }
     switch (field) {
+        case 2:
+            if (!strcmp(propertyname,"enum")) return "HTTPProtocol";
+            return NULL;
         default: return NULL;
     }
 }
@@ -372,6 +402,10 @@ Register_Class(httptRequestMessage);
 httptRequestMessage::httptRequestMessage(const char *name, int kind) : httptBaseMessage(name,kind)
 {
     this->badRequest_var = false;
+    this->method_var = RM_GET;
+    this->uri_var = "";
+    this->firstBytePos_var = BRS_UNSPECIFIED;
+    this->lastBytePos_var = BRS_UNSPECIFIED;
 }
 
 httptRequestMessage::httptRequestMessage(const httptRequestMessage& other) : httptBaseMessage()
@@ -389,6 +423,10 @@ httptRequestMessage& httptRequestMessage::operator=(const httptRequestMessage& o
     if (this==&other) return *this;
     httptBaseMessage::operator=(other);
     this->badRequest_var = other.badRequest_var;
+    this->method_var = other.method_var;
+    this->uri_var = other.uri_var;
+    this->firstBytePos_var = other.firstBytePos_var;
+    this->lastBytePos_var = other.lastBytePos_var;
     return *this;
 }
 
@@ -396,12 +434,20 @@ void httptRequestMessage::parsimPack(cCommBuffer *b)
 {
     httptBaseMessage::parsimPack(b);
     doPacking(b,this->badRequest_var);
+    doPacking(b,this->method_var);
+    doPacking(b,this->uri_var);
+    doPacking(b,this->firstBytePos_var);
+    doPacking(b,this->lastBytePos_var);
 }
 
 void httptRequestMessage::parsimUnpack(cCommBuffer *b)
 {
     httptBaseMessage::parsimUnpack(b);
     doUnpacking(b,this->badRequest_var);
+    doUnpacking(b,this->method_var);
+    doUnpacking(b,this->uri_var);
+    doUnpacking(b,this->firstBytePos_var);
+    doUnpacking(b,this->lastBytePos_var);
 }
 
 bool httptRequestMessage::badRequest() const
@@ -412,6 +458,46 @@ bool httptRequestMessage::badRequest() const
 void httptRequestMessage::setBadRequest(bool badRequest_var)
 {
     this->badRequest_var = badRequest_var;
+}
+
+int httptRequestMessage::method() const
+{
+    return method_var;
+}
+
+void httptRequestMessage::setMethod(int method_var)
+{
+    this->method_var = method_var;
+}
+
+const char * httptRequestMessage::uri() const
+{
+    return uri_var.c_str();
+}
+
+void httptRequestMessage::setUri(const char * uri_var)
+{
+    this->uri_var = uri_var;
+}
+
+int httptRequestMessage::firstBytePos() const
+{
+    return firstBytePos_var;
+}
+
+void httptRequestMessage::setFirstBytePos(int firstBytePos_var)
+{
+    this->firstBytePos_var = firstBytePos_var;
+}
+
+int httptRequestMessage::lastBytePos() const
+{
+    return lastBytePos_var;
+}
+
+void httptRequestMessage::setLastBytePos(int lastBytePos_var)
+{
+    this->lastBytePos_var = lastBytePos_var;
 }
 
 class httptRequestMessageDescriptor : public cClassDescriptor
@@ -461,7 +547,7 @@ const char *httptRequestMessageDescriptor::getProperty(const char *propertyname)
 int httptRequestMessageDescriptor::getFieldCount(void *object) const
 {
     cClassDescriptor *basedesc = getBaseClassDescriptor();
-    return basedesc ? 1+basedesc->getFieldCount(object) : 1;
+    return basedesc ? 5+basedesc->getFieldCount(object) : 5;
 }
 
 unsigned int httptRequestMessageDescriptor::getFieldTypeFlags(void *object, int field) const
@@ -474,6 +560,10 @@ unsigned int httptRequestMessageDescriptor::getFieldTypeFlags(void *object, int 
     }
     switch (field) {
         case 0: return FD_ISEDITABLE;
+        case 1: return FD_ISEDITABLE;
+        case 2: return FD_ISEDITABLE;
+        case 3: return FD_ISEDITABLE;
+        case 4: return FD_ISEDITABLE;
         default: return 0;
     }
 }
@@ -488,6 +578,10 @@ const char *httptRequestMessageDescriptor::getFieldName(void *object, int field)
     }
     switch (field) {
         case 0: return "badRequest";
+        case 1: return "method";
+        case 2: return "uri";
+        case 3: return "firstBytePos";
+        case 4: return "lastBytePos";
         default: return NULL;
     }
 }
@@ -502,6 +596,10 @@ const char *httptRequestMessageDescriptor::getFieldTypeString(void *object, int 
     }
     switch (field) {
         case 0: return "bool";
+        case 1: return "int";
+        case 2: return "string";
+        case 3: return "int";
+        case 4: return "int";
         default: return NULL;
     }
 }
@@ -515,6 +613,9 @@ const char *httptRequestMessageDescriptor::getFieldProperty(void *object, int fi
         field -= basedesc->getFieldCount(object);
     }
     switch (field) {
+        case 1:
+            if (!strcmp(propertyname,"enum")) return "RequestMethod";
+            return NULL;
         default: return NULL;
     }
 }
@@ -544,6 +645,10 @@ bool httptRequestMessageDescriptor::getFieldAsString(void *object, int field, in
     httptRequestMessage *pp = (httptRequestMessage *)object; (void)pp;
     switch (field) {
         case 0: bool2string(pp->badRequest(),resultbuf,bufsize); return true;
+        case 1: long2string(pp->method(),resultbuf,bufsize); return true;
+        case 2: oppstring2string(pp->uri(),resultbuf,bufsize); return true;
+        case 3: long2string(pp->firstBytePos(),resultbuf,bufsize); return true;
+        case 4: long2string(pp->lastBytePos(),resultbuf,bufsize); return true;
         default: return false;
     }
 }
@@ -559,6 +664,10 @@ bool httptRequestMessageDescriptor::setFieldAsString(void *object, int field, in
     httptRequestMessage *pp = (httptRequestMessage *)object; (void)pp;
     switch (field) {
         case 0: pp->setBadRequest(string2bool(value)); return true;
+        case 1: pp->setMethod(string2long(value)); return true;
+        case 2: pp->setUri((value)); return true;
+        case 3: pp->setFirstBytePos(string2long(value)); return true;
+        case 4: pp->setLastBytePos(string2long(value)); return true;
         default: return false;
     }
 }
@@ -596,6 +705,10 @@ httptReplyMessage::httptReplyMessage(const char *name, int kind) : httptBaseMess
 {
     this->result_var = 0;
     this->contentType_var = 0;
+    this->phrase_var = "";
+    this->firstBytePos_var = BRS_UNSPECIFIED;
+    this->lastBytePos_var = BRS_UNSPECIFIED;
+    this->instanceLength_var = BRS_UNSPECIFIED;
 }
 
 httptReplyMessage::httptReplyMessage(const httptReplyMessage& other) : httptBaseMessage()
@@ -614,6 +727,10 @@ httptReplyMessage& httptReplyMessage::operator=(const httptReplyMessage& other)
     httptBaseMessage::operator=(other);
     this->result_var = other.result_var;
     this->contentType_var = other.contentType_var;
+    this->phrase_var = other.phrase_var;
+    this->firstBytePos_var = other.firstBytePos_var;
+    this->lastBytePos_var = other.lastBytePos_var;
+    this->instanceLength_var = other.instanceLength_var;
     return *this;
 }
 
@@ -622,6 +739,10 @@ void httptReplyMessage::parsimPack(cCommBuffer *b)
     httptBaseMessage::parsimPack(b);
     doPacking(b,this->result_var);
     doPacking(b,this->contentType_var);
+    doPacking(b,this->phrase_var);
+    doPacking(b,this->firstBytePos_var);
+    doPacking(b,this->lastBytePos_var);
+    doPacking(b,this->instanceLength_var);
 }
 
 void httptReplyMessage::parsimUnpack(cCommBuffer *b)
@@ -629,6 +750,10 @@ void httptReplyMessage::parsimUnpack(cCommBuffer *b)
     httptBaseMessage::parsimUnpack(b);
     doUnpacking(b,this->result_var);
     doUnpacking(b,this->contentType_var);
+    doUnpacking(b,this->phrase_var);
+    doUnpacking(b,this->firstBytePos_var);
+    doUnpacking(b,this->lastBytePos_var);
+    doUnpacking(b,this->instanceLength_var);
 }
 
 int httptReplyMessage::result() const
@@ -649,6 +774,46 @@ int httptReplyMessage::contentType() const
 void httptReplyMessage::setContentType(int contentType_var)
 {
     this->contentType_var = contentType_var;
+}
+
+const char * httptReplyMessage::phrase() const
+{
+    return phrase_var.c_str();
+}
+
+void httptReplyMessage::setPhrase(const char * phrase_var)
+{
+    this->phrase_var = phrase_var;
+}
+
+int httptReplyMessage::firstBytePos() const
+{
+    return firstBytePos_var;
+}
+
+void httptReplyMessage::setFirstBytePos(int firstBytePos_var)
+{
+    this->firstBytePos_var = firstBytePos_var;
+}
+
+int httptReplyMessage::lastBytePos() const
+{
+    return lastBytePos_var;
+}
+
+void httptReplyMessage::setLastBytePos(int lastBytePos_var)
+{
+    this->lastBytePos_var = lastBytePos_var;
+}
+
+int httptReplyMessage::instanceLength() const
+{
+    return instanceLength_var;
+}
+
+void httptReplyMessage::setInstanceLength(int instanceLength_var)
+{
+    this->instanceLength_var = instanceLength_var;
 }
 
 class httptReplyMessageDescriptor : public cClassDescriptor
@@ -698,7 +863,7 @@ const char *httptReplyMessageDescriptor::getProperty(const char *propertyname) c
 int httptReplyMessageDescriptor::getFieldCount(void *object) const
 {
     cClassDescriptor *basedesc = getBaseClassDescriptor();
-    return basedesc ? 2+basedesc->getFieldCount(object) : 2;
+    return basedesc ? 6+basedesc->getFieldCount(object) : 6;
 }
 
 unsigned int httptReplyMessageDescriptor::getFieldTypeFlags(void *object, int field) const
@@ -712,6 +877,10 @@ unsigned int httptReplyMessageDescriptor::getFieldTypeFlags(void *object, int fi
     switch (field) {
         case 0: return FD_ISEDITABLE;
         case 1: return FD_ISEDITABLE;
+        case 2: return FD_ISEDITABLE;
+        case 3: return FD_ISEDITABLE;
+        case 4: return FD_ISEDITABLE;
+        case 5: return FD_ISEDITABLE;
         default: return 0;
     }
 }
@@ -727,6 +896,10 @@ const char *httptReplyMessageDescriptor::getFieldName(void *object, int field) c
     switch (field) {
         case 0: return "result";
         case 1: return "contentType";
+        case 2: return "phrase";
+        case 3: return "firstBytePos";
+        case 4: return "lastBytePos";
+        case 5: return "instanceLength";
         default: return NULL;
     }
 }
@@ -742,6 +915,10 @@ const char *httptReplyMessageDescriptor::getFieldTypeString(void *object, int fi
     switch (field) {
         case 0: return "int";
         case 1: return "int";
+        case 2: return "string";
+        case 3: return "int";
+        case 4: return "int";
+        case 5: return "int";
         default: return NULL;
     }
 }
@@ -785,6 +962,10 @@ bool httptReplyMessageDescriptor::getFieldAsString(void *object, int field, int 
     switch (field) {
         case 0: long2string(pp->result(),resultbuf,bufsize); return true;
         case 1: long2string(pp->contentType(),resultbuf,bufsize); return true;
+        case 2: oppstring2string(pp->phrase(),resultbuf,bufsize); return true;
+        case 3: long2string(pp->firstBytePos(),resultbuf,bufsize); return true;
+        case 4: long2string(pp->lastBytePos(),resultbuf,bufsize); return true;
+        case 5: long2string(pp->instanceLength(),resultbuf,bufsize); return true;
         default: return false;
     }
 }
@@ -801,6 +982,10 @@ bool httptReplyMessageDescriptor::setFieldAsString(void *object, int field, int 
     switch (field) {
         case 0: pp->setResult(string2long(value)); return true;
         case 1: pp->setContentType(string2long(value)); return true;
+        case 2: pp->setPhrase((value)); return true;
+        case 3: pp->setFirstBytePos(string2long(value)); return true;
+        case 4: pp->setLastBytePos(string2long(value)); return true;
+        case 5: pp->setInstanceLength(string2long(value)); return true;
         default: return false;
     }
 }

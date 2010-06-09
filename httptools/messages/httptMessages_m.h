@@ -1,5 +1,5 @@
 //
-// Generated file, do not edit! Created by opp_msgc 4.0 from httptools/messages/httptMessages.msg.
+// Generated file, do not edit! Created by opp_msgc 4.0 from ./httptMessages.msg.
 //
 
 #ifndef _HTTPTMESSAGES_M_H_
@@ -16,14 +16,71 @@
 
 
 /**
- * Class generated from <tt>httptools/messages/httptMessages.msg</tt> by opp_msgc.
+ * Enum generated from <tt>./httptMessages.msg</tt> by opp_msgc.
+ * <pre>
+ * enum HTTPProtocol
+ * {
+ *     HTTP_10 = 10;
+ *     HTTP_11 = 11;
+ * };
+ * </pre>
+ */
+enum HTTPProtocol {
+    HTTP_10 = 10,
+    HTTP_11 = 11
+};
+
+/**
+ * Enum generated from <tt>./httptMessages.msg</tt> by opp_msgc.
+ * <pre>
+ * enum RequestMethod
+ * {
+ *     RM_OPTIONS = 0;
+ *     RM_GET = 1;
+ *     RM_HEAD = 2;
+ *     RM_POST = 3;
+ *     RM_PUT = 4;
+ *     RM_DELETE = 5;
+ *     RM_TRACE = 6;
+ *     RM_CONNECT = 7;
+ * };
+ * </pre>
+ */
+enum RequestMethod {
+    RM_OPTIONS = 0,
+    RM_GET = 1,
+    RM_HEAD = 2,
+    RM_POST = 3,
+    RM_PUT = 4,
+    RM_DELETE = 5,
+    RM_TRACE = 6,
+    RM_CONNECT = 7
+};
+
+/**
+ * Enum generated from <tt>./httptMessages.msg</tt> by opp_msgc.
+ * <pre>
+ * enum ByteRangeState
+ * {
+ *     BRS_UNSPECIFIED = -1;
+ *     BRS_ASTERISK = -2;
+ * };
+ * </pre>
+ */
+enum ByteRangeState {
+    BRS_UNSPECIFIED = -1,
+    BRS_ASTERISK = -2
+};
+
+/**
+ * Class generated from <tt>./httptMessages.msg</tt> by opp_msgc.
  * <pre>
  * packet httptBaseMessage
  * {
  *     @omitGetVerb(true);
  *     string targetUrl; 				
  *     string originatorUrl = "";		
- *     int protocol = 11; 				
+ *     int protocol enum(HTTPProtocol) = HTTP_11; 
  *     bool keepAlive = true;			
  *     int serial = 0;					
  *     string heading = "";				
@@ -75,12 +132,30 @@ inline void doPacking(cCommBuffer *b, httptBaseMessage& obj) {obj.parsimPack(b);
 inline void doUnpacking(cCommBuffer *b, httptBaseMessage& obj) {obj.parsimUnpack(b);}
 
 /**
- * Class generated from <tt>httptools/messages/httptMessages.msg</tt> by opp_msgc.
+ * Class generated from <tt>./httptMessages.msg</tt> by opp_msgc.
  * <pre>
  * packet httptRequestMessage extends httptBaseMessage
  * {
  *     @omitGetVerb(true);			
  *     bool badRequest = false;	
+ *     int method enum(RequestMethod) = RM_GET;
+ *     string uri = "";
+ *     
+ *     
+ *     
+ *     
+ *     
+ *     
+ *     
+ *     
+ *     
+ *     
+ *     
+ *     
+ *     int firstBytePos = BRS_UNSPECIFIED;
+ *     
+ *     
+ *     int lastBytePos = BRS_UNSPECIFIED;
  * }
  * </pre>
  */
@@ -88,6 +163,10 @@ class httptRequestMessage : public httptBaseMessage
 {
   protected:
     bool badRequest_var;
+    int method_var;
+    opp_string uri_var;
+    int firstBytePos_var;
+    int lastBytePos_var;
 
     // protected and unimplemented operator==(), to prevent accidental usage
     bool operator==(const httptRequestMessage&);
@@ -104,19 +183,45 @@ class httptRequestMessage : public httptBaseMessage
     // field getter/setter methods
     virtual bool badRequest() const;
     virtual void setBadRequest(bool badRequest_var);
+    virtual int method() const;
+    virtual void setMethod(int method_var);
+    virtual const char * uri() const;
+    virtual void setUri(const char * uri_var);
+    virtual int firstBytePos() const;
+    virtual void setFirstBytePos(int firstBytePos_var);
+    virtual int lastBytePos() const;
+    virtual void setLastBytePos(int lastBytePos_var);
 };
 
 inline void doPacking(cCommBuffer *b, httptRequestMessage& obj) {obj.parsimPack(b);}
 inline void doUnpacking(cCommBuffer *b, httptRequestMessage& obj) {obj.parsimUnpack(b);}
 
 /**
- * Class generated from <tt>httptools/messages/httptMessages.msg</tt> by opp_msgc.
+ * Class generated from <tt>./httptMessages.msg</tt> by opp_msgc.
  * <pre>
  * packet httptReplyMessage extends httptBaseMessage
  * {
  *     @omitGetVerb(true);
  *     int result = 0; 				
  *     int contentType = 0;			
+ *     string phrase = "";
+ *     
+ *     
+ *     
+ *     
+ *     
+ *     
+ *     
+ *     
+ *     
+ *     
+ *     
+ *     
+ *     int firstBytePos = BRS_UNSPECIFIED;
+ *     
+ *     int lastBytePos = BRS_UNSPECIFIED;
+ *     
+ *     int instanceLength = BRS_UNSPECIFIED; 
  * }
  * </pre>
  */
@@ -125,6 +230,10 @@ class httptReplyMessage : public httptBaseMessage
   protected:
     int result_var;
     int contentType_var;
+    opp_string phrase_var;
+    int firstBytePos_var;
+    int lastBytePos_var;
+    int instanceLength_var;
 
     // protected and unimplemented operator==(), to prevent accidental usage
     bool operator==(const httptReplyMessage&);
@@ -143,6 +252,14 @@ class httptReplyMessage : public httptBaseMessage
     virtual void setResult(int result_var);
     virtual int contentType() const;
     virtual void setContentType(int contentType_var);
+    virtual const char * phrase() const;
+    virtual void setPhrase(const char * phrase_var);
+    virtual int firstBytePos() const;
+    virtual void setFirstBytePos(int firstBytePos_var);
+    virtual int lastBytePos() const;
+    virtual void setLastBytePos(int lastBytePos_var);
+    virtual int instanceLength() const;
+    virtual void setInstanceLength(int instanceLength_var);
 };
 
 inline void doPacking(cCommBuffer *b, httptReplyMessage& obj) {obj.parsimPack(b);}

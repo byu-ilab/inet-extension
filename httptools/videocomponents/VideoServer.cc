@@ -15,11 +15,11 @@
 //
 // ***************************************************************************
 
-#include "videoServer.h"
+#include "VideoServer.h"
 
-Define_Module(videoServer);
+Define_Module(VideoServer);
 
-void videoServer::initialize()
+void VideoServer::initialize()
 {
 	httptServerBase::initialize();
 
@@ -47,7 +47,7 @@ void videoServer::initialize()
     scheduleAt(simTime(),start);
 }
 
-void videoServer::finish()
+void VideoServer::finish()
 {
 	httptServerBase::finish();
 
@@ -58,7 +58,7 @@ void videoServer::finish()
 	recordScalar("sock.broken", socketsBroken);
 }
 
-void videoServer::handleMessage(cMessage *msg)
+void VideoServer::handleMessage(cMessage *msg)
 {
 	// setup listener socket.
 	if (msg->getKind() == START) {
@@ -77,7 +77,7 @@ void videoServer::handleMessage(cMessage *msg)
 }
 
 
-bool videoServer::hasCallback(TCPSocketAPI::CALLBACK_TYPE type){
+bool VideoServer::hasCallback(TCPSocketAPI::CALLBACK_TYPE type){
 	return (type == TCPSocketAPI::CB_T_RECV ||
 			type == TCPSocketAPI::CB_T_ACCEPT);
 }
@@ -92,7 +92,7 @@ bool videoServer::hasCallback(TCPSocketAPI::CALLBACK_TYPE type){
 /// On success: ret_status will be the descriptor of the accepted socket
 /// On error: ret_status will be TCPSocketAPI::CB_E_UNKNOWN from the
 /// 	TCPSocketAPI::CALLBACK_ERROR enumeration
-void videoServer::acceptCallback(int socket_id, int ret_status, void * yourPtr) {
+void VideoServer::acceptCallback(int socket_id, int ret_status, void * yourPtr) {
 
 	// signal next accept
 	tcp_api->accept(socket_id);
@@ -112,7 +112,7 @@ void videoServer::acceptCallback(int socket_id, int ret_status, void * yourPtr) 
 //						the number of bytes received
 // @param msg -- a pointer to the received message
 // @param yourPtr -- the pointer to the data passed to the accept method
-void videoServer::recvCallback(int socket_id, int ret_status,
+void VideoServer::recvCallback(int socket_id, int ret_status,
 	cPacket * msg, void * myPtr){
 
 	Enter_Method_Silent();
@@ -136,10 +136,10 @@ void videoServer::recvCallback(int socket_id, int ret_status,
 	updateDisplay();
 }
 
-void videoServer::closeSocket(int socket_id) {
+void VideoServer::closeSocket(int socket_id) {
 	tcp_api->close(socket_id);
 }
-httptReplyMessage* videoServer::handleGetRequest( httptRequestMessage *request, string resource ) {
+httptReplyMessage* VideoServer::handleGetRequest( httptRequestMessage *request, string resource ) {
 	// error if this resource is not a video title in workload generator
 	if (workload_generator->getVideoTitleAsInt(resource) == -1) {
 		return generateErrorReply(request,404);
@@ -159,7 +159,7 @@ httptReplyMessage* videoServer::handleGetRequest( httptRequestMessage *request, 
 	return NULL;
 }
 
-void videoServer::updateDisplay() {
+void VideoServer::updateDisplay() {
 	httptServerBase::updateDisplay();
 	if ( ev.isGUI() )
 	{
@@ -169,88 +169,3 @@ void videoServer::updateDisplay() {
 	}
 }
 
-
-//void httptServer::socketEstablished(int connId, void *yourPtr)
-//{
-//    EV_INFO << "connected socket with id=" << connId << endl;
-//	socketsOpened++;
-//}
-//
-//void httptServer::socketDataArrived(int connId, void *yourPtr, cPacket *msg, bool urgent)
-//{
-//	if ( yourPtr==NULL )
-//	{
-//		EV_ERROR << "Socket establish failure. Null pointer" << endl;
-//		return;
-//	}
-//	TCPSocket *socket = (TCPSocket*)yourPtr;
-//
-//	// Should be a httptReplyMessage
-//	EV_DEBUG << "Socket data arrived on connection " << connId << ". Message=" << msg->getName() << ", kind=" << msg->getKind() << endl;
-//
-//	// call the message handler to process the message.
-//	cMessage *reply = handleReceivedMessage(msg);
-//	cPacket *pckt = check_and_cast<cPacket *>(msg);
-//	if ( reply!=NULL )
-//	{
-//		requestsReceived++;
-//		socket->send(reply); // Send to socket if the reply is non-zero.
-//	}
-//	delete msg; // Delete the received message here. Must not be deleted in the handler!
-//}
-//
-//void httptServer::socketPeerClosed(int connId, void *yourPtr)
-//{
-//	if ( yourPtr==NULL )
-//	{
-//		EV_ERROR << "Socket establish failure. Null pointer" << endl;
-//		return;
-//	}
-//	TCPSocket *socket = (TCPSocket*)yourPtr;
-//
-//    // close the connection (if not already closed)
-//    if (socket->getState()==TCPSocket::PEER_CLOSED)
-//    {
-//        EV_INFO << "remote TCP closed, closing here as well. Connection id is " << connId << endl;
-//        socket->close();  // Call the close method to properly dispose of the socket.
-//    }
-//}
-//
-//void httptServer::socketClosed(int connId, void *yourPtr)
-//{
-//    EV_INFO << "connection closed. Connection id " << connId << endl;
-//
-//	if ( yourPtr==NULL )
-//	{
-//		EV_ERROR << "Socket establish failure. Null pointer" << endl;
-//		return;
-//	}
-//	// Cleanup
-//	TCPSocket *socket = (TCPSocket*)yourPtr;
-//	sockCollection.removeSocket(socket);
-//	delete socket;
-//}
-//
-//void httptServer::socketFailure(int connId, void *yourPtr, int code)
-//{
-//    EV_WARNING << "connection broken. Conneciton id " << connId << endl;
-//    numBroken++;
-//
-//    EV_INFO << "connection closed. Connection id " << connId << endl;
-//
-//	if ( yourPtr==NULL )
-//	{
-//		EV_ERROR << "Socket establish failure. Null pointer" << endl;
-//		return;
-//	}
-//	TCPSocket *socket = (TCPSocket*)yourPtr;
-//
-//	if (code==TCP_I_CONNECTION_RESET)
-//		EV_WARNING << "Connection reset!\\n";
-//	else if (code==TCP_I_CONNECTION_REFUSED)
-//		EV_WARNING << "Connection refused!\\n";
-//
-//	// Cleanup
-//	sockCollection.removeSocket(socket);
-//	delete socket;
-//}

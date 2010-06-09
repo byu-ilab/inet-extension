@@ -15,8 +15,8 @@
 //
 // ***************************************************************************
 
-#ifndef __videoServerSock_H_
-#define __videoServerSock_H_
+#ifndef __VIDEOSERVER_H
+#define __VIDEOSERVER_H
 
 #include "httptServerBase.h"
 #include "TCPSocketAPI.h"
@@ -26,10 +26,11 @@
  *
  * @version 1.0
  * @author  Travis Andelin
+ * @contributor Kevin Black
  */
 
 enum VSMessageType { START = 1 };
-class INET_API videoServer :
+class INET_API VideoServer :
 	public httptServerBase, TCPSocketAPI::CallbackInterface {
 
 	protected:
@@ -58,9 +59,9 @@ class INET_API videoServer :
 
 		/** @name TCP Socket API callbacks */
 		//@ {
-		virtual bool hasCallback(TCPSocketAPI::CALLBACK_TYPE type); // is this in CB interface?
+		//virtual bool hasCallback(TCPSocketAPI::CALLBACK_TYPE type); // is this in CB interface?
 		virtual void acceptCallback  (int socket_id, int ret_status, void * yourPtr); // this happens after each call  to accept.
-		virtual void connectCallback(int socket_id, int ret_status, void * myPtr); // this happens after each call to connect
+		//virtual void connectCallback(int socket_id, int ret_status, void * myPtr); // this happens after each call to connect
 		virtual void recvCallback(int socket_id, int ret_status, cPacket * msg, void * myPtr); // this happens after each call to recv
 		//@ }
 
@@ -73,6 +74,6 @@ class INET_API videoServer :
 		virtual void closeSocket(int socket_id);
 };
 
-#endif
+#endif /* __VIDEOSERVER_H */
 
 
