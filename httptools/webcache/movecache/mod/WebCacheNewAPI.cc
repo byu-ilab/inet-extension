@@ -183,6 +183,7 @@ void WebCacheNewAPI::recvCallback(int socket_id, int ret_status,
 	{
 		delete msg;
 		tcp_api->send(socket_id, errorReply);
+		tcp_api->recv(socket_id,myPtr);
 	}
 	else
 	{
