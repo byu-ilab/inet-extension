@@ -15,10 +15,10 @@
 
 package inet.httptools.webcache.movecache.test;
 
-import inet.applications.tcpapp.socketapi.TCPSocketAPIApp;
+import inet.applications.tcpapp.socketapi.TCPSocketAPIAppInterface;
 import inet.httptools.base.httptServerBaseInterface;
 
-simple DummyServer like TCPSocketAPIApp, httptServerBaseInterface
+simple DummyServer like TCPSocketAPIAppInterface, httptServerBaseInterface
 {
     parameters:
         string socketapi;

@@ -37,7 +37,7 @@ package inet.applications.tcpapp.socketapi;
 //
 // @see GenericAppMsg, TCPBasicClientApp, TelnetApp
 //
-simple TCPSAPIGenericSrvApp like TCPSocketAPIApp
+simple TCPSAPIGenericSrvApp like TCPSocketAPIAppInterface
 {
     parameters:
         string address = default(""); // local address; may be left empty ("")

@@ -15,9 +15,9 @@
 
 package inet.httptools.webcache.movecache.test;
 
-import inet.applications.tcpapp.socketapi.TCPSocketAPIApp;
+import inet.applications.tcpapp.socketapi.TCPSocketAPIAppInterface;
 
-simple ByteRangeClient like TCPSocketAPIApp
+simple ByteRangeClient like TCPSocketAPIAppInterface
 {
     parameters:
         string socketapi;

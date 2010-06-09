@@ -22,7 +22,7 @@ package inet.applications.tcpapp.socketapi;
 // is specified, and find the referenced TCPSocketAPI module
 // in its parent's module.
 
-moduleinterface TCPSocketAPIApp
+moduleinterface TCPSocketAPIAppInterface
 {
     parameters:
         string socketapi;

@@ -320,6 +320,10 @@ void httptBrowserBase::handleDataMessage( cMessage *msg )
 				EV_DEBUG << "UNKNOWN RESOURCE TYPE RECEIVED: " << (CONTENT_TYPE_ENUM)appmsg->contentType() << endl;
 				if (ev.isGUI()) bubble("Received an unknown resource type");
 				break;
+			default:
+				EV_DEBUG << "UNSUPPORTED RESOURCE TYPE RECEIVED: "<<(CONTENT_TYPE_ENUM)appmsg->contentType()<<endl;
+				if (ev.isGUI()) bubble("Received an unsupported resource type");
+				break;
 		}
 
 		// Parse the html page body

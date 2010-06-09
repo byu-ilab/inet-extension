@@ -59,11 +59,6 @@ void WebCache::initialize() {
 	resourceCache = new LRUCache(par("cacheSize"));
 	updateDisplay();
 	//EV_INFO << "INITIALIZING LRUCache OF SIZE "<<par("cacheSize")<<endl;
-	controller = check_and_cast<httptController*>(simulation.getSystemModule()->getSubmodule(par("controller")));
-	//getParentModule()->getParentModule()->getSubmodule("controller")); // not sure if this is it
-//  if (controller == NULL) {
-//    error("Controller module not found");
-//  }
 }
 void WebCache::finish() {
 	EV_DEBUG << "WEBCACHE: finish begin"<< endl;

@@ -45,11 +45,6 @@
 #include "httptUtils.h"
 #include "httptLogdefs.h"
 
-//#define HTTPT_REQUEST_MESSAGE  			10000
-//#define HTTPT_DELAYED_REQUEST_MESSAGE		10001
-//#define HTTPT_RESPONSE_MESSAGE 			10010
-//#define HTTPT_DELAYED_RESPONSE_MESSAGE	10011
-
 using namespace std;
 
 enum LOG_FORMAT {lf_short,lf_long};

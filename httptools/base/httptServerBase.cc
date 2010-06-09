@@ -14,31 +14,34 @@
 //
 
 #include "httptServerBase.h"
-#include <iostream>
 
 void httptServerBase::initialize()
 {
 	badRequests = 0;
 	EV_DEBUG << "Initializing server base component\n";
 
-	wwwName = (const char*)par("www");
+	wwwName = par("www").stdstringValue();
 	if ( wwwName.size() == 0 )
 	{
-		wwwName = "www.";
 		wwwName += getParentModule()->getFullName();
-		wwwName += ".com";
+		wwwName += ".omnet.net";
 	}
 	EV_DEBUG << "Initializing HTTP server. Using WWW name " << wwwName << endl;
 	port = par("port");
 		ASSERT(0 <= port && port < 65536);
 
 	httpProtocol = par("httpProtocol");
-		ASSERT(httpProtocol == 10 || httpProtocol == 11);
+		ASSERT(httpProtocol == HTTP_10 || httpProtocol == HTTP_11);
+
+	// find and register with controller
+	controller = check_and_cast<httptController *>(simulation.getSystemModule()->getSubmodule(par("controller")));
+	EV_DEBUG << "registerWithController: parent module's full name: "<<getParentModule()->getFullName()<<endl;
+	controller->registerWWWserver(getParentModule()->getFullName(),wwwName.c_str(),port,INSERT_END,activationTime);
 
 	// logging parameters
 	ll = par("logLevel");
-	logFileName = (const char*)par("logFile");
-	enableLogging = logFileName!="";
+	logFileName = par("logFile").stdstringValue();
+	enableLogging = !logFileName.empty();
 	outputFormat = lf_short;
 
 	activationTime = par("activationTime");
@@ -65,10 +68,6 @@ void httptServerBase::initialize()
 	activationTime = par("activationTime");
 	EV_INFO << "Activation time is " << activationTime << endl;
 	*/
-
-    // Register the server with the controller object
-   	registerWithController();
-
 	updateDisplay();
 }
 
@@ -97,16 +96,13 @@ void httptServerBase::updateDisplay()
 		}
 	}
 }
-
+/*//OLD CODE
 void httptServerBase::registerWithController()
 {
-	// Find controller object and register
-	cModule * controller = simulation.getSystemModule()->getSubmodule(par("controller"));
-	if ( controller == NULL )
-		error("Controller module not found");
 	EV_DEBUG << "registerWithController: parent module's full name: "<<getParentModule()->getFullName()<<endl;
-	((httptController*)controller)->registerWWWserver(getParentModule()->getFullName(),wwwName.c_str(),port,INSERT_END,activationTime);
+	controller->registerWWWserver(getParentModule()->getFullName(),wwwName.c_str(),port,INSERT_END,activationTime);
 }
+*/
 
 void httptServerBase::handleMessage(cMessage *msg)
 {
@@ -140,7 +136,6 @@ httptReplyMessage * httptServerBase::handleRequestMessage( cMessage *msg )
 
 	if (method == RM_NONE || uri.empty())
 	{
-		cout << "ServerBase: parsing from heading"<<endl;
 		// Verify that the header string has the correct number of parameters
 			// Parse the request string on spaces
 		cStringTokenizer tokenizer = cStringTokenizer(request->heading()," ");
@@ -189,18 +184,31 @@ httptReplyMessage * httptServerBase::handleGetRequest( httptRequestMessage *requ
 	return generateErrorReply(request, resource_url, 404);
 }
 
-httptReplyMessage* httptServerBase::generateErrorReply( httptRequestMessage *request, string resource_url, int code )
+httptReplyMessage* httptServerBase::generateErrorReply( httptRequestMessage *request, string resource_uri, int code )
 {
 	badRequests++;
-	return generateStandardReply(request, resource_url, code, par("errorReplySize"), rt_none);
+	return generateStandardReply(request, resource_uri, code, par("errorReplySize"), rt_unknown);
 }
 
+void httptServerBase::fillinErrorReply(httptReplyMessage * reply, httptRequestMessage *request, string resource_uri, int code)
+{
+	badRequests++;
+	fillinStandardReply(reply, request, resource_uri, code, par("errorReplySize"), rt_unknown);
+}
 
 httptReplyMessage * httptServerBase::generateStandardReply(httptRequestMessage * request,
 		string resource_uri, int code, int size, int content_type)
 {
-	ASSERT(request);
-	ASSERT(100 <= code && code <= 505);// TODO replace with constants or #define
+	httptReplyMessage * reply = new httptReplyMessage();
+	fillinStandardReply(reply, request, resource_uri, code, size, content_type);
+	return reply;
+}
+
+void httptServerBase::fillinStandardReply(httptReplyMessage * reply, httptRequestMessage * request,
+		string resource_uri, int code, int size, int content_type)
+{
+	ASSERT(reply && request);
+	ASSERT(HTTP_CODE_MIN <= code && code <= HTTP_CODE_MAX);
 	ASSERT(0 <= size);
 
 	string header = "HTTP/1.";
@@ -213,8 +221,6 @@ httptReplyMessage * httptServerBase::generateStandardReply(httptRequestMessage *
 	}
 	header = header + " " + httpCodeAsString(code) + " " + httpPhraseFromCode(code);
 
-	httptReplyMessage * reply = new httptReplyMessage();
-
 	reply->setHeading(header.c_str());
 
 	if (!resource_uri.empty())
@@ -224,7 +230,7 @@ httptReplyMessage * httptServerBase::generateStandardReply(httptRequestMessage *
 	}
 	reply->setName(header.c_str());
 
-	reply->setProtocol(request->protocol());  // MIGRATE40: kvj
+	reply->setProtocol(request->protocol());
 	reply->setResult(code);
 	reply->setPhrase(httpPhraseFromCode(code).c_str());
 
@@ -235,16 +241,22 @@ httptReplyMessage * httptServerBase::generateStandardReply(httptRequestMessage *
 
 	reply->setByteLength(size);
 	reply->setKind(HTTPT_RESPONSE_MESSAGE);
+}
 
+httptReplyMessage * httptServerBase::generateByteRangeReply(
+		httptRequestMessage * request, string resource_uri, int resource_size, int content_type)
+{
+	httptReplyMessage * reply = new httptReplyMessage();
+	fillinByteRangeReply(reply, request, resource_uri, resource_size, content_type);
 	return reply;
 }
 
 /// @see RFC 2616, sections 10.2.7, 10.4.17, 14.16, 14.35.1
-httptReplyMessage * httptServerBase::generateByteRangeReply(
-		httptRequestMessage * request, string resource_uri, int resource_size, int content_type)
+void httptServerBase::fillinByteRangeReply(httptReplyMessage * reply, httptRequestMessage * request,
+		string resource_uri, int resource_size, int content_type)
 {
-	ASSERT(request);
-	ASSERT(resource_size > 0);
+	ASSERT(reply && request);
+	ASSERT(0 < resource_size);
 
 	int fbp = request->firstBytePos();
 	int lbp = request->lastBytePos();
@@ -253,19 +265,18 @@ httptReplyMessage * httptServerBase::generateByteRangeReply(
 	if ( fbp < 0 || (0 <= lbp && lbp < fbp) )
 	{
 		// ignore the error and just return the whole entity with a 200 OK
-		return generateStandardReply(request, resource_uri, 200, resource_size, content_type);//TODO replace 200 with constant or #define
+		fillinStandardReply(reply, request, resource_uri, HTTP_CODE_200, resource_size, content_type);
+		return;
 	}
-
-	httptReplyMessage * reply = NULL;
 
 	// check if is unsatisfiable
 	if ( resource_size < fbp )
 	{
 		// send a 416 error
-		reply = generateErrorReply(request, resource_uri, 416);// TODO replace 416 with constant or #define
+		fillinErrorReply(reply, request, resource_uri, HTTP_CODE_416);
 		reply->setFirstBytePos(BRS_ASTERISK);
 		reply->setInstanceLength(resource_size);
-		return reply;
+		return;
 	}
 
 	// else is satisfiable, send back a 206 response
@@ -273,9 +284,8 @@ httptReplyMessage * httptServerBase::generateByteRangeReply(
 	{
 		lbp = resource_size - 1;
 	}
-	reply = generateStandardReply(request, resource_uri, 206, lbp - fbp, content_type); // TODO replace 206 with constant or #define
+	fillinStandardReply(reply, request, resource_uri, HTTP_CODE_206, lbp - fbp, content_type);
 	reply->setFirstBytePos(fbp);
 	reply->setLastBytePos(lbp);
 	reply->setInstanceLength(resource_size);
-	return reply;
 }

@@ -189,47 +189,52 @@ CONTENT_TYPE_ENUM getResourceCategory(string resourceExt)
 		return rt_image;
 	else if (resourceExt=="css" || resourceExt=="txt" || resourceExt=="js")
 		return rt_text;
+	else if (resourceExt=="vtmd")
+		return rt_vtmd;
+	else if (resourceExt=="vid" || resourceExt=="vidseg" || resourceExt=="vs")
+		return rt_vidseg;
+
 	return rt_unknown;
 }
 
 RequestMethod httpMethodFromString(const string & methodstr)
 {
-	if (methodstr == "OPTIONS")
+	if (methodstr == HTTP_METHOD_OPTIONS)
 	{
 		return RM_OPTIONS;
 	}
 
-	if (methodstr == "GET")
+	if (methodstr == HTTP_METHOD_GET)
 	{
 		return RM_GET;
 	}
 
-	if (methodstr == "HEAD")
+	if (methodstr == HTTP_METHOD_HEAD)
 	{
 		return RM_HEAD;
 	}
 
-	if (methodstr == "POST")
+	if (methodstr == HTTP_METHOD_POST)
 	{
 		return RM_POST;
 	}
 
-	if (methodstr == "PUT")
+	if (methodstr == HTTP_METHOD_PUT)
 	{
 		return RM_PUT;
 	}
 
-	if (methodstr == "DELETE")
+	if (methodstr == HTTP_METHOD_DELETE)
 	{
 		return RM_DELETE;
 	}
 
-	if (methodstr == "TRACE")
+	if (methodstr == HTTP_METHOD_TRACE)
 	{
 		return RM_TRACE;
 	}
 
-	if (methodstr == "CONNECT")
+	if (methodstr == HTTP_METHOD_CONNECT)
 	{
 		return RM_CONNECT;
 	}
@@ -241,15 +246,16 @@ string httpMethodAsString(int method)
 {
 	switch(method)
 	{
-	case RM_OPTIONS: return "OPTIONS"; break;
-	case RM_GET: return "GET"; break;
-	case RM_HEAD: return "HEAD"; break;
-	case RM_POST: return "POST"; break;
-	case RM_PUT: return "PUT"; break;
-	case RM_DELETE: return "DELETE"; break;
-	case RM_TRACE: return "TRACE"; break;
-	case RM_CONNECT: return "CONNECT"; break;
-	default: return "";
+	case RM_OPTIONS:	return HTTP_METHOD_OPTIONS;
+	case RM_GET: 		return HTTP_METHOD_GET;
+	case RM_HEAD: 		return HTTP_METHOD_HEAD;
+	case RM_POST: 		return HTTP_METHOD_POST;
+	case RM_PUT: 		return HTTP_METHOD_PUT;
+	case RM_DELETE: 	return HTTP_METHOD_DELETE;
+	case RM_TRACE: 		return HTTP_METHOD_TRACE;
+	case RM_CONNECT: 	return HTTP_METHOD_CONNECT;
+
+	default: 			return "";
 	}
 }
 
@@ -300,12 +306,13 @@ string httpPhraseFromCode(int code)
 {
 	switch(code)
 	{
-		case 200: return "OK";
-		case 206: return "PARTIAL CONTENT";
-		case 400: return "ERROR";
-		case 404: return "NOT FOUND";
-		case 416: return "REQUESTED RANGE NOT SATISFIABLE";
-		default: return "";
+		case HTTP_CODE_200: return HTTP_PHRASE_200;
+		case HTTP_CODE_206: return HTTP_PHRASE_206;
+		case HTTP_CODE_400: return HTTP_PHRASE_400;
+		case HTTP_CODE_404: return HTTP_PHRASE_404;
+		case HTTP_CODE_416: return HTTP_PHRASE_416;
+
+		default: 			return "";
 	}
 }
 

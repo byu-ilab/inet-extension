@@ -1,10 +1,10 @@
 // Author: Kevin Black
 //
-// Based off of the original httptServerBase class (which was refactored
-// to httptHTMLServerBase and then modified to extend this class).  Provides
-// generic HTTP server functions, such as generating error messages, parsing
-// request options, validating byte range requests, and generating byte
-// range reply messages.
+// Based off of the original httptServerBase class by Kristjan V. Jonsson
+// (which was refactored to httptHTMLServerBase and then modified to extend
+// this class).  Provides generic HTTP server functions, such as generating
+// error messages, parsing request options, validating byte range requests,
+// and generating byte range reply messages.
 //
 //*****************************************************************************
 //
@@ -32,6 +32,7 @@ class httptServerBase: public httptNodeBase
 protected:
 	unsigned long badRequests;
 	simtime_t activationTime;
+	httptController * controller;
 
 public:
 	/** Overridden from cSimpleModule */
@@ -50,8 +51,9 @@ protected:
 	/**
 	 * Register the server object with the controller.
 	 * Called at initialization (simulation startup).
+	 * Perhaps would be useful in the future for a server to be able to register with different controllers
 	 */
-	void registerWithController();
+	//void registerWithController();
 
 	/**
 	 * Handle a received data message, determine which HTTP option it is, if the bad bit is
@@ -76,28 +78,39 @@ protected:
 	 * Increments the bad request counter.
 	 * @todo perhaps make an enum instead of an int
 	 */
-	httptReplyMessage* generateErrorReply( httptRequestMessage *request, string resource_url, int code );
+	httptReplyMessage* generateErrorReply( httptRequestMessage *request, string resource_uri, int code);
 
+	/**
+	 * Fills in fields associated with the standard reply message (not including the byte range fields).
+	 * Increments the bad request counter.
+	 */
+	void fillinErrorReply(httptReplyMessage * reply, httptRequestMessage * request, string resource_uri, int code);
 
 	/**
 	 * Generates a standard reply message with the given parameters (i.e. one that doesn't
 	 * worry about byte ranges).
 	 */
-	httptReplyMessage * generateStandardReply(httptRequestMessage * request, string resource_url,
+	httptReplyMessage * generateStandardReply(httptRequestMessage * request, string resource_uri,
 			int code, int size, int content_type);
 
 	/**
-	 * Fills in the reply message according to the information in the reqest, the code, and the size.
+	 * Fills in fields associated with the standard reply message (not including the byte range fields).
 	 */
-//	void fillinReplyMessage(httptReplyMessage * reply, httptRequestMessage * request,
-//			string resource, int code, int size, int content_type);
+	void fillinStandardReply(httptReplyMessage * reply, httptRequestMessage * request,
+			string resource_uri, int code, int resource_size, int content_type);
 
 	/**
-	 * Generates a reply message according to the indicated byte range request, validating it against
-	 * the indicated resource size.
+	 * Generates a standard reply message according to the indicated byte range request,
+	 * validating it against the indicated resource size.
 	 */
 	httptReplyMessage * generateByteRangeReply(httptRequestMessage * request,
 			string resource, int resource_size, int content_type);
+
+	/**
+	 * Fills in the standard reply fields as well as the byte range fields.
+	 */
+	void fillinByteRangeReply(httptReplyMessage * reply, httptRequestMessage * request,
+			string resource_uri, int resource_size, int content_type);
 };
 
 #endif /* HTTPTSERVERBASE_H_ */

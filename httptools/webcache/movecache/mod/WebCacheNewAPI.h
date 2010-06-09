@@ -44,7 +44,7 @@ public:
 
 protected:
 	// internals
-	httptController *controller; // Reference to central controller object.
+	//httptController *controller; // Reference to central controller object.
 	Cache * resourceCache;
 	TCPSocketAPI * tcp_api;
 	string upstream_cache;
