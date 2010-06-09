@@ -56,10 +56,11 @@ simple httptHTMLServer like inet.applications.tcpapp.TCPApp
         int logLevel = default(0);						// The log level: 2: Debug, 1: Info; 0: Errors and warnings only
         string logFile = default("");					// Name of server log file. Events are appended, allowing sharing of file for multiple servers.
         string siteDefinition = default("");			// The site script file. Blank to disable.
-        double activationTime @unit("s") = default(0s);	// The initial activation delay. Zero to disable.
+        double activationTime @unit(s) = default(0s);	// The initial activation delay. Zero to disable.
         xml config;										// The XML configuration file for random sites
+        string controller = default("controller");
+        volatile int errorReplySize @unit(B) = default(200B);
     gates:
         input tcpIn;
         output tcpOut;
 }
-

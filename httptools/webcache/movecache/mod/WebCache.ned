@@ -28,7 +28,8 @@ simple WebCache like TCPApp
         xml config;										// The XML configuration file for random sites
         int cacheSize = default(10000);  // capacity of cache in bytes
         string serverwww = default("");
-        
+        string controller = default("controller");
+        volatile int errorReplySize @unit(B) = default (200B);
     gates:
         input tcpIn;
         output tcpOut;

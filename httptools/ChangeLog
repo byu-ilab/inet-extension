@@ -1,3 +1,7 @@
+June 7-8, 2010
+Added byte range processing to the WebCacheNewAPI.
+Tested; it appears to be working.
+
 June 4, 2010
 Refactored all of the servers to be httptHTMLServer...
 Moved the Servers and Browsers into the htmlcomponents

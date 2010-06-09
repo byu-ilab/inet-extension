@@ -26,7 +26,6 @@
 #define HTTPTSERVERBASE_H_
 
 #include "httptNodeBase.h"
-#include "httptByteRangeMessages_m.h"
 
 class httptServerBase: public httptNodeBase
 {
@@ -77,19 +76,27 @@ protected:
 	 * Increments the bad request counter.
 	 * @todo perhaps make an enum instead of an int
 	 */
-	httptReplyMessage* generateErrorReply( httptRequestMessage *request, int code );
+	httptReplyMessage* generateErrorReply( httptRequestMessage *request, string resource_url, int code );
+
+
+	/**
+	 * Generates a standard reply message with the given parameters (i.e. one that doesn't
+	 * worry about byte ranges).
+	 */
+	httptReplyMessage * generateStandardReply(httptRequestMessage * request, string resource_url,
+			int code, int size, int content_type);
 
 	/**
 	 * Fills in the reply message according to the information in the reqest, the code, and the size.
 	 */
-	void fillinReplyMessage(httptReplyMessage * reply, httptRequestMessage * request,
-			string resource, int code, int size, int content_type);
+//	void fillinReplyMessage(httptReplyMessage * reply, httptRequestMessage * request,
+//			string resource, int code, int size, int content_type);
 
 	/**
 	 * Generates a reply message according to the indicated byte range request, validating it against
 	 * the indicated resource size.
 	 */
-	httptReplyMessage * generateByteRangeReply(httptByteRangeRequestMessage * request,
+	httptReplyMessage * generateByteRangeReply(httptRequestMessage * request,
 			string resource, int resource_size, int content_type);
 };
 
