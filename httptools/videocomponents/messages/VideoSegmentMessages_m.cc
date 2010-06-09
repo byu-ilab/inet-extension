@@ -1,5 +1,5 @@
 //
-// Generated file, do not edit! Created by opp_msgc 4.0 from ./VideoSegmentMessages.msg.
+// Generated file, do not edit! Created by opp_msgc 4.0 from httptools/videocomponents/messages/VideoSegmentMessages.msg.
 //
 
 // Disable warnings about unused variables, empty switch stmts, etc:

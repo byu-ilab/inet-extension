@@ -36,6 +36,8 @@
 #include <string.h>
 #include <stdlib.h>
 
+#include "httptMessages_m.h"
+
 #if WIN32
 # include <io.h>
 # include <stdio.h>
@@ -60,12 +62,25 @@ std::string getDelimited(string str, string ldelim, string rdelim="");
 std::vector<std::string> parseResourceName(string resource);
 CONTENT_TYPE_ENUM getResourceCategory(vector<std::string> res);
 CONTENT_TYPE_ENUM getResourceCategory(string resourceExt);
+
+// returns RM_NONE if the methodstr doesn't contain a known http method
+RequestMethod httpMethodFromString(const string & methodstr);
+
+// returns an empty string if the method is unknown
+string httpMethodAsString(int method);
+
+// returns an emtpy string if the code is out of the defined status code range (currently 100 - 505)
 string httpCodeAsString(int code);
+
+// returns an empty string if the code is not recognized
 string httpPhraseFromCode(int code);
+
 string getReverseString(const string & toreverse);
+
 double safeatof(const char* strval, double defaultVal=0.0);
 int safeatoi(const char* strval, int defaultVal=0);
 int safeatobool(const char* strval, bool defaultVal=false);
+
 std::vector<std::string> splitFile(string fileName);
 bool fileExists( const char *file );
 

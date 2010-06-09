@@ -294,22 +294,6 @@ void WebCacheNewAPI::respondToClientRequest(int socket_id, httptRequestMessage *
 	// TODO add type extractor from extension? or add type to web resource?
 	// checks if it is indeed a byte range request
 	tcp_api->send(socket_id, generateByteRangeReply(request, resource->getID(), resource->getSize(), rt_text));
-//
-//	httptReplyMessage * reply = NULL;
-//		// TODO add type extractor from extension? or add type to web resource?
-//	// checks if it is indeed a byte range request
-//	reply = generateByteRangeReply(request, resouce->getID(), resouce->getSize(), rt_text);
-//
-//	if (br_request)
-//	{
-//		reply  = generateByteRangeReply(br_request, resouce->getID(), resouce->getSize(), rt_text); // TODO add type extractor from extension? or add type to web resource?
-//	}
-//	else
-//	{
-//		reply = new httptReplyMessage();
-//		fillinReplyMessage(reply, request, resouce->getID(), 200, resouce->getSize(), rt_text);
-//	}
-//	tcp_api->send(socket_id, reply);
 }
 
 bool WebCacheNewAPI::isErrorMessage(httptReplyMessage *msg)
@@ -319,6 +303,7 @@ bool WebCacheNewAPI::isErrorMessage(httptReplyMessage *msg)
 
 httptReplyMessage * WebCacheNewAPI::handleGetRequest(httptRequestMessage * msg, string resource_url)
 {
+	// we may not be able to return a response immediately
 	return NULL;
 }
 // A client (or cache) requests a file from me.
@@ -359,20 +344,34 @@ void WebCacheNewAPI::processDownstreamRequest(int socket_id, cPacket * msg, Conn
  * takes a URL from a request message.  for now, this must be a correctly formatted one.
  */
 string WebCacheNewAPI::extractURLFromRequest(httptRequestMessage * request) {
+	string r_msg = request->uri();
+	if (!r_msg.empty())
+	{
+		return r_msg;
+	}
+
+	// else parse it out
 	cStringTokenizer tokenizer = cStringTokenizer(request->heading()," ");
-	 vector<string> res = tokenizer.asVector();
-	 string r_msg = res[1];
-	 if (!strcmp(r_msg.c_str(), "/")) {
-		 r_msg = "root";
-	 }
-	 r_msg = trimLeft(r_msg, "/");
-	 return r_msg;
+	vector<string> res = tokenizer.asVector();
+	r_msg = res[1];
+	if (!strcmp(r_msg.c_str(), "/")) {
+		r_msg = "root";
+	}
+	r_msg = trimLeft(r_msg, "/");
+	return r_msg;
 }
 string WebCacheNewAPI::extractURLFromResponse(httptReplyMessage * response) {
+	string r_msg = response->relatedUri();
+	if (!r_msg.empty())
+	{
+		return r_msg;
+	}
+
+	// else parse it out, this format is not well defined
 	cStringTokenizer tokenizer = cStringTokenizer(response->getFullName(),"()");
-	 vector<string> res = tokenizer.asVector();
-	 string resp = res[1];
-	 return resp;
+	vector<string> res = tokenizer.asVector();
+	r_msg = res[1];
+	return r_msg;
 }
 
 /*

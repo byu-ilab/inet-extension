@@ -54,6 +54,7 @@ enum HTTPProtocol {
  * <pre>
  * enum RequestMethod
  * {
+ *     RM_NONE = -1; 
  *     RM_OPTIONS = 0;
  *     RM_GET = 1;
  *     RM_HEAD = 2;
@@ -66,6 +67,7 @@ enum HTTPProtocol {
  * </pre>
  */
 enum RequestMethod {
+    RM_NONE = -1,
     RM_OPTIONS = 0,
     RM_GET = 1,
     RM_HEAD = 2,
@@ -157,7 +159,7 @@ inline void doUnpacking(cCommBuffer *b, httptBaseMessage& obj) {obj.parsimUnpack
  * {
  *     @omitGetVerb(true);			
  *     bool badRequest = false;	
- *     int method enum(RequestMethod) = RM_GET;
+ *     int method enum(RequestMethod) = RM_NONE;
  *     string uri = "";
  *     
  *     

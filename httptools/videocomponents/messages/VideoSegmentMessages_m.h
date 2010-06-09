@@ -1,5 +1,5 @@
 //
-// Generated file, do not edit! Created by opp_msgc 4.0 from ./VideoSegmentMessages.msg.
+// Generated file, do not edit! Created by opp_msgc 4.0 from httptools/videocomponents/messages/VideoSegmentMessages.msg.
 //
 
 #ifndef _VIDEOSEGMENTMESSAGES_M_H_
@@ -21,7 +21,7 @@
 
 
 /**
- * Class generated from <tt>./VideoSegmentMessages.msg</tt> by opp_msgc.
+ * Class generated from <tt>httptools/videocomponents/messages/VideoSegmentMessages.msg</tt> by opp_msgc.
  * <pre>
  * message VideoSegmentRequestMessage extends httptRequestMessage
  * {
@@ -67,7 +67,7 @@ inline void doPacking(cCommBuffer *b, VideoSegmentRequestMessage& obj) {obj.pars
 inline void doUnpacking(cCommBuffer *b, VideoSegmentRequestMessage& obj) {obj.parsimUnpack(b);}
 
 /**
- * Class generated from <tt>./VideoSegmentMessages.msg</tt> by opp_msgc.
+ * Class generated from <tt>httptools/videocomponents/messages/VideoSegmentMessages.msg</tt> by opp_msgc.
  * <pre>
  * message VideoSegmentReplyMessage extends httptReplyMessage 
  * {

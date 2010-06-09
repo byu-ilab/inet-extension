@@ -243,6 +243,8 @@ httptRequestMessage * ByteRangeClient::generateBRRequest(const std::string & uri
 	request->setHeading(header.c_str());
 	request->setOriginatorUrl("");
 	request->setTargetUrl(par("serverwww"));
+	request->setMethod(RM_GET);
+	request->setUri(uri.c_str());
 	request->setProtocol(httpProtocol);
 	request->setByteLength(100);
 	request->setKind(HTTPT_REQUEST_MESSAGE);
