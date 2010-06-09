@@ -143,49 +143,50 @@ void ByteRangeClient::recvCallback(int socket_id, int ret_status, cPacket * msg,
 		return;
 	}
 
-	httptByteRangeReplyMessage * br_reply = dynamic_cast<httptByteRangeReplyMessage *>(msg);
-	if (!br_reply)
-	{
-		delete rri_ptr;//id_ptr;
-		throw cRuntimeError(this, "received message on request %d for byte range %d is not a byte range reply message.",
-				rri_ptr->request_id, rri_ptr->range_id);
-	}
+	httptReplyMessage * reply = check_and_cast<httptReplyMessage *>(msg);
 
-	if (br_reply->result() != 206)
+//	if (!reply)
+//	{
+//		delete rri_ptr;//id_ptr;
+//		throw cRuntimeError(this, "received message on request %d for byte range %d is not a byte range reply message.",
+//				rri_ptr->request_id, rri_ptr->range_id);
+//	}
+
+	if (reply->result() != 206)
 	{
-		BR_INFO << "result code: "<<br_reply->result()<<"\nexpected: 206\n";
+		BR_INFO << "result code: "<<reply->result()<<"\nexpected: 206\n";
 	}
 
 	int range_id = rri_ptr->range_id;
 
-	if (br_reply->firstBytePos() != range_id * _range_size)
+	if (reply->firstBytePos() != range_id * _range_size)
 	{
-		BR_INFO << "first byte of returned message is: "<<br_reply->firstBytePos()<<
+		BR_INFO << "first byte of returned message is: "<<reply->firstBytePos()<<
 			"\nexpected: "<<range_id*_range_size<<endl;
 	}
 
 	if (range_id == _num_ranges - 1)
 	{
-		if (br_reply->lastBytePos() != _file_size -1 )
+		if (reply->lastBytePos() != _file_size -1 )
 		{
-			BR_INFO << "last byte of returned message is: "<<br_reply->lastBytePos()<<
+			BR_INFO << "last byte of returned message is: "<<reply->lastBytePos()<<
 				"\nexpected: "<<_file_size-1<<endl;
 		}
 	}
-	else if (br_reply->lastBytePos() !=  (range_id+1) * _range_size - 1 )
+	else if (reply->lastBytePos() !=  (range_id+1) * _range_size - 1 )
 	{
-		BR_INFO << "last byte of returned message is: "<<br_reply->lastBytePos()<<
+		BR_INFO << "last byte of returned message is: "<<reply->lastBytePos()<<
 			"\nexpected: "<<(range_id+1)*_range_size-1<<endl;
 
 	}
 
-	if (br_reply->instanceLength() != _file_size)
+	if (reply->instanceLength() != _file_size)
 	{
-		BR_INFO << "instance length is: "<<br_reply->instanceLength()<<
+		BR_INFO << "instance length is: "<<reply->instanceLength()<<
 			"\nexpected: "<<_file_size<<endl;
 	}
 
-	delete br_reply;
+	delete reply;
 
 	if (rri_ptr->request_id < _num_requests_to_make -1)
 	{
@@ -226,7 +227,7 @@ int ByteRangeClient::createSocket(int request_id, int range_id)
 			serverhostname, serverport /*par("serverport")*/, (void *) rri);
 }
 
-httptByteRangeRequestMessage * ByteRangeClient::generateBRRequest(const std::string & uri, int fbp, int lbp)
+httptRequestMessage * ByteRangeClient::generateBRRequest(const std::string & uri, int fbp, int lbp)
 {
 	std::string header = "GET "+uri+" HTTP/1.";
 	switch(httpProtocol)
@@ -237,7 +238,7 @@ httptByteRangeRequestMessage * ByteRangeClient::generateBRRequest(const std::str
 		error("Unknown HTTP protocol");
 	}
 
-	httptByteRangeRequestMessage * request = new httptByteRangeRequestMessage(header.c_str());
+	httptRequestMessage * request = new httptRequestMessage(header.c_str());
 
 	request->setHeading(header.c_str());
 	request->setOriginatorUrl("");
@@ -253,7 +254,7 @@ httptByteRangeRequestMessage * ByteRangeClient::generateBRRequest(const std::str
 
 void ByteRangeClient::sendBRRequest(int socket_id, int request_id, int range_id)
 {
-	httptByteRangeRequestMessage * request = NULL;
+	httptRequestMessage * request = NULL;
 
 	std::stringstream filename;
 	filename << "somefile" << request_id;

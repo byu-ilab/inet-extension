@@ -21,7 +21,6 @@
 #include "TCPSocketAPIAppUtils.h"
 #include "httptController.h"
 #include "httptLogdefs.h"
-#include "httptByteRangeMessages_m.h"
 #include "httptNodeBase.h"
 
 #include <iostream>
@@ -59,7 +58,7 @@ protected:
     virtual void recvCallback(int socket_id, int ret_status, cPacket * msg, void * myPtr);
 
     virtual int createSocket(int request_id, int range_id);
-    virtual httptByteRangeRequestMessage * generateBRRequest(const std::string & uri, int fbp, int lbp);
+    virtual httptRequestMessage * generateBRRequest(const std::string & uri, int fbp, int lbp);
     virtual void sendBRRequest(int socket_id, int request_id, int range_id);
 };
 

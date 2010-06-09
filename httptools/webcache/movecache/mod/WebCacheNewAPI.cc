@@ -236,12 +236,11 @@ void WebCacheNewAPI::makeUpstreamRequest(int socket_id, ConnInfo * data) {
 	//httptRequestMessage * ds_request = data->ds_request;
 	//httptRequestMessage * us_request = ds_request->dup();
 	httptRequestMessage * us_request = new httptRequestMessage(*(data->ds_request));
-	if (dynamic_cast<httptByteRangeRequestMessage *>(us_request))
-	{
-		throw cRuntimeError(this, "request to upstream server is still a byte range request");
-	}
+
 	us_request->setTargetUrl(par("serverwww"));
 	us_request->setOriginatorUrl(wwwName.c_str());//ds_request->targetUrl());
+	us_request->setFirstBytePos(BRS_UNSPECIFIED);
+	us_request->setLastBytePos(BRS_UNSPECIFIED);// just to be safe
 
 	ConnInfo * ci =new ConnInfo;
 	ci->sockType = CLIENT;
@@ -288,22 +287,29 @@ void WebCacheNewAPI::processUpstreamResponse(int socket_id, cPacket * msg, ConnI
 	delete data;
 }
 
-void WebCacheNewAPI::respondToClientRequest(int socket_id, httptRequestMessage * request, Resource * resouce)
+void WebCacheNewAPI::respondToClientRequest(int socket_id, httptRequestMessage * request, Resource * resource)
 {
-	ASSERT(request && resouce);
+	ASSERT(request && resource);
 
-	httptReplyMessage * reply = NULL;
-	httptByteRangeRequestMessage * br_request = dynamic_cast<httptByteRangeRequestMessage *>(request);
-	if (br_request)
-	{
-		reply  = generateByteRangeReply(br_request, resouce->getID(), resouce->getSize(), rt_text); // TODO add type extractor from extension? or add type to web resource?
-	}
-	else
-	{
-		reply = new httptReplyMessage();
-		fillinReplyMessage(reply, request, resouce->getID(), 200, resouce->getSize(), rt_text);
-	}
-	tcp_api->send(socket_id, reply);
+	// TODO add type extractor from extension? or add type to web resource?
+	// checks if it is indeed a byte range request
+	tcp_api->send(socket_id, generateByteRangeReply(request, resource->getID(), resource->getSize(), rt_text));
+//
+//	httptReplyMessage * reply = NULL;
+//		// TODO add type extractor from extension? or add type to web resource?
+//	// checks if it is indeed a byte range request
+//	reply = generateByteRangeReply(request, resouce->getID(), resouce->getSize(), rt_text);
+//
+//	if (br_request)
+//	{
+//		reply  = generateByteRangeReply(br_request, resouce->getID(), resouce->getSize(), rt_text); // TODO add type extractor from extension? or add type to web resource?
+//	}
+//	else
+//	{
+//		reply = new httptReplyMessage();
+//		fillinReplyMessage(reply, request, resouce->getID(), 200, resouce->getSize(), rt_text);
+//	}
+//	tcp_api->send(socket_id, reply);
 }
 
 bool WebCacheNewAPI::isErrorMessage(httptReplyMessage *msg)

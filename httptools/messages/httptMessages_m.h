@@ -18,6 +18,25 @@
 /**
  * Enum generated from <tt>./httptMessages.msg</tt> by opp_msgc.
  * <pre>
+ * enum HTTPMessageKind
+ * {
+ *     HTTPT_REQUEST_MESSAGE 			= 10000;
+ *     HTTPT_DELAYED_REQUEST_MESSAGE 	= 10001;
+ *     HTTPT_RESPONSE_MESSAGE 			= 10010;
+ *     HTTPT_DELAYED_RESPONSE_MESSAGE 	= 10011;
+ * };
+ * </pre>
+ */
+enum HTTPMessageKind {
+    HTTPT_REQUEST_MESSAGE = 10000,
+    HTTPT_DELAYED_REQUEST_MESSAGE = 10001,
+    HTTPT_RESPONSE_MESSAGE = 10010,
+    HTTPT_DELAYED_RESPONSE_MESSAGE = 10011
+};
+
+/**
+ * Enum generated from <tt>./httptMessages.msg</tt> by opp_msgc.
+ * <pre>
  * enum HTTPProtocol
  * {
  *     HTTP_10 = 10;
@@ -204,7 +223,11 @@ inline void doUnpacking(cCommBuffer *b, httptRequestMessage& obj) {obj.parsimUnp
  *     @omitGetVerb(true);
  *     int result = 0; 				
  *     int contentType = 0;			
- *     string phrase = "";
+ *     string phrase = "";				
+ *     								
+ *     								
+ *     string relatedUri = "";			
+ *     								
  *     
  *     
  *     
@@ -231,6 +254,7 @@ class httptReplyMessage : public httptBaseMessage
     int result_var;
     int contentType_var;
     opp_string phrase_var;
+    opp_string relatedUri_var;
     int firstBytePos_var;
     int lastBytePos_var;
     int instanceLength_var;
@@ -254,6 +278,8 @@ class httptReplyMessage : public httptBaseMessage
     virtual void setContentType(int contentType_var);
     virtual const char * phrase() const;
     virtual void setPhrase(const char * phrase_var);
+    virtual const char * relatedUri() const;
+    virtual void setRelatedUri(const char * relatedUri_var);
     virtual int firstBytePos() const;
     virtual void setFirstBytePos(int firstBytePos_var);
     virtual int lastBytePos() const;

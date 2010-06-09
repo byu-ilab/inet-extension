@@ -43,6 +43,14 @@
 //
 // ----------------------------------------------------------------------------
 
+enum HTTPMessageKind
+{
+    HTTPT_REQUEST_MESSAGE 			= 10000;
+    HTTPT_DELAYED_REQUEST_MESSAGE 	= 10001;
+    HTTPT_RESPONSE_MESSAGE 			= 10010;
+    HTTPT_DELAYED_RESPONSE_MESSAGE 	= 10011;
+};
+
 enum HTTPProtocol
 {
     HTTP_10 = 10;
@@ -133,7 +141,11 @@ packet httptReplyMessage extends httptBaseMessage
     @omitGetVerb(true);
     int result = 0; 				// e.g. 200 for OK, 404 for NOT FOUND.
     int contentType = 0;			// The content type: HTML pages, text or image resources.
-    string phrase = "";
+    string phrase = "";				// The description phrase associated with the status code
+    								// provided here to allow for use of status codes other
+    								// than the ones known to httptutils
+    string relatedUri = "";			// the uri of the resouce that this response pertains to
+    								// provided merely as a convenience tag for tracking
     
     // Content-Range header values
     

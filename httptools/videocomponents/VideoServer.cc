@@ -77,10 +77,10 @@ void VideoServer::handleMessage(cMessage *msg)
 }
 
 
-bool VideoServer::hasCallback(TCPSocketAPI::CALLBACK_TYPE type){
-	return (type == TCPSocketAPI::CB_T_RECV ||
-			type == TCPSocketAPI::CB_T_ACCEPT);
-}
+//bool VideoServer::hasCallback(TCPSocketAPI::CALLBACK_TYPE type){
+//	return (type == TCPSocketAPI::CB_T_RECV ||
+//			type == TCPSocketAPI::CB_T_ACCEPT);
+//}
 
 /// Handles the acceptance of a new socket.
 /// @param socket_id -- the descriptor for the listening socket
@@ -142,7 +142,7 @@ void VideoServer::closeSocket(int socket_id) {
 httptReplyMessage* VideoServer::handleGetRequest( httptRequestMessage *request, string resource ) {
 	// error if this resource is not a video title in workload generator
 	if (workload_generator->getVideoTitleAsInt(resource) == -1) {
-		return generateErrorReply(request,404);
+		return generateErrorReply(request, resource, 404);
 	}
 
 	// get metadata

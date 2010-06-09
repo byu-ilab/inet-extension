@@ -31,6 +31,15 @@ void doUnpacking(cCommBuffer *, T& t) {
 
 
 EXECUTE_ON_STARTUP(
+    cEnum *e = cEnum::find("HTTPMessageKind");
+    if (!e) enums.getInstance()->add(e = new cEnum("HTTPMessageKind"));
+    e->insert(HTTPT_REQUEST_MESSAGE, "HTTPT_REQUEST_MESSAGE");
+    e->insert(HTTPT_DELAYED_REQUEST_MESSAGE, "HTTPT_DELAYED_REQUEST_MESSAGE");
+    e->insert(HTTPT_RESPONSE_MESSAGE, "HTTPT_RESPONSE_MESSAGE");
+    e->insert(HTTPT_DELAYED_RESPONSE_MESSAGE, "HTTPT_DELAYED_RESPONSE_MESSAGE");
+);
+
+EXECUTE_ON_STARTUP(
     cEnum *e = cEnum::find("HTTPProtocol");
     if (!e) enums.getInstance()->add(e = new cEnum("HTTPProtocol"));
     e->insert(HTTP_10, "HTTP_10");
@@ -706,6 +715,7 @@ httptReplyMessage::httptReplyMessage(const char *name, int kind) : httptBaseMess
     this->result_var = 0;
     this->contentType_var = 0;
     this->phrase_var = "";
+    this->relatedUri_var = "";
     this->firstBytePos_var = BRS_UNSPECIFIED;
     this->lastBytePos_var = BRS_UNSPECIFIED;
     this->instanceLength_var = BRS_UNSPECIFIED;
@@ -728,6 +738,7 @@ httptReplyMessage& httptReplyMessage::operator=(const httptReplyMessage& other)
     this->result_var = other.result_var;
     this->contentType_var = other.contentType_var;
     this->phrase_var = other.phrase_var;
+    this->relatedUri_var = other.relatedUri_var;
     this->firstBytePos_var = other.firstBytePos_var;
     this->lastBytePos_var = other.lastBytePos_var;
     this->instanceLength_var = other.instanceLength_var;
@@ -740,6 +751,7 @@ void httptReplyMessage::parsimPack(cCommBuffer *b)
     doPacking(b,this->result_var);
     doPacking(b,this->contentType_var);
     doPacking(b,this->phrase_var);
+    doPacking(b,this->relatedUri_var);
     doPacking(b,this->firstBytePos_var);
     doPacking(b,this->lastBytePos_var);
     doPacking(b,this->instanceLength_var);
@@ -751,6 +763,7 @@ void httptReplyMessage::parsimUnpack(cCommBuffer *b)
     doUnpacking(b,this->result_var);
     doUnpacking(b,this->contentType_var);
     doUnpacking(b,this->phrase_var);
+    doUnpacking(b,this->relatedUri_var);
     doUnpacking(b,this->firstBytePos_var);
     doUnpacking(b,this->lastBytePos_var);
     doUnpacking(b,this->instanceLength_var);
@@ -784,6 +797,16 @@ const char * httptReplyMessage::phrase() const
 void httptReplyMessage::setPhrase(const char * phrase_var)
 {
     this->phrase_var = phrase_var;
+}
+
+const char * httptReplyMessage::relatedUri() const
+{
+    return relatedUri_var.c_str();
+}
+
+void httptReplyMessage::setRelatedUri(const char * relatedUri_var)
+{
+    this->relatedUri_var = relatedUri_var;
 }
 
 int httptReplyMessage::firstBytePos() const
@@ -863,7 +886,7 @@ const char *httptReplyMessageDescriptor::getProperty(const char *propertyname) c
 int httptReplyMessageDescriptor::getFieldCount(void *object) const
 {
     cClassDescriptor *basedesc = getBaseClassDescriptor();
-    return basedesc ? 6+basedesc->getFieldCount(object) : 6;
+    return basedesc ? 7+basedesc->getFieldCount(object) : 7;
 }
 
 unsigned int httptReplyMessageDescriptor::getFieldTypeFlags(void *object, int field) const
@@ -881,6 +904,7 @@ unsigned int httptReplyMessageDescriptor::getFieldTypeFlags(void *object, int fi
         case 3: return FD_ISEDITABLE;
         case 4: return FD_ISEDITABLE;
         case 5: return FD_ISEDITABLE;
+        case 6: return FD_ISEDITABLE;
         default: return 0;
     }
 }
@@ -897,9 +921,10 @@ const char *httptReplyMessageDescriptor::getFieldName(void *object, int field) c
         case 0: return "result";
         case 1: return "contentType";
         case 2: return "phrase";
-        case 3: return "firstBytePos";
-        case 4: return "lastBytePos";
-        case 5: return "instanceLength";
+        case 3: return "relatedUri";
+        case 4: return "firstBytePos";
+        case 5: return "lastBytePos";
+        case 6: return "instanceLength";
         default: return NULL;
     }
 }
@@ -916,9 +941,10 @@ const char *httptReplyMessageDescriptor::getFieldTypeString(void *object, int fi
         case 0: return "int";
         case 1: return "int";
         case 2: return "string";
-        case 3: return "int";
+        case 3: return "string";
         case 4: return "int";
         case 5: return "int";
+        case 6: return "int";
         default: return NULL;
     }
 }
@@ -963,9 +989,10 @@ bool httptReplyMessageDescriptor::getFieldAsString(void *object, int field, int 
         case 0: long2string(pp->result(),resultbuf,bufsize); return true;
         case 1: long2string(pp->contentType(),resultbuf,bufsize); return true;
         case 2: oppstring2string(pp->phrase(),resultbuf,bufsize); return true;
-        case 3: long2string(pp->firstBytePos(),resultbuf,bufsize); return true;
-        case 4: long2string(pp->lastBytePos(),resultbuf,bufsize); return true;
-        case 5: long2string(pp->instanceLength(),resultbuf,bufsize); return true;
+        case 3: oppstring2string(pp->relatedUri(),resultbuf,bufsize); return true;
+        case 4: long2string(pp->firstBytePos(),resultbuf,bufsize); return true;
+        case 5: long2string(pp->lastBytePos(),resultbuf,bufsize); return true;
+        case 6: long2string(pp->instanceLength(),resultbuf,bufsize); return true;
         default: return false;
     }
 }
@@ -983,9 +1010,10 @@ bool httptReplyMessageDescriptor::setFieldAsString(void *object, int field, int 
         case 0: pp->setResult(string2long(value)); return true;
         case 1: pp->setContentType(string2long(value)); return true;
         case 2: pp->setPhrase((value)); return true;
-        case 3: pp->setFirstBytePos(string2long(value)); return true;
-        case 4: pp->setLastBytePos(string2long(value)); return true;
-        case 5: pp->setInstanceLength(string2long(value)); return true;
+        case 3: pp->setRelatedUri((value)); return true;
+        case 4: pp->setFirstBytePos(string2long(value)); return true;
+        case 5: pp->setLastBytePos(string2long(value)); return true;
+        case 6: pp->setInstanceLength(string2long(value)); return true;
         default: return false;
     }
 }

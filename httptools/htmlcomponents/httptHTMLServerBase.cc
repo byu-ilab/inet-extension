@@ -234,7 +234,7 @@ httptReplyMessage* httptHTMLServerBase::handleGetRequest( httptRequestMessage *r
 	if ( req.size()!=3 )
 	{
 		EV_ERROR << "Invalid GET request string: " << request->heading() << endl;
-		return generateErrorReply(request,400);
+		return generateErrorReply(request, resource, 400);
 	}
 
 	CONTENT_TYPE_ENUM cat = getResourceCategory(req);
@@ -258,7 +258,7 @@ httptReplyMessage* httptHTMLServerBase::handleGetRequest( httptRequestMessage *r
 				else
 				{
 					EV_ERROR << "Page not found: " << resource << endl;
-					return generateErrorReply(request,404);
+					return generateErrorReply(request, resource, 404);
 				}
 			}
 		}
@@ -269,14 +269,14 @@ httptReplyMessage* httptHTMLServerBase::handleGetRequest( httptRequestMessage *r
 		if ( scriptedMode && resources.find(resource)==resources.end() )
 		{
 			EV_ERROR << "Resource not found: " << resource << endl;
-			return generateErrorReply(request,404);
+			return generateErrorReply(request, resource, 404);
 		}
 		return generateResourceMessage(request,resource,cat);
 	}
 	else
 	{
 		EV_ERROR << "Unknown or unsupported resource requested in " << request->heading() << endl;
-		return generateErrorReply(request,400);
+		return generateErrorReply(request, resource, 400);
 	}
 }
 
@@ -284,8 +284,7 @@ httptReplyMessage* httptHTMLServerBase::generateDocument( httptRequestMessage *r
 {
 	EV_DEBUG << "Generating HTML document for request " << request->getName() << " from " << request->getSenderModule()->getName() << endl;
 
-	httptReplyMessage* replymsg = new httptReplyMessage();
-	fillinReplyMessage(replymsg, request, resource, 200, 1, rt_html_page);
+	httptReplyMessage* replymsg = generateStandardReply(request, resource, 200, 1, rt_html_page);
 	/*
 	char szReply[512];
 	sprintf(szReply,"HTTP/1.1 200 OK (%s)",resource);
@@ -333,8 +332,7 @@ httptReplyMessage* httptHTMLServerBase::generateResourceMessage( httptRequestMes
 	else if ( category==rt_image )
 		imgResourcesServed++;
 
-	httptReplyMessage * replymsg = new httptReplyMessage();
-	fillinReplyMessage(replymsg, request, resource, 200, 1, category);
+	httptReplyMessage * replymsg = generateStandardReply(request, resource, 200, 1, category);
 	/*
 	char szReply[512];
 	sprintf(szReply,"HTTP/1.1 200 OK (%s)",resource.c_str());

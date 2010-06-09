@@ -141,6 +141,7 @@ httptReplyMessage * httptServerBase::handleRequestMessage( cMessage *msg ) //, i
 
 	httptReplyMessage* replymsg;
 
+	// @todo use the new request fields instead of parsing
 	// Verify that the header string has the correct number of parameters
 		// Parse the request string on spaces
 	cStringTokenizer tokenizer = cStringTokenizer(request->heading()," ");
@@ -148,7 +149,7 @@ httptReplyMessage * httptServerBase::handleRequestMessage( cMessage *msg ) //, i
 	if ( res.size() != 3 )
 	{
 		EV_ERROR << "Invalid request string: " << request->heading() << endl;
-		replymsg = generateErrorReply(request,400);
+		replymsg = generateErrorReply(request, "", 400);
 		logResponse(replymsg);
 		return replymsg;
 	}
@@ -158,7 +159,7 @@ httptReplyMessage * httptServerBase::handleRequestMessage( cMessage *msg ) //, i
 	{
 		// Bad requests get a 404 reply.
 		EV_ERROR << "Bad request - bad flag set. Message: " << request->getName() << endl;
-		replymsg = generateErrorReply(request,404);
+		replymsg = generateErrorReply(request, res[1], 404);
 	}
 	// handle the request method
 	else if ( res[0] == "GET" )
@@ -169,7 +170,7 @@ httptReplyMessage * httptServerBase::handleRequestMessage( cMessage *msg ) //, i
 	else
 	{
 		EV_ERROR << "Unsupported request type " << res[0] << " for " << request->heading() << endl;
-		replymsg = generateErrorReply(request,400);
+		replymsg = generateErrorReply(request, res[1], 400);
 	}
 
 	if ( replymsg!=NULL )
@@ -181,55 +182,105 @@ httptReplyMessage * httptServerBase::handleRequestMessage( cMessage *msg ) //, i
 httptReplyMessage * httptServerBase::handleGetRequest( httptRequestMessage *request, string resource_url )
 {
 	EV_ERROR << "Unknown or unsupported resource requested in " << request->heading() << endl;
-	return generateErrorReply(request,404);
+	return generateErrorReply(request, resource_url, 404);
 }
 
-httptReplyMessage* httptServerBase::generateErrorReply( httptRequestMessage *request, int code )
+httptReplyMessage* httptServerBase::generateErrorReply( httptRequestMessage *request, string resource_url, int code )
 {
-	httptReplyMessage * reply = new httptReplyMessage();
-	fillinReplyMessage(reply, request, "", code, par("errorReplySize"), rt_none);
 	badRequests++;
-	return reply;
+	return generateStandardReply(request, resource_url, code, par("errorReplySize"), rt_none);
+//
+//	httptReplyMessage * reply = new httptReplyMessage();
+//	fillinReplyMessage(reply, request, resource_url, code, par("errorReplySize"), rt_none);
+//	badRequests++;
+//	return reply;
 }
 
-void httptServerBase::fillinReplyMessage(httptReplyMessage * reply, httptRequestMessage * request,
-		string resource, int code, int size, int content_type)
+//void httptServerBase::fillinReplyMessage(httptReplyMessage * reply, httptRequestMessage * request,
+//		string resource, int code, int size, int content_type)
+//{
+//	ASSERT(reply && request);
+//	ASSERT(100 <= code && code <= 505);// TODO replace with constants or #define
+//	ASSERT(0 <= size);
+//
+//	string header = "HTTP/1.";
+//	switch(httpProtocol)
+//	{
+//	case HTTP_10: header = header + "0"; break;
+//	case HTTP_11: header = header + "1"; break;
+//	default:
+//		error("fillinReplyMessage(): Unknown HTTP protocol");
+//	}
+//	header = header + " " + httpCodeAsString(code) + " " + httpPhraseFromCode(code);
+//
+//	reply->setHeading(header.c_str());
+//
+//	if (!resource.empty())
+//	{
+//		header = header + " (" + resource + ")"; // to identify the resource in question
+//		reply->setRelatedUri(resouce.c_str());
+//	}
+//	reply->setName(header.c_str());
+//
+//	reply->setProtocol(request->protocol());  // MIGRATE40: kvj
+//	reply->setResult(code);
+//	reply->setPhrase(httpPhraseFromCode(code).c_str());
+//
+//	reply->setOriginatorUrl(wwwName.c_str());
+//	reply->setTargetUrl(request->originatorUrl());
+//	reply->setSerial(request->serial());
+//	reply->setContentType(content_type);
+//
+//	reply->setByteLength(size);
+//	reply->setKind(HTTPT_RESPONSE_MESSAGE);
+//}
+
+httptReplyMessage * httptServerBase::generateStandardReply(httptRequestMessage * request,
+		string resource_uri, int code, int size, int content_type)
 {
-	ASSERT(reply && request);
+	ASSERT(request);
 	ASSERT(100 <= code && code <= 505);// TODO replace with constants or #define
 	ASSERT(0 <= size);
 
 	string header = "HTTP/1.";
 	switch(httpProtocol)
 	{
-	case 10: header = header + "0"; break;
-	case 11: header = header + "1"; break;
+	case HTTP_10: header = header + "0"; break;
+	case HTTP_11: header = header + "1"; break;
 	default:
-		error("fillinReplyMessage(): Unknown HTTP protocol");
+		error("generateStandardReply(): Unknown HTTP protocol");
 	}
 	header = header + " " + httpCodeAsString(code) + " " + httpPhraseFromCode(code);
 
+	httptReplyMessage * reply = new httptReplyMessage();
+
 	reply->setHeading(header.c_str());
 
-	if (!resource.empty())
+	if (!resource_uri.empty())
 	{
-		header = header + " (" + resource + ")"; // to identify the resource in question
+		header = header + " (" + resource_uri + ")"; // to identify the resource in question
+		reply->setRelatedUri(resource_uri.c_str());
 	}
 	reply->setName(header.c_str());
 
+	reply->setProtocol(request->protocol());  // MIGRATE40: kvj
+	reply->setResult(code);
+	reply->setPhrase(httpPhraseFromCode(code).c_str());
+
 	reply->setOriginatorUrl(wwwName.c_str());
 	reply->setTargetUrl(request->originatorUrl());
-	reply->setProtocol(request->protocol());  // MIGRATE40: kvj
 	reply->setSerial(request->serial());
-	reply->setResult(code);
 	reply->setContentType(content_type);
+
 	reply->setByteLength(size);
 	reply->setKind(HTTPT_RESPONSE_MESSAGE);
+
+	return reply;
 }
 
 /// @see RFC 2616, sections 10.2.7, 10.4.17, 14.16, 14.35.1
 httptReplyMessage * httptServerBase::generateByteRangeReply(
-		httptByteRangeRequestMessage * request, string resource, int resource_size, int content_type)
+		httptRequestMessage * request, string resource_uri, int resource_size, int content_type)
 {
 	ASSERT(request);
 	ASSERT(resource_size > 0);
@@ -237,34 +288,31 @@ httptReplyMessage * httptServerBase::generateByteRangeReply(
 	int fbp = request->firstBytePos();
 	int lbp = request->lastBytePos();
 
-	// check for invalid syntax
-	if ( fbp < 0 || (lbp >= 0 && lbp < fbp) )
+	// check for invalid syntax and/or that the range header is not set
+	if ( fbp < 0 || (0 <= lbp && lbp < fbp) )
 	{
 		// ignore the error and just return the whole entity with a 200 OK
-		httptReplyMessage * reply = new httptReplyMessage();
-		fillinReplyMessage(reply, request, resource, 200, resource_size, content_type);//TODO replace 200 with constant or #define
-		return reply;
+		return generateStandardReply(request, resource_uri, 200, resource_size, content_type);//TODO replace 200 with constant or #define
 	}
+
+	httptReplyMessage * reply = NULL;
 
 	// check if is unsatisfiable
 	if ( resource_size < fbp )
 	{
 		// send a 416 error
-		httptByteRangeReplyMessage * reply = new httptByteRangeReplyMessage();
-		fillinReplyMessage(reply, request, resource, 416, par("errorReplySize"), content_type);// TODO replace 416 with constant or #define
-		reply->setFirstBytePos(-1);
+		reply = generateErrorReply(request, resource_uri, 416);//, par("errorReplySize"), content_type);// TODO replace 416 with constant or #define
+		reply->setFirstBytePos(BRS_ASTERISK);
 		reply->setInstanceLength(resource_size);
-		badRequests++;
 		return reply;
 	}
 
 	// else is satisfiable, send back a 206 response
-	httptByteRangeReplyMessage * reply = new httptByteRangeReplyMessage();
 	if ( lbp < 0 || resource_size < lbp )
 	{
 		lbp = resource_size - 1;
 	}
-	fillinReplyMessage(reply, request, resource, 206, lbp - fbp, content_type); // TODO replace 206 with constant or #define
+	reply = generateStandardReply(request, resource_uri, 206, lbp - fbp, content_type); // TODO replace 206 with constant or #define
 	reply->setFirstBytePos(fbp);
 	reply->setLastBytePos(lbp);
 	reply->setInstanceLength(resource_size);
