@@ -14,6 +14,7 @@
 //
 
 #include "httptServerBase.h"
+#include <iostream>
 
 void httptServerBase::initialize()
 {
@@ -82,8 +83,6 @@ void httptServerBase::updateDisplay()
 	if ( ev.isGUI() )
 	{
 		char buf[1024];
-//		sprintf( buf, "%ld", htmlDocsServed + imgResourcesServed + textResourcesServed ); // TODO move this to httptHTMLServerBase
-//		sprintf( buf, "Req: %ld", requestsReceived );
 		sprintf(buf, "Bad req: %ld", badRequests);
 		getParentModule()->getDisplayString().setTagArg("t",0,buf);
 		if ( activationTime<=simTime() )
@@ -96,11 +95,6 @@ void httptServerBase::updateDisplay()
 			getParentModule()->getDisplayString().setTagArg("i2",0,"status/down");
 			getParentModule()->getDisplayString().setTagArg("i2",1,"red");
 		}
-//		if ( activationTime>simTime() )
-//		{
-//			getParentModule()->getDisplayString().setTagArg("i2",0,"status/down");
-//			getParentModule()->getDisplayString().setTagArg("i2",1,"red");
-//		}
 	}
 }
 
@@ -120,7 +114,7 @@ void httptServerBase::handleMessage(cMessage *msg)
 	updateDisplay();
 }
 
-httptReplyMessage * httptServerBase::handleRequestMessage( cMessage *msg ) //, int reply_interface_num)
+httptReplyMessage * httptServerBase::handleRequestMessage( cMessage *msg )
 {
 	httptRequestMessage *request = check_and_cast<httptRequestMessage *>(msg);
 
@@ -141,17 +135,26 @@ httptReplyMessage * httptServerBase::handleRequestMessage( cMessage *msg ) //, i
 
 	httptReplyMessage* replymsg;
 
-	// @todo use the new request fields instead of parsing
-	// Verify that the header string has the correct number of parameters
-		// Parse the request string on spaces
-	cStringTokenizer tokenizer = cStringTokenizer(request->heading()," ");
-	std::vector<string> res = tokenizer.asVector();
-	if ( res.size() != 3 )
+	int method = request->method();
+	string uri = request->uri();
+
+	if (method == RM_NONE || uri.empty())
 	{
-		EV_ERROR << "Invalid request string: " << request->heading() << endl;
-		replymsg = generateErrorReply(request, "", 400);
-		logResponse(replymsg);
-		return replymsg;
+		cout << "ServerBase: parsing from heading"<<endl;
+		// Verify that the header string has the correct number of parameters
+			// Parse the request string on spaces
+		cStringTokenizer tokenizer = cStringTokenizer(request->heading()," ");
+		std::vector<string> res = tokenizer.asVector();
+		if ( res.size() != 3 )
+		{
+			EV_ERROR << "Invalid request string: " << request->heading() << endl;
+			replymsg = generateErrorReply(request, "", 400);
+			logResponse(replymsg);
+			return replymsg;
+		}
+
+		method = httpMethodFromString(res[0]);
+		uri = res[1];
 	}
 
 	// Send a bad request response if requested
@@ -159,18 +162,19 @@ httptReplyMessage * httptServerBase::handleRequestMessage( cMessage *msg ) //, i
 	{
 		// Bad requests get a 404 reply.
 		EV_ERROR << "Bad request - bad flag set. Message: " << request->getName() << endl;
-		replymsg = generateErrorReply(request, res[1], 404);
+		replymsg = generateErrorReply(request, uri, 404);
 	}
 	// handle the request method
-	else if ( res[0] == "GET" )
+	else if ( method == RM_GET )
 	{
-		EV_DEBUG << "Handling GET request " << request->getName() << " resource: " << res[1] << endl;
-		replymsg = handleGetRequest(request,res[1]); // Pass in the resource string part
+		EV_DEBUG << "Handling GET request " << request->getName() << " resource: " << uri << endl;
+		replymsg = handleGetRequest(request,uri); // Pass in the resource string part
 	}
 	else
 	{
-		EV_ERROR << "Unsupported request type " << res[0] << " for " << request->heading() << endl;
-		replymsg = generateErrorReply(request, res[1], 400);
+		EV_ERROR << "Unsupported request type " << httpMethodAsString(method) <<
+			" for " << request->heading() << endl;
+		replymsg = generateErrorReply(request, uri, 400);
 	}
 
 	if ( replymsg!=NULL )
@@ -189,51 +193,8 @@ httptReplyMessage* httptServerBase::generateErrorReply( httptRequestMessage *req
 {
 	badRequests++;
 	return generateStandardReply(request, resource_url, code, par("errorReplySize"), rt_none);
-//
-//	httptReplyMessage * reply = new httptReplyMessage();
-//	fillinReplyMessage(reply, request, resource_url, code, par("errorReplySize"), rt_none);
-//	badRequests++;
-//	return reply;
 }
 
-//void httptServerBase::fillinReplyMessage(httptReplyMessage * reply, httptRequestMessage * request,
-//		string resource, int code, int size, int content_type)
-//{
-//	ASSERT(reply && request);
-//	ASSERT(100 <= code && code <= 505);// TODO replace with constants or #define
-//	ASSERT(0 <= size);
-//
-//	string header = "HTTP/1.";
-//	switch(httpProtocol)
-//	{
-//	case HTTP_10: header = header + "0"; break;
-//	case HTTP_11: header = header + "1"; break;
-//	default:
-//		error("fillinReplyMessage(): Unknown HTTP protocol");
-//	}
-//	header = header + " " + httpCodeAsString(code) + " " + httpPhraseFromCode(code);
-//
-//	reply->setHeading(header.c_str());
-//
-//	if (!resource.empty())
-//	{
-//		header = header + " (" + resource + ")"; // to identify the resource in question
-//		reply->setRelatedUri(resouce.c_str());
-//	}
-//	reply->setName(header.c_str());
-//
-//	reply->setProtocol(request->protocol());  // MIGRATE40: kvj
-//	reply->setResult(code);
-//	reply->setPhrase(httpPhraseFromCode(code).c_str());
-//
-//	reply->setOriginatorUrl(wwwName.c_str());
-//	reply->setTargetUrl(request->originatorUrl());
-//	reply->setSerial(request->serial());
-//	reply->setContentType(content_type);
-//
-//	reply->setByteLength(size);
-//	reply->setKind(HTTPT_RESPONSE_MESSAGE);
-//}
 
 httptReplyMessage * httptServerBase::generateStandardReply(httptRequestMessage * request,
 		string resource_uri, int code, int size, int content_type)
@@ -301,7 +262,7 @@ httptReplyMessage * httptServerBase::generateByteRangeReply(
 	if ( resource_size < fbp )
 	{
 		// send a 416 error
-		reply = generateErrorReply(request, resource_uri, 416);//, par("errorReplySize"), content_type);// TODO replace 416 with constant or #define
+		reply = generateErrorReply(request, resource_uri, 416);// TODO replace 416 with constant or #define
 		reply->setFirstBytePos(BRS_ASTERISK);
 		reply->setInstanceLength(resource_size);
 		return reply;

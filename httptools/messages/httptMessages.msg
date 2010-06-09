@@ -80,6 +80,7 @@ packet httptBaseMessage
 // see http://www.w3.org/Protocols/rfc2616/rfc2616-sec9.html
 enum RequestMethod
 {
+    RM_NONE = -1; // signals that no request method has been set
     RM_OPTIONS = 0;
     RM_GET = 1;
     RM_HEAD = 2;
@@ -108,7 +109,7 @@ packet httptRequestMessage extends httptBaseMessage
 {
     @omitGetVerb(true);			// Dont append get to generated getter methods.
     bool badRequest = false;	// Set to true to simulate a bad request. Server answers w. 404.
-    int method enum(RequestMethod) = RM_GET;
+    int method enum(RequestMethod) = RM_NONE;
     string uri = "";
     
     // Range header values

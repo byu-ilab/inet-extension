@@ -49,6 +49,7 @@ EXECUTE_ON_STARTUP(
 EXECUTE_ON_STARTUP(
     cEnum *e = cEnum::find("RequestMethod");
     if (!e) enums.getInstance()->add(e = new cEnum("RequestMethod"));
+    e->insert(RM_NONE, "RM_NONE");
     e->insert(RM_OPTIONS, "RM_OPTIONS");
     e->insert(RM_GET, "RM_GET");
     e->insert(RM_HEAD, "RM_HEAD");
@@ -411,7 +412,7 @@ Register_Class(httptRequestMessage);
 httptRequestMessage::httptRequestMessage(const char *name, int kind) : httptBaseMessage(name,kind)
 {
     this->badRequest_var = false;
-    this->method_var = RM_GET;
+    this->method_var = RM_NONE;
     this->uri_var = "";
     this->firstBytePos_var = BRS_UNSPECIFIED;
     this->lastBytePos_var = BRS_UNSPECIFIED;

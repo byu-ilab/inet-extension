@@ -192,6 +192,68 @@ CONTENT_TYPE_ENUM getResourceCategory(string resourceExt)
 	return rt_unknown;
 }
 
+RequestMethod httpMethodFromString(const string & methodstr)
+{
+	if (methodstr == "OPTIONS")
+	{
+		return RM_OPTIONS;
+	}
+
+	if (methodstr == "GET")
+	{
+		return RM_GET;
+	}
+
+	if (methodstr == "HEAD")
+	{
+		return RM_HEAD;
+	}
+
+	if (methodstr == "POST")
+	{
+		return RM_POST;
+	}
+
+	if (methodstr == "PUT")
+	{
+		return RM_PUT;
+	}
+
+	if (methodstr == "DELETE")
+	{
+		return RM_DELETE;
+	}
+
+	if (methodstr == "TRACE")
+	{
+		return RM_TRACE;
+	}
+
+	if (methodstr == "CONNECT")
+	{
+		return RM_CONNECT;
+	}
+
+	return RM_NONE;
+}
+
+string httpMethodAsString(int method)
+{
+	switch(method)
+	{
+	case RM_OPTIONS: return "OPTIONS"; break;
+	case RM_GET: return "GET"; break;
+	case RM_HEAD: return "HEAD"; break;
+	case RM_POST: return "POST"; break;
+	case RM_PUT: return "PUT"; break;
+	case RM_DELETE: return "DELETE"; break;
+	case RM_TRACE: return "TRACE"; break;
+	case RM_CONNECT: return "CONNECT"; break;
+	default: return "";
+	}
+}
+
+
 string httpCodeAsString(int code)
 {
 	if (code < 100 || 505 < code)
