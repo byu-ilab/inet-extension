@@ -56,7 +56,7 @@ void WebCache::initialize() {
 	WATCH(numBroken);
 	WATCH(socketsOpened);
 
-	resourceCache = new LRUCache(par("cacheSize"));
+	resourceCache = new LRUCache(par("cacheSize").longValue());
 	updateDisplay();
 	//EV_INFO << "INITIALIZING LRUCache OF SIZE "<<par("cacheSize")<<endl;
 }

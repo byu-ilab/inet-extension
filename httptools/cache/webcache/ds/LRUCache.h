@@ -28,15 +28,15 @@ struct classcomp {
 
 class LRUCache: public Cache {
 private:
-	int capacity, remaining;
+	int64 capacity, remaining;
 	typedef map<Resource *,simtime_t,classcomp> LCM;
 	LCM resources;
 	Resource * getOldestResource();
 
 public:
-	LRUCache(int capacity);
+	LRUCache(unsigned long capacity);
 	virtual ~LRUCache();
-	virtual int getRemainingCapacity();
+	virtual unsigned long getRemainingCapacity();
 protected:
 	/**
 	 * Indicates whether the cache holds a resource.
@@ -52,7 +52,7 @@ protected:
 	 * Clears the cache.
 	 */
 	virtual void empty();
-	virtual int getCapacity();
+	virtual unsigned long getCapacity();
 	virtual void renew(Resource *);
 };
 

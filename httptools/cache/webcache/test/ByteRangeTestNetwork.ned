@@ -13,16 +13,16 @@
 // along with this program.  If not, see http://www.gnu.org/licenses/.
 // 
 
-package inet.httptools.webcache.movecache.mod;
+package inet.httptools.cache.webcache.test;
 
 import inet.networklayer.autorouting.FlatNetworkConfigurator;
 import inet.nodes.inet.Router;
 import inet.nodes.inet.StandardHost;
+import inet.nodes.inet.StandardHostWithTCPSocketAPI;
 import ned.DatarateChannel;
 import inet.httptools.base.*;
-import inet.httptools.webcache.movecache.mod.WebCache;
 
-network SimpleCacheNetwork
+network ByteRangeTestNetwork
 {
     parameters:
         //int numClients;
@@ -44,15 +44,15 @@ network SimpleCacheNetwork
             parameters:
                 @display("p=61,98");
         }
-        client: StandardHost { //s[numClients]: StandardHost {
+        client: StandardHostWithTCPSocketAPI { //s[numClients]: StandardHost {
             parameters:
                 @display("p=100,322,row,100;i=device/pc3");
         }
-        server: StandardHost { //s[numServers]: StandardHost {
+        server: StandardHostWithTCPSocketAPI { //s[numServers]: StandardHost {
             parameters:
                 @display("p=245,72,row,100;i=device/pc2");
         }
-        cache: StandardHost {
+        cache: StandardHostWithTCPSocketAPI {
             parameters:
                 @display("p=135,171,i=device/pc1");
         }

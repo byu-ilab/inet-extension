@@ -15,7 +15,7 @@
 import inet.applications.tcpapp.socketapi.TCPSocketAPIAppInterface;
 import inet.httptools.base.httptServerBaseInterface;
 
-package inet.httptools.webcache.movecache.mod;
+package inet.httptools.cache.webcache.mod;
 
 simple WebCacheNewAPI like TCPSocketAPIAppInterface, httptServerBaseInterface
 {
@@ -45,7 +45,7 @@ simple WebCacheNewAPI like TCPSocketAPIAppInterface, httptServerBaseInterface
         // attributes specific to the WebCacheNewAPI
         	// cache capacity
         	// TODO make it TB, need to change LRU to use long
-        int cacheSize @unit(KB)= default(10KB);// @unit(TB) = default(10TB);  // capacity of cache in terabytes
+        int cacheSize @unit(TB)= default(10TB);  // capacity of cache in terabytes
         	// domain name of upstream server/cache
         string serverwww = default(""); // domain name of upstream server/cache.
         	// time an upstream connection should wait without any activity

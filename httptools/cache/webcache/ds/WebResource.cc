@@ -13,17 +13,22 @@
 // along with this program.  If not, see http://www.gnu.org/licenses/.
 //
 
-#ifndef RESOURCE_H_
-#define RESOURCE_H_
-#include <string>
-using namespace std;
-class Resource {
-public:
-//	Resource();
-//	Resource(const Resource &);
-//	virtual ~Resource();
-	virtual string getID()=0;
-	virtual int getSize()=0;
-};
+#include "WebResource.h"
 
-#endif /* RESOURCE_H_ */
+WebResource::WebResource(string uri, int64 size): uri(uri), size(size) {
+	return;
+}
+WebResource::WebResource(const WebResource & other) {
+	uri = "" + other.uri;
+	size = other.size;
+
+}
+WebResource::~WebResource() {
+	return;
+}
+string WebResource::getID() {
+	return uri;
+}
+unsigned long WebResource::getSize() {
+	return size;
+}

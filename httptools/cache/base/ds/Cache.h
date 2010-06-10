@@ -16,12 +16,12 @@
 #ifndef CACHE_H_
 #define CACHE_H_
 
+#include <omnetpp.h>
 #include "httptLogdefs.h"
 #include "Resource.h"
+
 class Cache {
 public:
-	//Cache();
-	//virtual ~Cache();
 	/**
 	 * Indicates whether the cache holds a resource.
 	 * Returns the resource if it exists, and NULL if it does not.
@@ -37,8 +37,8 @@ public:
 	 */
 	virtual void empty() = 0;
 
-	virtual int getCapacity() = 0;
-	virtual int getRemainingCapacity() = 0;
+	virtual unsigned long getCapacity() = 0;
+	virtual unsigned long getRemainingCapacity() = 0;
 	virtual void renew(Resource *) = 0;
 };
 
