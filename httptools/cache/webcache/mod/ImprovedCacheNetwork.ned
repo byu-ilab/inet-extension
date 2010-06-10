@@ -12,8 +12,7 @@
 // You should have received a copy of the GNU Lesser General Public License
 // along with this program.  If not, see http://www.gnu.org/licenses/.
 // 
-
-package inet.httptools.webcache.movecache.mod;
+package inet.httptools.cache.webcache.mod;
 
 import inet.networklayer.autorouting.FlatNetworkConfigurator;
 import inet.nodes.inet.Router;
@@ -21,7 +20,6 @@ import inet.nodes.inet.StandardHost;
 import ned.DatarateChannel;
 import inet.nodes.inet.StandardHostWithTCPSocketAPI;
 import inet.httptools.base.*;
-import inet.httptools.webcache.movecache.mod.WebCache;
 
 network ImprovedCacheNetwork
 {

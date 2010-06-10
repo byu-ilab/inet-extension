@@ -12,8 +12,7 @@
 // You should have received a copy of the GNU Lesser General Public License
 // along with this program.  If not, see http://www.gnu.org/licenses/.
 // 
-
-package inet.httptools.webcache.movecache.mod;
+package inet.httptools.cache.webcache.mod;
 
 import inet.nodes.inet.Router;
 import inet.nodes.inet.StandardHost;

@@ -24,6 +24,7 @@
 //
 
 #include <omnetpp.h>
+//#include "simunits.h"
 
 #if OMNETPP_VERSION < 0x0400
 #  error At least OMNeT++/OMNEST version 4.0 required

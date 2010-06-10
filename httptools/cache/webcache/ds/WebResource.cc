@@ -13,33 +13,22 @@
 // along with this program.  If not, see http://www.gnu.org/licenses/.
 //
 
-#ifndef CACHE_H_
-#define CACHE_H_
+#include "WebResource.h"
 
-#include "httptLogdefs.h"
-#include "Resource.h"
-class Cache {
-public:
-	//Cache();
-	//virtual ~Cache();
-	/**
-	 * Indicates whether the cache holds a resource.
-	 * Returns the resource if it exists, and NULL if it does not.
-	 */
-	virtual Resource * has(Resource *)=0;
-	/**
-	 * Adds resource to the cache.
-	 * @pre cache must not have resource before adding.
-	 */
-	virtual void add(Resource *)=0;
-	/**
-	 * Clears the cache.
-	 */
-	virtual void empty() = 0;
+WebResource::WebResource(string uri, uint64 size): uri(uri), size(size) {
+	return;
+}
+WebResource::WebResource(const WebResource & other) {
+	uri = "" + other.uri;
+	size = other.size;
 
-	virtual int getCapacity() = 0;
-	virtual int getRemainingCapacity() = 0;
-	virtual void renew(Resource *) = 0;
-};
-
-#endif /* CACHE_H_ */
+}
+WebResource::~WebResource() {
+	return;
+}
+string WebResource::getID() {
+	return uri;
+}
+uint64 WebResource::getSize() {
+	return size;
+}

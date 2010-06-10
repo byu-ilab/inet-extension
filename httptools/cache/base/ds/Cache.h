@@ -13,17 +13,33 @@
 // along with this program.  If not, see http://www.gnu.org/licenses/.
 //
 
-#ifndef RESOURCE_H_
-#define RESOURCE_H_
-#include <string>
-using namespace std;
-class Resource {
+#ifndef CACHE_H_
+#define CACHE_H_
+
+#include <omnetpp.h>
+#include "httptLogdefs.h"
+#include "Resource.h"
+
+class Cache {
 public:
-//	Resource();
-//	Resource(const Resource &);
-//	virtual ~Resource();
-	virtual string getID()=0;
-	virtual int getSize()=0;
+	/**
+	 * Indicates whether the cache holds a resource.
+	 * Returns the resource if it exists, and NULL if it does not.
+	 */
+	virtual Resource * has(Resource *)=0;
+	/**
+	 * Adds resource to the cache.
+	 * @pre cache must not have resource before adding.
+	 */
+	virtual void add(Resource *)=0;
+	/**
+	 * Clears the cache.
+	 */
+	virtual void empty() = 0;
+
+	virtual uint64 getCapacity() = 0;
+	virtual uint64 getRemainingCapacity() = 0;
+	virtual void renew(Resource *) = 0;
 };
 
-#endif /* RESOURCE_H_ */
+#endif /* CACHE_H_ */

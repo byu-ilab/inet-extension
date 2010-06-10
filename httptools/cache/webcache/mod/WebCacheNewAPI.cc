@@ -34,9 +34,9 @@ void WebCacheNewAPI::initialize() {
 	upstream_cache = par("serverwww").stringValue();
 	request_timeout = par("request_timeout");
 
-	int cache_size = par("cacheSize");
-	cache_size *= 1024;
-	resourceCache = new LRUCache(cache_size);
+	int64 cache_size = par("cacheSize").longValue();
+		ASSERT(cache_size > 0);
+	resourceCache = new LRUCache((uint64) cache_size);
 	updateDisplay();
 	requestsReceived = 0;
 	serverSocketsBroken=0;
@@ -310,7 +310,7 @@ void WebCacheNewAPI::processDownstreamRequest(int socket_id, cPacket * msg, Conn
 	Resource * wr_temp = new WebResource(url, 0); // works because comparator used only looks at the ID not the size
 	Resource * wr_incache = resourceCache->has(wr_temp);
 	if (wr_incache) {
-		resourceCache->renew(wr_temp); // update timestamp on LRU cache.
+		resourceCache->renew(wr_incache); // update timestamp on LRU cache.
 		hits++;
 
 		respondToClientRequest(socket_id, request, wr_incache);
@@ -409,12 +409,19 @@ void WebCacheNewAPI::updateDisplay() {
 		float h = 0;
 		if (requestsReceived > 0)
 			h = 100.0 * hits / requestsReceived;
-		int cacheSize = resourceCache->getCapacity(); //(int)par("cacheSize");
-		int remaining = resourceCache->getRemainingCapacity();
+		unsigned long cacheSize = resourceCache->getCapacity(); //(int)par("cacheSize");
+		unsigned long remaining = resourceCache->getRemainingCapacity();
 		float full =0;
 		if (cacheSize > 0)
-			full = 100.0 * (cacheSize-remaining) /cacheSize;
-		sprintf( buf, "Req: %ld\nHit: %.1f\%\nCap: %.1fKB\nFull: %.1f\%", requestsReceived,h,cacheSize/1000.0, full);
+			full = 100.0 * (cacheSize-remaining) / cacheSize;
+
+		// figure out the units
+		ByteUnit unit = determineByteUnit(cacheSize, unittype_bibyte);
+		string unitstr = getByteUnitAsString(unit);
+		double convfactor = getMultiplicativeFactor(unit_B, unittype_bibyte, unit, unittype_bibyte);
+		double capacity = (double) cacheSize * convfactor;
+		sprintf( buf, "Req: %ld\nHit: %.1f\%\nCap: %.1f%s\nFull: %.1f\%", requestsReceived,h,
+				capacity, unitstr.c_str(), full);
 		getParentModule()->getDisplayString().setTagArg("t",0,buf);
 	} /*else if (ev.isGUI() ){
 		httptServerBase::updateDisplay();

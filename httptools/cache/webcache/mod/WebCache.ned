@@ -14,7 +14,9 @@
 // 
 import inet.applications.tcpapp.TCPApp;
 
-package inet.httptools.webcache.movecache.mod;
+package inet.httptools.cache.webcache.mod;
+
+
 simple WebCache like TCPApp
 {
     parameters:

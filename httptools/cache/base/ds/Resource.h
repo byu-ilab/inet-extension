@@ -13,22 +13,16 @@
 // along with this program.  If not, see http://www.gnu.org/licenses/.
 //
 
-#ifndef WEBRESOURCE_H_
-#define WEBRESOURCE_H_
+#ifndef RESOURCE_H_
+#define RESOURCE_H_
 
-#include "Resource.h"
-
-class WebResource: public Resource {
-private:
-	string uri;
-	int size;
+#include <omnetpp.h>
+#include <string>
+using namespace std;
+class Resource {
 public:
-	WebResource(string uri, int size);
-	WebResource(const WebResource &);
-	virtual ~WebResource();
-protected:
-	virtual string getID();
-	virtual int getSize();
+	virtual string getID()=0;
+	virtual uint64 getSize()=0;
 };
 
-#endif /* WEBRESOURCE_H_ */
+#endif /* RESOURCE_H_ */

@@ -13,7 +13,7 @@
 // along with this program.  If not, see http://www.gnu.org/licenses/.
 // 
 
-package inet.httptools.webcache.movecache.test;
+package inet.httptools.cache.webcache.test;
 
 import inet.applications.tcpapp.socketapi.TCPSocketAPIAppInterface;
 import inet.httptools.base.httptServerBaseInterface;
