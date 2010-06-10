@@ -21,6 +21,7 @@
 #include "httptServerBase.h"
 #include "TCPSocketAPI.h"
 #include "VideoTitleWorkloadGenerator.h"
+#include "VideoSegmentMessages_m.h"
 
 /**
  *

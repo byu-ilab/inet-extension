@@ -137,25 +137,36 @@ void VideoServer::closeSocket(int socket_id) {
 }
 httptReplyMessage* VideoServer::handleGetRequest( httptRequestMessage *request, string resource ) {
 	// error if this resource is not a video title in workload generator
-	VideoSegmentRequestMessage * v_request = static_cast<VideoSegmentRequestMessage *>(request);
-	if (!v_request) {
+	VideoSegmentRequestMessage * vrequest = static_cast<VideoSegmentRequestMessage *>(request);
+	if (!vrequest) {
 		opp_error("VideoServer::handleGetRequest: did not receive VideoSegmentRequestMessage");
 	}
 
-	if (workload_generator->getVideoTitleAsInt(resource) == -1) {
-		return generateErrorReply(request, resource, 404);
+	VideoTitleMetaData md =  workload_generator->getMetaData(vrequest->getTitle());
+
+	if (md.num_segments == -1) {
+		return generateErrorReply(vrequest, resource, 404);
 	}
 
-	v_request->
+	int res_size = md.quality_interval * vrequest->getQualityLevel();
 
-	int quality =...
-	int res_size = metadata->quality_interval *
+	int res_type = rt_vidseg;
+
 	// if it is a byte range request, service it.
-	if (static_cast<httptByteRangeRequestMessage *>(request)) {
-		return generateByteRangeReply(request, resource, )
+	VideoSegmentReplyMessage * reply = new VideoSegmentReplyMessage();
+
+	reply->setTitle(vrequest->getTitle());
+	reply->setType(vrequest->getType());
+	reply->setSegmentNumber(vrequest->getSegmentNumber());
+	reply->setQualityLevel(vrequest->getQualityLevel());
+
+	if (vrequest->firstBytePos() != BRS_UNSPECIFIED) {
+		fillinByteRangeReply(reply, vrequest, resource, res_size, res_type);
 	}
-	// service normal request
-	return NULL;
+	else { // service normal request
+		fillinStandardReply(reply, vrequest, resource, HTTP_CODE_200, res_size, res_type);
+	}
+	return reply;
 }
 
 void VideoServer::updateDisplay() {

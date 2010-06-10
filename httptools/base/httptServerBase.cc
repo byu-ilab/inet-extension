@@ -34,7 +34,7 @@ void httptServerBase::initialize()
 		ASSERT(httpProtocol == HTTP_10 || httpProtocol == HTTP_11);
 
 	// find and register with controller
-	controller = check_and_cast<httptController *>(simulation.getSystemModule()->getSubmodule(par("controller")));
+	controller = check_and_cast<httptController *>(findModuleSomewhereUp("controller",this));
 	EV_DEBUG << "registerWithController: parent module's full name: "<<getParentModule()->getFullName()<<endl;
 	controller->registerWWWserver(getParentModule()->getFullName(),wwwName.c_str(),port,INSERT_END,activationTime);
 
@@ -138,6 +138,7 @@ httptReplyMessage * httptServerBase::handleRequestMessage( cMessage *msg )
 	{
 		// Verify that the header string has the correct number of parameters
 			// Parse the request string on spaces
+		cout<<request->heading()<<endl;
 		cStringTokenizer tokenizer = cStringTokenizer(request->heading()," ");
 		std::vector<string> res = tokenizer.asVector();
 		if ( res.size() != 3 )

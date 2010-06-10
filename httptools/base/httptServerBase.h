@@ -26,6 +26,7 @@
 #define HTTPTSERVERBASE_H_
 
 #include "httptNodeBase.h"
+#include "ModuleAccess.h"
 
 class httptServerBase: public httptNodeBase
 {

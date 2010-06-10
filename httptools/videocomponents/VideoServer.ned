@@ -12,10 +12,10 @@
 // Foundation, Inc., 59 Temple Place - Suite 330, Boston, MA  02111-1307, USA.
 //
 // ----------------------------------------------------------------------------
+import inet.applications.tcpapp.socketapi.TCPSocketAPIAppInterface;
+import inet.httptools.base.httptServerBaseInterface;
 
 package inet.httptools.videocomponents;
-
-import inet.applications.tcpapp.socketapi.TCPSocketAPIAppInterface;
 
 //
 // VideoServer
@@ -30,17 +30,33 @@ import inet.applications.tcpapp.socketapi.TCPSocketAPIAppInterface;
 // @version 1.0 
 // @author  Travis Andelin
 //
-simple VideoServer like TCPSocketAPIAppInterface
+simple VideoServer like TCPSocketAPIAppInterface, httptServerBaseInterface
 {
     parameters:
-        string socketapi;									// the socketAPI name.
-        string www = default("");						// The WWW name of the server
-        int port = default(80);							// The listening port number
-        int httpProtocol=default(11);					// The http protocol: 10 for http/1.0, 11 for http/1.1. Not used at the present time.
-        int logLevel = default(0);						// The log level: 2: Debug, 1: Info; 0: Errors and warnings only
-        string logFile = default("");					// Name of server log file. Events are appended, allowing sharing of file for multiple servers.
+ 		// specific to VideoServer
         string siteDefinition = default("");			// The site script file. Blank to disable.
-        double activationTime @unit("s") = default(0s);	// The initial activation delay. Zero to disable.
         xml config;										// The XML configuration file for random sites
+        
+         // From TCPSocketAPIApp
+        string socketapi;								// the socketAPI name.
+        
+        // From httptServerBaseInterface
+        	// domain name of the server
+        string www = default("");						// The WWW name of the server
+        	// the port the server listens on
+        int port = default(80);							// The listening port number
+        	// the httptController with which this server should register
+        string controller = default("controller");
+        	// the protocl to be used
+        int httpProtocol=default(11);					// The http protocol: 10 for http/1.0, 11 for http/1.1. Not used at the present time.
+        	// the size of a reply message indicating an error
+        volatile int errorReplySize @unit(B) = default(200B);
+        	// the level of logging to be used
+        int logLevel = default(0);						// The log level: 2: Debug, 1: Info; 0: Errors and warnings only
+        	// the file to write the log to
+        string logFile = default("");					// Name of server log file. Events are appended, allowing sharing of file for multiple servers.
+        	// the time it takes to activate
+        double activationTime @unit(s) = default(0s);	// The initial activation delay. Zero to disable.
+                
 }
 
