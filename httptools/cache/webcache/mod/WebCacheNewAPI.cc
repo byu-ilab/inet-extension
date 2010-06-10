@@ -20,7 +20,7 @@ Define_Module(WebCacheNewAPI);
 
 WebCacheNewAPI::WebCacheNewAPI() {
 	resourceCache = NULL;
-	cacheSizeUnit = TiB;
+	cacheSizeUnit = KiB;
 }
 
 WebCacheNewAPI::~WebCacheNewAPI() {
