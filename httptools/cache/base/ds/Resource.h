@@ -22,7 +22,7 @@ using namespace std;
 class Resource {
 public:
 	virtual string getID()=0;
-	virtual unsigned long getSize()=0;
+	virtual uint64 getSize()=0;
 };
 
 #endif /* RESOURCE_H_ */

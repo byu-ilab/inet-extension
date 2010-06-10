@@ -16,7 +16,7 @@
 #include "LRUCache.h"
 
 
-LRUCache::LRUCache(unsigned long capacity):capacity(capacity), remaining(capacity){
+LRUCache::LRUCache(uint64 capacity):capacity(capacity), remaining(capacity){
 	return;
 }
 
@@ -76,10 +76,10 @@ Resource * LRUCache::getOldestResource() {
 	return oldest;
 }
 
-unsigned long LRUCache::getRemainingCapacity() {
+uint64 LRUCache::getRemainingCapacity() {
 	return remaining;
 }
-unsigned long LRUCache::getCapacity() {
+uint64 LRUCache::getCapacity() {
 	return capacity;
 }
 void LRUCache::renew(Resource * res) {

@@ -34,9 +34,9 @@ void WebCacheNewAPI::initialize() {
 	upstream_cache = par("serverwww").stringValue();
 	request_timeout = par("request_timeout");
 
-	long cache_size = par("cacheSize").longValue();
+	int64 cache_size = par("cacheSize").longValue();
 		ASSERT(cache_size > 0);
-	resourceCache = new LRUCache((unsigned long) cache_size);
+	resourceCache = new LRUCache((uint64) cache_size);
 	updateDisplay();
 	requestsReceived = 0;
 	serverSocketsBroken=0;

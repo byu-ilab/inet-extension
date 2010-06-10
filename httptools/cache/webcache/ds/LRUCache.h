@@ -34,9 +34,9 @@ private:
 	Resource * getOldestResource();
 
 public:
-	LRUCache(unsigned long capacity);
+	LRUCache(uint64 capacity);
 	virtual ~LRUCache();
-	virtual unsigned long getRemainingCapacity();
+	virtual uint64 getRemainingCapacity();
 protected:
 	/**
 	 * Indicates whether the cache holds a resource.
@@ -52,7 +52,7 @@ protected:
 	 * Clears the cache.
 	 */
 	virtual void empty();
-	virtual unsigned long getCapacity();
+	virtual uint64 getCapacity();
 	virtual void renew(Resource *);
 };
 

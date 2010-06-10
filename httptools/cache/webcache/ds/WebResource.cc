@@ -15,7 +15,7 @@
 
 #include "WebResource.h"
 
-WebResource::WebResource(string uri, int64 size): uri(uri), size(size) {
+WebResource::WebResource(string uri, uint64 size): uri(uri), size(size) {
 	return;
 }
 WebResource::WebResource(const WebResource & other) {
@@ -29,6 +29,6 @@ WebResource::~WebResource() {
 string WebResource::getID() {
 	return uri;
 }
-unsigned long WebResource::getSize() {
+uint64 WebResource::getSize() {
 	return size;
 }

@@ -37,8 +37,8 @@ public:
 	 */
 	virtual void empty() = 0;
 
-	virtual unsigned long getCapacity() = 0;
-	virtual unsigned long getRemainingCapacity() = 0;
+	virtual uint64 getCapacity() = 0;
+	virtual uint64 getRemainingCapacity() = 0;
 	virtual void renew(Resource *) = 0;
 };
 
