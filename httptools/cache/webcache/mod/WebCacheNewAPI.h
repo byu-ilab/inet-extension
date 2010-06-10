@@ -26,6 +26,7 @@
 #include "IPAddressResolver.h"
 #include "WebResource.h"
 #include "CacheRequestMgr.h"
+#include "simunits.h"
 
 enum CacheMessageType { START = 1 };
 enum SockType{SERVER,CLIENT,LISTENER};

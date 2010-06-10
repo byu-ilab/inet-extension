@@ -20,7 +20,6 @@ Define_Module(WebCacheNewAPI);
 
 WebCacheNewAPI::WebCacheNewAPI() {
 	resourceCache = NULL;
-	cacheSizeUnit = KiB;
 }
 
 WebCacheNewAPI::~WebCacheNewAPI() {
@@ -37,8 +36,7 @@ void WebCacheNewAPI::initialize() {
 
 	long cache_size = par("cacheSize").longValue();
 		ASSERT(cache_size > 0);
-	cache_size *= cacheSizeUnit;
-	resourceCache = new LRUCache((unsigned) cache_size);
+	resourceCache = new LRUCache((unsigned long) cache_size);
 	updateDisplay();
 	requestsReceived = 0;
 	serverSocketsBroken=0;
@@ -416,7 +414,14 @@ void WebCacheNewAPI::updateDisplay() {
 		float full =0;
 		if (cacheSize > 0)
 			full = 100.0 * (cacheSize-remaining) / cacheSize;
-		sprintf( buf, "Req: %ld\nHit: %.1f\%\nCap: %.1fTiB\nFull: %.1f\%", requestsReceived,h,(double)cacheSize/cacheSizeUnit, full);
+
+		// figure out the units
+		ByteUnit unit = determineByteUnit(cacheSize, unittype_bibyte);
+		string unitstr = getByteUnitAsString(unit);
+		double convfactor = getMultiplicativeFactor(unit_B, unittype_bibyte, unit, unittype_bibyte);
+		double capacity = (double) cacheSize * convfactor;
+		sprintf( buf, "Req: %ld\nHit: %.1f\%\nCap: %.1f%s\nFull: %.1f\%", requestsReceived,h,
+				capacity, unitstr.c_str(), full);
 		getParentModule()->getDisplayString().setTagArg("t",0,buf);
 	} /*else if (ev.isGUI() ){
 		httptServerBase::updateDisplay();
