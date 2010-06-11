@@ -288,7 +288,7 @@ void VideoTitleWorkloadGenerator::generateConfiguration()
 
 	// generate video title meta data
 	VideoTitleMetaData vtmd_template;
-	vtmd_template.num_rates = num_bit_rates;
+	vtmd_template.num_quality_levels = num_bit_rates;
 	vtmd_template.quality_interval = quality_interval;
 	vtmd_template.video_type = "vod";
 
@@ -347,7 +347,7 @@ void VideoTitleWorkloadGenerator::generateConfiguration()
 			output_file << "title: "<<vtmd_template.video_title<<endl;
 			output_file << "type: "<<vtmd_template.video_type<<endl;
 			output_file << "segments: "<<vtmd_template.num_segments<<endl;
-			output_file << "rates: "<<vtmd_template.num_rates<<endl;
+			output_file << "rates: "<<vtmd_template.num_quality_levels<<endl;
 			output_file << "interval: "<<vtmd_template.quality_interval<<endl;
 			output_file.flush();
 			output_file.close();
@@ -369,4 +369,55 @@ void VideoTitleWorkloadGenerator::generateConfiguration()
 		output_file << "maxsegments: "<<max_segments<<endl;
 		// if going to read in data then will have to write out the file titles
 	}
+}
+
+
+/*
+ * Returns the video segment data as contained in the uri.
+ * Throws an error if the uri isn't in the right format.
+ */
+struct VideoSegmentMetaData VideoTitleWorkloadGenerator::parseVideoSegmentUri(const std::string & uri)
+{
+	cStringTokenizer tokenizer = cStringTokenizer(uri.c_str(),"/");
+	vector<string> res = tokenizer.asVector();
+	if (res.size() != 4)
+	{
+		throw cRuntimError(this, "invalid uri provided");
+	}
+
+	// TODO check that the numbers are valid
+	VideoSegmentMetaData vsmd;
+	vsmd.video_title = res[1];
+	vsmd.video_type = res[0];
+	vsmd.quality_level = atoi(res[2].c_str());
+	vsmd.segment_number = atoi(res[3].c_str());
+
+	return vsmd;
+}
+
+/*
+ * Simple creates a video segment uri according to the provided parameters.
+ * Does not check if the parameters are valid.
+ */
+std::string VideoTitleWorkloadGenerator::createVideoSegmentUri(const std::string & title,
+		const std::string & type, int quality_level, int segment_number)
+{
+	stringstream uri_template;
+	uri_template << "/" << type << "/" << title << "/" << quality_level << "/" <<
+		segment_number << ".vid";
+	return uri_template.str();
+}
+
+/*
+ * Determines whether the provided video segment data is valid according to
+ * it's corresponding video title's meta data.
+ */
+bool VideoTitleWorkloadGenerator::isVideoSegmentDataValid(struct VideoSegmentMetaData vsdata)
+{
+	return false;
+}
+
+bool VideoTitleWorkloadGenerator::isVideoSegmentDataValid(const std::string & uri)
+{
+	return false;
 }

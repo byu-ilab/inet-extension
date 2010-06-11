@@ -5,7 +5,7 @@
 
 #include <omnetpp.h>
 #include <string.h>
-
+#include <sstream>
 #include "VideoTitleMetaData.h"
 
 struct VideoTitlePopularity
@@ -61,6 +61,27 @@ public:
 	virtual std::string getVideoTitleAsString(int video_title_id);
 	// returns -1 if there is an error in the video title
 	virtual int getVideoTitleAsInt(const std::string & video_title);
+
+	/*
+	 * Returns the video segment data as contained in the uri.
+	 * Throws an error if the uri isn't in the right format.
+	 */
+	virtual struct VideoSegmentMetaData parseVideoSegmentUri(const std::string & uri);
+
+	/*
+	 * Simple creates a video segment uri according to the provided parameters.
+	 * Does not check if the parameters are valid.
+	 */
+	virtual std::string createVideoSegmentUri(const std::string & type, const std::string & title,
+			int quality_level, int segment_number);
+
+	/*
+	 * Determines whether the provided video segment data is valid according to
+	 * it's corresponding video title's meta data.
+	 */
+	virtual bool isVideoSegmentDataValid(struct VideoSegmentMetaData vsdata);
+
+	virtual bool isVideoSegmentDataValid(const std::string & uri);
 
 protected:
 	/** @name Overridden from cSimpleModule */
