@@ -6,7 +6,10 @@
 #include "VideoTitleWorkloadGenerator.h"
 
 #include <cmath>	// for pow and ceil
-#include <fstream>
+#include <fstream>	// for writing out to files
+#include <vector>	// for parsing results
+#include <sstream>	// for crafting URIs
+#include "httptUtils.h"
 
 Define_Module(VideoTitleWorkloadGenerator);
 
@@ -226,15 +229,15 @@ int VideoTitleWorkloadGenerator::getVideoTitleAsInt(const std::string & video_ti
 	return video_title_id;
 }
 
-std::string VideoTitleWorkloadGenerator::getReverseString(const std::string & toreverse)
-{
-	std::string retstr = "";
-	for (int i = toreverse.size()-1; i >= 0; i--)
-	{
-		retstr += toreverse.at(i);
-	}
-	return retstr;
-}
+//std::string VideoTitleWorkloadGenerator::getReverseString(const std::string & toreverse)
+//{
+//	std::string retstr = "";
+//	for (int i = toreverse.size()-1; i >= 0; i--)
+//	{
+//		retstr += toreverse.at(i);
+//	}
+//	return retstr;
+//}
 
 
 void VideoTitleWorkloadGenerator::configureFromInput(const std::string & input_file)
@@ -382,10 +385,10 @@ struct VideoSegmentMetaData VideoTitleWorkloadGenerator::parseVideoSegmentUri(co
 	vector<string> res = tokenizer.asVector();
 	if (res.size() != 4)
 	{
-		throw cRuntimError(this, "invalid uri provided");
+		error("invalid uri provided");
 	}
 
-	// TODO check that the numbers are valid
+	// TODO check that res[2] and res[3] are numbers?
 	VideoSegmentMetaData vsmd;
 	vsmd.video_title = res[1];
 	vsmd.video_type = res[0];
@@ -406,18 +409,45 @@ std::string VideoTitleWorkloadGenerator::createVideoSegmentUri(const std::string
 	uri_template << "/" << type << "/" << title << "/" << quality_level << "/" <<
 		segment_number << ".vid";
 	return uri_template.str();
+
+//	Other Format possibility; requires #include <iomanip>
+//	setfill('0');
+//	std::stringstream uri;
+//	uri << "/" << video_type << "/" << video_title << "/" << setw(2) << quality_level << data->segment << ".vid";
 }
 
 /*
  * Determines whether the provided video segment data is valid according to
  * it's corresponding video title's meta data.
  */
-bool VideoTitleWorkloadGenerator::isVideoSegmentDataValid(struct VideoSegmentMetaData vsdata)
+bool VideoTitleWorkloadGenerator::isVideoSegmentDataValid(const struct VideoSegmentMetaData & vsdata)
 {
-	return false;
+	VideoTitleMetaData vtmd = getMetaData(vsdata.video_title);
+
+	if (vtmd.num_segments < MIN_SEGMENT_NUMBER) //implicitly checks that the titles are the same
+	{
+		return false;
+	}
+
+	if (vtmd.video_type != vsdata.video_type)
+	{
+		return false;
+	}
+
+	if (vsdata.quality_level < MIN_QUALITY_LEVEL || vtmd.num_quality_levels < vsdata.quality_level )
+	{
+		return false;
+	}
+
+	if (vsdata.segment_number < MIN_SEGMENT_NUMBER || (vtmd.num_segments - 1) < vsdata.segment_number )
+	{
+		return false;
+	}
+
+	return true;
 }
 
 bool VideoTitleWorkloadGenerator::isVideoSegmentDataValid(const std::string & uri)
 {
-	return false;
+	return isVideoSegmentDataValid(parseVideoSegmentUri(uri));
 }

@@ -134,38 +134,43 @@ void VideoServer::recvCallback(int socket_id, int ret_status,
 void VideoServer::closeSocket(int socket_id) {
 	tcp_api->close(socket_id);
 }
-httptReplyMessage* VideoServer::handleGetRequest( httptRequestMessage *request, string resource ) {
+httptReplyMessage* VideoServer::handleGetRequest( httptRequestMessage *request, string resource_uri ) {
 	// error if this resource is not a video title in workload generator
 //	VideoSegmentRequestMessage * vrequest = static_cast<VideoSegmentRequestMessage *>(request);
 //	if (!vrequest) {
 //		opp_error("VideoServer::handleGetRequest: did not receive VideoSegmentRequestMessage");
 //	}
 
-	VideoTitleMetaData md =  workload_generator->getMetaData(vrequest->getTitle());
+	VideoSegmentMetaData vsmd = workload_generator->parseVideoSegmentUri(resource_uri);
 
-	if (md.num_segments == -1) {
-		return generateErrorReply(vrequest, resource, 404);
+	if (!workload_generator->isVideoSegmentDataValid(vsmd))
+	{
+		return generateErrorReply(request, resource_uri, 404);
 	}
 
-	int res_size = md.quality_interval * vrequest->getQualityLevel();
+	VideoTitleMetaData vtmd =  workload_generator->getMetaData(vsmd.video_title);
 
-	int res_type = rt_vidseg;
+	int res_size = vtmd.quality_interval * vsmd.quality_level;
+
+//	int res_type = rt_vidseg;
 
 	// if it is a byte range request, service it.
-	VideoSegmentReplyMessage * reply = new VideoSegmentReplyMessage();
+//	VideoSegmentReplyMessage * reply = new VideoSegmentReplyMessage();
+//
+//	reply->setTitle(vrequest->getTitle());
+//	reply->setType(vrequest->getType());
+//	reply->setSegmentNumber(vrequest->getSegmentNumber());
+//	reply->setQualityLevel(vrequest->getQualityLevel());
 
-	reply->setTitle(vrequest->getTitle());
-	reply->setType(vrequest->getType());
-	reply->setSegmentNumber(vrequest->getSegmentNumber());
-	reply->setQualityLevel(vrequest->getQualityLevel());
+	return generateByteRangeReply(request, resource_uri, res_size, rt_vidseg);
 
-	if (vrequest->firstBytePos() != BRS_UNSPECIFIED) {
-		fillinByteRangeReply(reply, vrequest, resource, res_size, res_type);
-	}
-	else { // service normal request
-		fillinStandardReply(reply, vrequest, resource, HTTP_CODE_200, res_size, res_type);
-	}
-	return reply;
+//	if (vrequest->firstBytePos() != BRS_UNSPECIFIED) {
+//		fillinByteRangeReply(reply, vrequest, resource, res_size, res_type);
+//	}
+//	else { // service normal request
+//		fillinStandardReply(reply, vrequest, resource, HTTP_CODE_200, res_size, res_type);
+//	}
+//	return reply;
 }
 
 void VideoServer::updateDisplay() {

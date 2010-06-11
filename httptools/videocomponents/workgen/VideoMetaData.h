@@ -8,6 +8,9 @@
 #ifndef VIDEOTITLEMETADATA_H_
 #define VIDEOTITLEMETADATA_H_
 
+#define MIN_QUALITY_LEVEL 1
+#define MIN_SEGMENT_NUMBER 0
+
 struct VideoTitleMetaData
 {
 	std::string video_title;
