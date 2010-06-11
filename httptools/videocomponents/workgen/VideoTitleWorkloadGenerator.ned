@@ -42,7 +42,7 @@ simple VideoTitleWorkloadGenerator
         double segmentDuration @unit(s) = default(2s);
         int numBitRates = default(12);
         	// bit rate level * quality interval = 2 sec segment size at that bit rate	
-        int qualityInterval @unit(KB) = default(35KB);
+        int qualityInterval @unit(B) = default(35KB);
 
         // popularity variables
         double zipfExponent = default(2.0);
