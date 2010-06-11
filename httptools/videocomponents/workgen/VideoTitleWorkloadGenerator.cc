@@ -181,10 +181,13 @@ std::string VideoTitleWorkloadGenerator::getVideoTitleAsString(int video_title_i
 int VideoTitleWorkloadGenerator::getVideoTitleAsInt(const std::string & video_title)
 {
 	// check that the indicated string can be converted to a positive integer
-	char first = video_title.at(0); // negative hex character 8, 9, A, B, C, D, E, F
-	if (video_title.size() > 8 || !isdigit(video_title.at(0)) || first == '8' || first == '9')
-	{
+	if (video_title.size() > 8) {
 		return -1;
+	} else if (video_title.size() == 8){
+		char first = video_title.at(0);
+		if (first >= '8' ) {
+			return -1;
+		}
 	}
 
 	int video_title_id = 0;
@@ -390,8 +393,8 @@ struct VideoSegmentMetaData VideoTitleWorkloadGenerator::parseVideoSegmentUri(co
 
 	// TODO check that res[2] and res[3] are numbers?
 	VideoSegmentMetaData vsmd;
-	vsmd.video_title = res[1];
-	vsmd.video_type = res[0];
+	vsmd.video_title = res[0];
+	vsmd.video_type = res[1];
 	vsmd.quality_level = atoi(res[2].c_str());
 	vsmd.segment_number = atoi(res[3].c_str());
 
