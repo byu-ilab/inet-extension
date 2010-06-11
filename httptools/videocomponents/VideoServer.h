@@ -21,6 +21,7 @@
 #include "httptServerBase.h"
 #include "TCPSocketAPI.h"
 #include "VideoTitleWorkloadGenerator.h"
+#include "TCPSocketAPIAppUtils.h"
 
 /**
  *
@@ -59,7 +60,6 @@ class INET_API VideoServer :
 
 		/** @name TCP Socket API callbacks */
 		//@ {
-		//virtual bool hasCallback(TCPSocketAPI::CALLBACK_TYPE type); // is this in CB interface?
 		virtual void acceptCallback  (int socket_id, int ret_status, void * yourPtr); // this happens after each call  to accept.
 		//virtual void connectCallback(int socket_id, int ret_status, void * myPtr); // this happens after each call to connect
 		virtual void recvCallback(int socket_id, int ret_status, cPacket * msg, void * myPtr); // this happens after each call to recv

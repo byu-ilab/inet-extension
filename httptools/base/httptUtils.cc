@@ -172,7 +172,7 @@ std::string getDelimited(string str, string ldelim, string rdelim)
 	else return str.substr(lpos+1,rpos-lpos-1);
 }
 
-CONTENT_TYPE_ENUM getResourceCategory(vector<std::string> res)
+WEB_CONTENT_TYPE getResourceCategory(vector<std::string> res)
 {
 	if ( res.size()==2 )
 		return rt_html_page;
@@ -181,7 +181,7 @@ CONTENT_TYPE_ENUM getResourceCategory(vector<std::string> res)
 	return rt_unknown;
 }
 
-CONTENT_TYPE_ENUM getResourceCategory(string resourceExt)
+WEB_CONTENT_TYPE getResourceCategory(string resourceExt)
 {
 	if (resourceExt=="" || resourceExt=="htm" || resourceExt=="html")
 		return rt_html_page;

@@ -23,6 +23,8 @@ class Resource {
 public:
 	virtual string getID()=0;
 	virtual uint64 getSize()=0;
+	virtual int    getType()=0;
+	virtual string getContent()=0;
 };
 
 #endif /* RESOURCE_H_ */

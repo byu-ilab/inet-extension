@@ -56,6 +56,7 @@ simple httptBrowser like TCPApp
         string scriptFile = default("");				// The browsing script file. Blank to disable.
         double activationTime @unit("s") = default(0s);	// The initial activation delay. Zero to disable.
         xml config;										// The XML config file
+        string proxywww = default("");
     gates:
         input tcpIn;
         output tcpOut;

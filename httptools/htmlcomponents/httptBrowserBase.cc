@@ -285,7 +285,7 @@ void httptBrowserBase::handleDataMessage( cMessage *msg )
 	string senderWWW = appmsg->originatorUrl();
 	EV_DEBUG << "Handling received message from " << senderWWW << ": " << msg->getName() << ". Received @T=" << simTime() << endl;
 
-	if ( appmsg->result()!=200 || (CONTENT_TYPE_ENUM)appmsg->contentType()==rt_unknown )
+	if ( appmsg->result()!=200 || (WEB_CONTENT_TYPE)appmsg->contentType()==rt_unknown )
 	{
 		EV_INFO << "Result for " << appmsg->getName() << " was other than OK. Code: " << appmsg->result() << endl;
 		htmlErrorsReceived++;
@@ -294,7 +294,7 @@ void httptBrowserBase::handleDataMessage( cMessage *msg )
 	}
 	else
 	{
-		switch( (CONTENT_TYPE_ENUM)appmsg->contentType() )
+		switch( (WEB_CONTENT_TYPE)appmsg->contentType() )
 		{
 			case rt_html_page:
 				EV_INFO << "HTML Document received: " << appmsg->getName() << "'. Size is " << appmsg->getByteLength() << " bytes and serial " << serial << endl;
@@ -317,17 +317,17 @@ void httptBrowserBase::handleDataMessage( cMessage *msg )
 				if (ev.isGUI()) bubble("Received an image resource");
 				break;
 			case rt_unknown:
-				EV_DEBUG << "UNKNOWN RESOURCE TYPE RECEIVED: " << (CONTENT_TYPE_ENUM)appmsg->contentType() << endl;
+				EV_DEBUG << "UNKNOWN RESOURCE TYPE RECEIVED: " << (WEB_CONTENT_TYPE)appmsg->contentType() << endl;
 				if (ev.isGUI()) bubble("Received an unknown resource type");
 				break;
 			default:
-				EV_DEBUG << "UNSUPPORTED RESOURCE TYPE RECEIVED: "<<(CONTENT_TYPE_ENUM)appmsg->contentType()<<endl;
+				EV_DEBUG << "UNSUPPORTED RESOURCE TYPE RECEIVED: "<<(WEB_CONTENT_TYPE)appmsg->contentType()<<endl;
 				if (ev.isGUI()) bubble("Received an unsupported resource type");
 				break;
 		}
 
 		// Parse the html page body
-		if ( (CONTENT_TYPE_ENUM)appmsg->contentType() == rt_html_page && strlen(appmsg->payload()) != 0 )
+		if ( (WEB_CONTENT_TYPE)appmsg->contentType() == rt_html_page && strlen(appmsg->payload()) != 0 )
 		{
 			EV_DEBUG << "Processing HTML document body:\n";
 			cStringTokenizer lineTokenizer( (const char*)appmsg->payload(), "\n" );
@@ -456,7 +456,7 @@ cMessage* httptBrowserBase::generateResourceRequest(string www, string resource,
 		resource.insert(0,"/");
 
 	string ext = trimLeft(resource,".");
-	CONTENT_TYPE_ENUM rc = getResourceCategory(ext);
+	WEB_CONTENT_TYPE rc = getResourceCategory(ext);
 	if ( rc==rt_image ) imgResourcesRequested++;
 	else if ( rc==rt_text ) textResourcesRequested++;
 

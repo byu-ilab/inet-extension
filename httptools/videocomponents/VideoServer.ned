@@ -36,6 +36,7 @@ simple VideoServer like TCPSocketAPIAppInterface, httptServerBaseInterface
  		// specific to VideoServer
         string siteDefinition = default("");			// The site script file. Blank to disable.
         xml config;										// The XML configuration file for random sites
+        string workloadGenerator = default("workloadgenerator");
         
          // From TCPSocketAPIApp
         string socketapi;								// the socketAPI name.

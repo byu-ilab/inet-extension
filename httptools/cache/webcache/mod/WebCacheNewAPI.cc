@@ -18,7 +18,7 @@
 
 Define_Module(WebCacheNewAPI);
 
-WebCacheNewAPI::WebCacheNewAPI() {
+WebCacheNewAPI::WebCacheNewAPI() : pendingRequests(), contentFilter(), shouldFilter(false) {
 	resourceCache = NULL;
 }
 
@@ -31,12 +31,20 @@ WebCacheNewAPI::~WebCacheNewAPI() {
 void WebCacheNewAPI::initialize() {
 	httptServerBase::initialize();
 
-	upstream_cache = par("serverwww").stringValue();
+	upstream_cache = par("serverwww").stdstringValue();
 	request_timeout = par("request_timeout");
 
 	int64 cache_size = par("cacheSize").longValue();
 		ASSERT(cache_size > 0);
 	resourceCache = new LRUCache((uint64) cache_size);
+
+	string config_filename = par("filterConfig").stdstringValue();
+	if (!config_filename.empty())
+	{
+		shouldFilter = true;
+		contentFilter.configureFromXML(config_filename);
+	}
+
 	updateDisplay();
 	requestsReceived = 0;
 	serverSocketsBroken=0;
@@ -239,6 +247,7 @@ void WebCacheNewAPI::makeUpstreamRequest(int socket_id, ConnInfo * data) {
 	ci->sockType = CLIENT;
 	ci->ds_request = NULL;
 
+	WC_DEBUG("requesting from server: "<<us_request->heading());
 	tcp_api->send(socket_id,us_request);
 	tcp_api->recv(socket_id,ci);
 	delete data->ds_request;
@@ -259,10 +268,18 @@ void WebCacheNewAPI::processUpstreamResponse(int socket_id, cPacket * msg, ConnI
 
 	if (!isErrorMessage(reply)) {
 		// add resource to cache
-		Resource * wr = new WebResource(extractURLFromResponse(reply),reply->getByteLength());
-		if (wr->getSize() <= resourceCache->getCapacity()) {
-		  resourceCache->add(wr);
+		string uri = extractURLFromResponse(reply);
+		Resource * wr = new WebResource(uri,reply->getByteLength(), reply->contentType(), reply->payload());
+
+		string ext = parseResourceName(uri)[2];
+		if (!shouldFilter || /* implicit shouldFilter && */ contentFilter.containsExtension(ext))
+		{
+			if (wr->getSize() <= resourceCache->getCapacity()) {
+			  resourceCache->add(wr);
+			  WC_DEBUG("added: "<<wr->getID());
+			}
 		}
+		// else just forward it
 
 		// send a response to each waiting client.
 		list<RequestRecord> requests_to_service = pendingRequests.getRequestsForResource(wr->getID());
@@ -286,7 +303,10 @@ void WebCacheNewAPI::respondToClientRequest(int socket_id, httptRequestMessage *
 
 	// TODO add type extractor from extension? or add type to web resource?
 	// checks if it is indeed a byte range request
-	tcp_api->send(socket_id, generateByteRangeReply(request, resource->getID(), resource->getSize(), rt_text));
+	httptReplyMessage * reply = generateByteRangeReply(request, resource->getID(), resource->getSize(), resource->getType());
+	reply->setPayload(resource->getContent().c_str());
+	WC_DEBUG("sent to client: "<<reply->heading()<<" for resource: "<<reply->relatedUri());
+	tcp_api->send(socket_id, reply);
 }
 
 bool WebCacheNewAPI::isErrorMessage(httptReplyMessage *msg)
@@ -305,7 +325,7 @@ void WebCacheNewAPI::processDownstreamRequest(int socket_id, cPacket * msg, Conn
 
 	httptRequestMessage * request = check_and_cast<httptRequestMessage *>(msg);
 	requestsReceived++;
-
+	WC_DEBUG("received request for: "<<request->heading());
 	string url = extractURLFromRequest(request);
 	Resource * wr_temp = new WebResource(url, 0); // works because comparator used only looks at the ID not the size
 	Resource * wr_incache = resourceCache->has(wr_temp);

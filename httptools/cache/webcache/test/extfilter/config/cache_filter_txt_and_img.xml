@@ -1,0 +1,4 @@
+<wcef-config>
+	<extension value="txt" type="text" />
+	<extension value="jpg" type="image" />
+</wcef-config>

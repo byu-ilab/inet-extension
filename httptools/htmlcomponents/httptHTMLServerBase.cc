@@ -237,7 +237,7 @@ httptReplyMessage* httptHTMLServerBase::handleGetRequest( httptRequestMessage *r
 		return generateErrorReply(request, resource, 400);
 	}
 
-	CONTENT_TYPE_ENUM cat = getResourceCategory(req);
+	WEB_CONTENT_TYPE cat = getResourceCategory(req);
 
 	if ( cat==rt_html_page )
 	{
@@ -323,7 +323,7 @@ httptReplyMessage* httptHTMLServerBase::generateDocument( httptRequestMessage *r
 	return replymsg;
 }
 
-httptReplyMessage* httptHTMLServerBase::generateResourceMessage( httptRequestMessage *request, string resource, CONTENT_TYPE_ENUM category )
+httptReplyMessage* httptHTMLServerBase::generateResourceMessage( httptRequestMessage *request, string resource, WEB_CONTENT_TYPE category )
 {
 	EV_DEBUG << "Generating resource message in response to request " << request->heading() << " with serial " << request->serial() << endl;
 

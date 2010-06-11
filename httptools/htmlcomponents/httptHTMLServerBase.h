@@ -132,7 +132,7 @@ class INET_API httptHTMLServerBase : public httptServerBase /*httptNodeBase*/
 		/** Generate a HTML document in response to a request. */
 		httptReplyMessage* generateDocument( httptRequestMessage *request, const char* resource, int size=0 );
 		/** Generate a resource message in response to a request. */
-		httptReplyMessage* generateResourceMessage( httptRequestMessage *request, string resource, CONTENT_TYPE_ENUM category );
+		httptReplyMessage* generateResourceMessage( httptRequestMessage *request, string resource, WEB_CONTENT_TYPE category );
 
 		// Overrides from httptServerBase
 		/** Handle a received HTTP GET request */

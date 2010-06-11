@@ -13,61 +13,62 @@
 // along with this program.  If not, see http://www.gnu.org/licenses/.
 // 
 
-package inet.httptools.cache.webcache.test;
+package inet.httptools.cache.webcache.test.extfilter;
 
 import inet.networklayer.autorouting.FlatNetworkConfigurator;
 import inet.nodes.inet.Router;
 import inet.nodes.inet.StandardHost;
 import inet.nodes.inet.StandardHostWithTCPSocketAPI;
 import ned.DatarateChannel;
-import inet.httptools.base.*;
+import inet.httptools.base.httptController;
 
-network ByteRangeTestNetwork
+network CacheExtensionFilterTest
 {
     parameters:
-        //int numClients;
+        int numClients;
         //int numServers;
 
-        @display("bgb=296,384");
+        @display("bgb=409,384");
     types:
         channel C extends DatarateChannel
         {
             datarate = 1Mbps;
-            delay = 50000us;
+            delay = 0.1us;
         }
     submodules:
         configurator: FlatNetworkConfigurator {
             parameters:
-                @display("p=61,163");
+                @display("p=61,137");
         }
         controller: httptController {
             parameters:
-                @display("p=61,98");
+                @display("p=61,72");
         }
-        client: StandardHostWithTCPSocketAPI { //s[numClients]: StandardHost {
+
+        clients[numClients]: StandardHost { //s[numClients]: StandardHost {
             parameters:
                 @display("p=100,322,row,100;i=device/pc3");
         }
-        server: StandardHostWithTCPSocketAPI { //s[numServers]: StandardHost {
+        server: StandardHost { //s[numServers]: StandardHost {
             parameters:
-                @display("p=245,72,row,100;i=device/pc2");
-        }
-        cache: StandardHostWithTCPSocketAPI {
-            parameters:
-                @display("p=135,171,i=device/pc1");
+                @display("p=135,72,row,100;i=device/pc2");
         }
         router: Router {
             parameters:
-                @display("p=206,257");
+                @display("p=261,202");
         }
-
+        cache: StandardHostWithTCPSocketAPI {
+            parameters:
+                @display("p=261,72");
+        }
     connections:
-        client.pppg++ <--> C <--> router.pppg++;
-        cache.pppg++ <--> C <--> router.pppg++;
+        //        client.pppg++ <--> C <--> router.pppg++;
+        router.pppg++ <--> C <--> cache.pppg++;
         cache.pppg++ <--> C <--> server.pppg++;
-        //for c=0..numClients-1 {
-        //    clients[c].pppg++ <--> C <--> router.pppg++;
-        //}
+
+        for c=0..numClients-1 {
+            clients[c].pppg++ <--> C <--> router.pppg++;
+        }
 
         //for s=0..numServers-1 {
         //    servers[s].pppg++ <--> C <--> router.pppg++;

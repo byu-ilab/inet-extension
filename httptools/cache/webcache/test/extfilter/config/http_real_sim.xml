@@ -1,0 +1,21 @@
+<config>
+	
+		<serverPopularityDistribution type="constant" value="0" />
+	
+	
+		<activityPeriod type="exponential" mean="3600" sd="1800" />
+		<interSessionInterval type="normal" mean="3600" sd="1800" />
+		<InterRequestInterval type="normal" mean="600" sd="60" />
+		<requestSize type="normal" mean="200" sd="50" />
+		<reqInSession type="normal" mean="10" sd="5" />
+		<processingDelay type="normal" mean="3" sd="1" />
+	
+	
+		<htmlPageSize type="exponential" mean="10000" min="1000" />
+		<numResources type="uniform" beginning="0" end="20" />
+		<textImageResourceRatio type="uniform" beginning="0.2" end="0.8" />
+		<imageResourceSize type="exponential" mean="20000" min="1000" />
+		<textResourceSize type="exponential" mean="10000" min="1000" />
+		<replyDelay type="normal" mean="3" sd="1" />
+		<errorMessageSize type="normal" mean="100" sd="20" />
+</config>

@@ -22,7 +22,8 @@ void VideoServer::initialize()
 {
 	httptServerBase::initialize();
 
-	workload_generator = dynamic_cast<VideoTitleWorkloadGenerator*>(getParentModule()->getParentModule()->getSubmodule("workloadGenerator"));
+	workload_generator = dynamic_cast<VideoTitleWorkloadGenerator*>(simulation.getSystemModule()->getSubmodule(par("workloadGenerator")));
+		// alternate: getParentModule()->getParentModule()->getSubmodule("workloadGenerator"));
 	if (!workload_generator) {
 		error("workload generator module not found");
 	}
@@ -32,11 +33,12 @@ void VideoServer::initialize()
 	updateDisplay();
 
 	// get socket api
-	std::string api_obj_name = par("socketapi").stringValue();
-	if (api_obj_name.empty()) {
-		opp_error("videoServer::initialize(): no tcp socket api specified!");
-	}
-	tcp_api = check_and_cast<TCPSocketAPI *>(getParentModule()->getSubmodule(api_obj_name.c_str()));
+	tcp_api = findTCPSocketAPI(this);
+//	std::string api_obj_name = par("socketapi").stringValue();
+//	if (api_obj_name.empty()) {
+//		opp_error("videoServer::initialize(): no tcp socket api specified!");
+//	}
+//	tcp_api = check_and_cast<TCPSocketAPI *>(getParentModule()->getSubmodule(api_obj_name.c_str()));
 
     cMessage * start = new cMessage("START",START);
     scheduleAt(simTime(),start);
@@ -70,12 +72,6 @@ void VideoServer::handleMessage(cMessage *msg)
 	httptServerBase::handleMessage(msg);
 	delete msg;
 }
-
-
-//bool VideoServer::hasCallback(TCPSocketAPI::CALLBACK_TYPE type){
-//	return (type == TCPSocketAPI::CB_T_RECV ||
-//			type == TCPSocketAPI::CB_T_ACCEPT);
-//}
 
 /// Handles the acceptance of a new socket.
 /// @param socket_id -- the descriptor for the listening socket

@@ -27,6 +27,15 @@
 #include "WebResource.h"
 #include "CacheRequestMgr.h"
 #include "simunits.h"
+#include "WebContentExtensionFilter.h"
+
+#define DEBUG
+#ifdef DEBUG
+	#include <iostream>
+	#define WC_DEBUG(CODE) std::cout << CODE << endl
+#else
+	#define WC_DEBUG(CODE)
+#endif
 
 enum CacheMessageType { START = 1 };
 enum SockType{SERVER,CLIENT,LISTENER};
@@ -62,6 +71,9 @@ protected:
 	unsigned long clientSocketsOpened;
 	int hits;
 	int misses;
+
+	WebContentExtensionFilter contentFilter;
+	bool shouldFilter;
 
 	virtual void updateDisplay(); //> Update the display string if running in GUI mode
 

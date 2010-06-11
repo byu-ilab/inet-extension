@@ -137,14 +137,22 @@ void httptBrowser::sendRequestToRandomServer()
 	char szWWW[127];
 	char szModuleName[127];
 
-	if ( controller->getAnyServerInfo( szWWW, szModuleName, connectPort ) != 0 )
+//	if ( controller->getAnyServerInfo( szWWW, szModuleName, connectPort ) != 0 )
+//	{
+//		EV_ERROR << "Unable to get a random server from controller" << endl;
+//		return;
+//	}
+//	EV_DEBUG << "Sending request to random server " << szWWW << " (" << szModuleName << ") on port " << connectPort << endl;
+//	submitToSocket(szModuleName,connectPort,generateRandomPageRequest(szWWW));
+	string proxywww = par("proxywww").stdstringValue();
+	if (controller->getServerInfo(proxywww.c_str(), szModuleName, connectPort) != 0)
 	{
-		EV_ERROR << "Unable to get a random server from controller" << endl;
+		EV_ERROR << "Unable to get the cache's information from controller" <<endl;
 		return;
 	}
 
-	EV_DEBUG << "Sending request to random server " << szWWW << " (" << szModuleName << ") on port " << connectPort << endl;
-	submitToSocket(szModuleName,connectPort,generateRandomPageRequest(szWWW));
+	EV_DEBUG << "Sending request to random server " << proxywww << " (" << szModuleName << ") on port " << connectPort << endl;
+	submitToSocket(szModuleName,connectPort,generateRandomPageRequest(proxywww));
 }
 
 void httptBrowser::sendRequestsToServer( string www, MESSAGE_QUEUE_TYPE queue )

@@ -22,13 +22,17 @@ class WebResource: public Resource {
 private:
 	string uri;
 	uint64 size;
+	int type;
+	string content;
 public:
-	WebResource(string uri, uint64 size);
+	WebResource(string uri, uint64 size, int type=-1, string content="");
 	WebResource(const WebResource &);
 	virtual ~WebResource();
 protected:
 	virtual string getID();
 	virtual uint64 getSize();
+	virtual int    getType();
+	virtual string getContent();
 };
 
 #endif /* WEBRESOURCE_H_ */

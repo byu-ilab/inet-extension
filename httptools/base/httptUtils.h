@@ -72,7 +72,7 @@
 #define HTTP_PHRASE_416 "REQUESTED RANGE NOT SATISFIABLE"
 
 /** @brief type of returned content. Used in http responses. */
-enum CONTENT_TYPE_ENUM {rt_unknown,rt_html_page,rt_image,rt_text,rt_vtmd, rt_vidseg};
+enum WEB_CONTENT_TYPE {rt_unknown,rt_html_page,rt_image,rt_text,rt_vtmd, rt_vidseg};
 
 using namespace std;
 
@@ -85,8 +85,8 @@ string extractServerName( const char *path );
 string extractResourceName( const char *path );
 std::string getDelimited(string str, string ldelim, string rdelim="");
 std::vector<std::string> parseResourceName(string resource);
-CONTENT_TYPE_ENUM getResourceCategory(vector<std::string> res);
-CONTENT_TYPE_ENUM getResourceCategory(string resourceExt);
+WEB_CONTENT_TYPE getResourceCategory(vector<std::string> res);
+WEB_CONTENT_TYPE getResourceCategory(string resourceExt);
 
 // returns RM_NONE if the methodstr doesn't contain a known http method
 RequestMethod httpMethodFromString(const string & methodstr);

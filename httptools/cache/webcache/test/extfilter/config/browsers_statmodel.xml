@@ -1,0 +1,8 @@
+<config>
+	<activityPeriod type="exponential" mean="3600" sd="1800" />
+	<interSessionInterval type="normal" mean="3600" sd="1800" />
+	<InterRequestInterval type="normal" mean="600" sd="60" />
+	<requestSize type="normal" mean="200" sd="50" />
+	<reqInSession type="normal" mean="10" sd="5" />
+	<processingDelay type="normal" mean="3" sd="1" />
+</config>
