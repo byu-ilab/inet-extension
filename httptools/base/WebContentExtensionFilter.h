@@ -21,7 +21,6 @@
 #include <set>
 #include "httptUtils.h"
 #include <fstream>
-#include "XMLDefs.h"
 #include "XMLIO.h"
 
 #define XML_WCEF_ROOT 					"wcef-config"
