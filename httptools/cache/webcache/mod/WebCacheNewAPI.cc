@@ -137,7 +137,12 @@ void WebCacheNewAPI::connectCallback(int socket_id, int ret_status, void * myPtr
 	// check that socket_id is valid socket, i.e. in the set?
 	ConnInfo * data = static_cast<ConnInfo *>(myPtr);
 	if (!data) {
-		cout << "connect: No connection info returned!";
+		LOG_DEBUG("connect: No connection info returned!");
+		closeSocket(socket_id);
+		return;
+	}
+	if (TCPSocketAPI::isCallbackError(ret_status))
+	{
 		closeSocket(socket_id);
 		return;
 	}
@@ -158,7 +163,7 @@ void WebCacheNewAPI::recvCallback(int socket_id, int ret_status,
 
 	ConnInfo * data = static_cast<ConnInfo *>(myPtr);
 	if (!data) {
-		cout << "WebCacheNewAPI::recvCallback: No watch data returned!";
+		LOG_DEBUG("WebCacheNewAPI::recvCallback: No watch data returned!");
 		closeSocket(socket_id);
 		return;
 	}
@@ -166,6 +171,7 @@ void WebCacheNewAPI::recvCallback(int socket_id, int ret_status,
 	if (TCPSocketAPI::isCallbackError(ret_status))
 	{
 		// msg is NULL so don't call delete
+		LOG_DEBUG("Callback error is: "<<TCPSocketAPI::getCallbackErrorName(ret_status));
 		closeSocket(socket_id);
 		return;
 	}
@@ -247,7 +253,7 @@ void WebCacheNewAPI::makeUpstreamRequest(int socket_id, ConnInfo * data) {
 	ci->sockType = CLIENT;
 	ci->ds_request = NULL;
 
-	WC_DEBUG("requesting from server: "<<us_request->heading());
+	LOG_DEBUG("requesting from server: "<<us_request->heading());
 	tcp_api->send(socket_id,us_request);
 	tcp_api->recv(socket_id,ci);
 	delete data->ds_request;
@@ -260,7 +266,7 @@ void WebCacheNewAPI::processUpstreamResponse(int socket_id, cPacket * msg, ConnI
 	httptReplyMessage * reply = dynamic_cast<httptReplyMessage *>(msg);
 	// TODO use check_and_cast?
 	if (!reply) {
-		cout << "processResponse: message is not an httptReply!";
+		LOG_DEBUG("processResponse: message is not an httptReply!");
 		closeSocket(socket_id);
 		return;
 	}
@@ -276,7 +282,7 @@ void WebCacheNewAPI::processUpstreamResponse(int socket_id, cPacket * msg, ConnI
 		{
 			if (wr->getSize() <= resourceCache->getCapacity()) {
 			  resourceCache->add(wr);
-			  WC_DEBUG("added: "<<wr->getID());
+			  LOG_DEBUG("added: "<<wr->getID());
 			}
 		}
 		// else just forward it
@@ -301,11 +307,10 @@ void WebCacheNewAPI::respondToClientRequest(int socket_id, httptRequestMessage *
 {
 	ASSERT(request && resource);
 
-	// TODO add type extractor from extension? or add type to web resource?
 	// checks if it is indeed a byte range request
 	httptReplyMessage * reply = generateByteRangeReply(request, resource->getID(), resource->getSize(), resource->getType());
 	reply->setPayload(resource->getContent().c_str());
-	WC_DEBUG("sent to client: "<<reply->heading()<<" for resource: "<<reply->relatedUri());
+	LOG_DEBUG("sent to client: "<<reply->heading()<<" for resource: "<<reply->relatedUri());
 	tcp_api->send(socket_id, reply);
 }
 
@@ -322,10 +327,9 @@ httptReplyMessage * WebCacheNewAPI::handleGetRequest(httptRequestMessage * msg, 
 // A client (or cache) requests a file from me.
 // If I have it, send it along.  Otherwise, initiate a request from an upstream host.
 void WebCacheNewAPI::processDownstreamRequest(int socket_id, cPacket * msg, ConnInfo * data) {
-
 	httptRequestMessage * request = check_and_cast<httptRequestMessage *>(msg);
 	requestsReceived++;
-	WC_DEBUG("received request for: "<<request->heading());
+	LOG_DEBUG("received request for: "<<request->heading());
 	string url = extractURLFromRequest(request);
 	Resource * wr_temp = new WebResource(url, 0); // works because comparator used only looks at the ID not the size
 	Resource * wr_incache = resourceCache->has(wr_temp);
@@ -391,7 +395,7 @@ string WebCacheNewAPI::extractURLFromResponse(httptReplyMessage * response) {
  * Handle timeout.  Assumed to be for client-like sockets only.
  */
 void WebCacheNewAPI::handleTimeout(int socket_id) {
-	EV_DEBUG << "handling timeout..."<<endl;
+	LOG_DEBUG("handling timeout...");
 	opp_error("WebCacheNewAPI::handleTimeout: not supposed to be here.");
 }
 
@@ -417,6 +421,7 @@ void WebCacheNewAPI::closeSocket(int socket_id) {
 	if (data) {
 		delete data;
 	}
+	pendingRequests.removeAndDeleteAllRequestsOnInterface(socket_id);
 	tcp_api->close(socket_id);
 	//sockets.erase(i);
 }

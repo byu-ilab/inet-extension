@@ -28,14 +28,7 @@
 #include "CacheRequestMgr.h"
 #include "simunits.h"
 #include "WebContentExtensionFilter.h"
-
-#define DEBUG
-#ifdef DEBUG
-	#include <iostream>
-	#define WC_DEBUG(CODE) std::cout << CODE << endl
-#else
-	#define WC_DEBUG(CODE)
-#endif
+#include "DebugDef.h"
 
 enum CacheMessageType { START = 1 };
 enum SockType{SERVER,CLIENT,LISTENER};

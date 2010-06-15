@@ -138,7 +138,7 @@ httptReplyMessage * httptServerBase::handleRequestMessage( cMessage *msg )
 	{
 		// Verify that the header string has the correct number of parameters
 			// Parse the request string on spaces
-		cout<<request->heading()<<endl;
+		LOG_DEBUG(request->heading());
 		cStringTokenizer tokenizer = cStringTokenizer(request->heading()," ");
 		std::vector<string> res = tokenizer.asVector();
 		if ( res.size() != 3 )
