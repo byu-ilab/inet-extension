@@ -26,7 +26,8 @@
 #include "ICMPv6Message_m.h"
 
 Define_Module(TCP);
-
+// EnableDebugging(true); // TODO
+#define DEBUG_CLASS true
 
 bool TCP::testing;
 bool TCP::logverbose;
@@ -57,7 +58,7 @@ static std::ostream& operator<<(std::ostream& os, const TCPConnection& conn)
 
 void TCP::initialize()
 {
-    lastEphemeralPort = EPHEMERAL_PORTRANGE_START;
+    lastEphemeralPort = EPHEMERAL_PORTRANGE_END -1;// EPHEMERAL_PORTRANGE_START;
     WATCH(lastEphemeralPort);
 
     WATCH_PTRMAP(tcpConnMap);
@@ -394,9 +395,51 @@ void TCP::removeConnection(TCPConnection *conn)
 
     // IMPORTANT: usedEphemeralPorts.erase(conn->localPort) is NOT GOOD because it
     // deletes ALL occurrences of the port from the multiset.
-    std::multiset<short>::iterator it = usedEphemeralPorts.find(conn->localPort);
+    EphemeralPortRange::iterator it = usedEphemeralPorts.find(conn->localPort);
     if (it!=usedEphemeralPorts.end())
         usedEphemeralPorts.erase(it);
+
+    if (usedEphemeralPorts.size() != 0)
+    {
+		LOG_DEBUG_WHERE
+		LOG_DEBUG_APPEND(simTime()<<" ");
+		LOG_DEBUG_APPEND("Free ports: ");
+		int range_start = EPHEMERAL_PORTRANGE_START;
+		int range_end = range_start - 1;
+		for (int p = EPHEMERAL_PORTRANGE_START; p < EPHEMERAL_PORTRANGE_END; p++)
+		{
+			if (usedEphemeralPorts.find(p) != usedEphemeralPorts.end())
+			{
+				if (range_start == range_end)
+				{
+					LOG_DEBUG_APPEND(range_start << " ");
+				}
+				else if (range_start < range_end)
+				{
+					LOG_DEBUG_APPEND(range_start << "-" << range_end << " ");
+				}
+
+				range_start = p + 1;
+			}
+			else
+			{
+				range_end = p;
+			}
+		}
+
+		if (range_start == range_end)
+		{
+			LOG_DEBUG_APPEND(range_start <<std::endl);
+		}
+		else if (range_start < range_end)
+		{
+			LOG_DEBUG_APPEND(range_start << "-" << range_end <<std::endl);
+		}
+		else
+		{
+			LOG_DEBUG_APPEND(std::endl);
+		}
+    }
 
     delete conn;
 }

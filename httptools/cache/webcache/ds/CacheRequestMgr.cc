@@ -82,3 +82,19 @@ bool CacheRequestMgr::addRequest(int socket_id, string uri, httptRequestMessage 
 	requests.push_back(RequestRecord(socket_id, uri, request));//pair<int,string>(socket_id,uri));
 	return !found;
 }
+
+void CacheRequestMgr::removeAndDeleteAllRequestsOnInterface(int interface_id)
+{
+	list<RequestRecord>::iterator it;
+	for (it = requests.begin(); it != requests.end(); it++)
+	{
+		if ((*it).interface_id = interface_id)
+		{
+			if ((*it).request_msg_ptr)
+			{
+				delete (*it).request_msg_ptr;
+			}
+			it = requests.erase(it);
+		}
+	}
+}

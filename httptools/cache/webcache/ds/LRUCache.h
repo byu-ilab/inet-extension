@@ -19,6 +19,7 @@
 #include <map>
 #include <omnetpp.h>
 #include "Cache.h"
+#include "DebugDef.h"
 
 struct classcomp {
 		bool operator() (Resource * lhs, Resource * rhs ) const {

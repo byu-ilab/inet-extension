@@ -27,6 +27,7 @@
 
 #include "httptNodeBase.h"
 #include "ModuleAccess.h"
+#include "DebugDef.h"
 
 class httptServerBase: public httptNodeBase
 {

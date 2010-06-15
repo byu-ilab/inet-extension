@@ -52,6 +52,7 @@ public:
 	void removeRequestsForResource(string);
 	void removeAndDeleteRequestsForResource(string);
 	bool addRequest(int,string, httptRequestMessage *);
+	void removeAndDeleteAllRequestsOnInterface(int);
 };
 
 #endif /* CACHEREQUESTMGR_H_ */

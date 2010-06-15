@@ -239,6 +239,7 @@ int httptController::getServerInfo( const char* wwwName, char* module, int &port
 	totalLookups++;
 	en->accessCount++;
 
+
 	strcpy(module,en->host.c_str());
 	port=en->port;
 

@@ -50,5 +50,6 @@ simple httptController
         string events = default("");          // Popularity modification events defintion file.
         string eventsSection = default("");   // Section within the popularity modification file, if one is defined.
         xml config;                           // XML configuration file.        
+        @display("i=msg/req");
 }
 
