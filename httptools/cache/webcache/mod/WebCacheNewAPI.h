@@ -48,22 +48,24 @@ public:
 protected:
 	// internals
 	Cache * resourceCache;
-	unsigned long cacheSizeUnit;
+	uint64 cacheSizeUnit;
 	TCPSocketAPI * tcp_api;
 	string upstream_cache;
 	int request_timeout;
 	CacheRequestMgr pendingRequests;
 
 	// stats
-	unsigned long requestsReceived;
-	unsigned long numBroken;
-	unsigned long socketsOpened;
-	unsigned long serverSocketsBroken;
-	unsigned long serverSocketsOpened;
-	unsigned long clientSocketsBroken;
-	unsigned long clientSocketsOpened;
-	int hits;
-	int misses;
+	uint64 requestsReceived;
+
+	uint64 serverSocketsBroken;
+	uint64 serverSocketsOpened;
+
+	uint64 clientSocketsBroken;
+	uint64 clientSocketsOpened;
+	uint64 currentSocketsOpenToServer;
+
+	uint64 hits;
+	uint64 misses;
 
 	WebContentExtensionFilter contentFilter;
 	bool shouldFilter;
@@ -88,7 +90,7 @@ protected:
 	virtual void processUpstreamResponse(int socket_id, cPacket * msg, ConnInfo * data); // get response from upper-level server.
 	virtual void processDownstreamRequest(int socket_id, cPacket * msg, ConnInfo * data); // handle request from client (or cache)
 	virtual int openUpstreamSocket(ConnInfo *data);
-	virtual void handleTimeout(int socket_id);
+	//virtual void handleTimeout(int socket_id);
 	virtual void closeSocket(int socket_id);
 	virtual void respondToClientRequest(int socket_id, httptRequestMessage * request, Resource * resouce);
 

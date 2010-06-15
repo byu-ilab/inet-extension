@@ -22,7 +22,7 @@
 #include <set>
 #include <omnetpp.h>
 #include "IPvXAddress.h"
-
+#include "DebugDef.h"
 
 class TCPConnection;
 class TCPSegment;
@@ -137,8 +137,10 @@ class INET_API TCP : public cSimpleModule
     TcpAppConnMap tcpAppConnMap;
     TcpConnMap tcpConnMap;
 
+    typedef std::multiset<int> EphemeralPortRange;
+
     short lastEphemeralPort;
-    std::multiset<short> usedEphemeralPorts;
+    EphemeralPortRange usedEphemeralPorts;
 
   protected:
     /** Factory method; may be overriden for customizing TCP */

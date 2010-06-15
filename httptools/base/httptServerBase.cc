@@ -15,6 +15,9 @@
 
 #include "httptServerBase.h"
 
+// EnableDebugging(false); // TODO
+#define DEBUG_CLASS false
+
 void httptServerBase::initialize()
 {
 	badRequests = 0;

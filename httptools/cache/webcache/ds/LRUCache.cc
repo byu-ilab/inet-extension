@@ -15,6 +15,8 @@
 
 #include "LRUCache.h"
 
+// EnableDebugging(false); // TODO
+#define DEBUG_CLASS false
 
 LRUCache::LRUCache(uint64 capacity):capacity(capacity), remaining(capacity){
 	return;
