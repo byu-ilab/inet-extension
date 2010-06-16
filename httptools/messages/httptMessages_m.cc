@@ -1,5 +1,5 @@
 //
-// Generated file, do not edit! Created by opp_msgc 4.0 from httptools/messages/httptMessages.msg.
+// Generated file, do not edit! Created by opp_msgc 4.1 from httptools/messages/httptMessages.msg.
 //
 
 // Disable warnings about unused variables, empty switch stmts, etc:
@@ -208,12 +208,13 @@ class httptBaseMessageDescriptor : public cClassDescriptor
     virtual const char *getProperty(const char *propertyname) const;
     virtual int getFieldCount(void *object) const;
     virtual const char *getFieldName(void *object, int field) const;
+    virtual int findField(void *object, const char *fieldName) const;
     virtual unsigned int getFieldTypeFlags(void *object, int field) const;
     virtual const char *getFieldTypeString(void *object, int field) const;
     virtual const char *getFieldProperty(void *object, int field, const char *propertyname) const;
     virtual int getArraySize(void *object, int field) const;
 
-    virtual bool getFieldAsString(void *object, int field, int i, char *resultbuf, int bufsize) const;
+    virtual std::string getFieldAsString(void *object, int field, int i) const;
     virtual bool setFieldAsString(void *object, int field, int i, const char *value) const;
 
     virtual const char *getFieldStructName(void *object, int field) const;
@@ -256,16 +257,16 @@ unsigned int httptBaseMessageDescriptor::getFieldTypeFlags(void *object, int fie
             return basedesc->getFieldTypeFlags(object, field);
         field -= basedesc->getFieldCount(object);
     }
-    switch (field) {
-        case 0: return FD_ISEDITABLE;
-        case 1: return FD_ISEDITABLE;
-        case 2: return FD_ISEDITABLE;
-        case 3: return FD_ISEDITABLE;
-        case 4: return FD_ISEDITABLE;
-        case 5: return FD_ISEDITABLE;
-        case 6: return FD_ISEDITABLE;
-        default: return 0;
-    }
+    static unsigned int fieldTypeFlags[] = {
+        FD_ISEDITABLE,
+        FD_ISEDITABLE,
+        FD_ISEDITABLE,
+        FD_ISEDITABLE,
+        FD_ISEDITABLE,
+        FD_ISEDITABLE,
+        FD_ISEDITABLE,
+    };
+    return (field>=0 && field<7) ? fieldTypeFlags[field] : 0;
 }
 
 const char *httptBaseMessageDescriptor::getFieldName(void *object, int field) const
@@ -276,16 +277,30 @@ const char *httptBaseMessageDescriptor::getFieldName(void *object, int field) co
             return basedesc->getFieldName(object, field);
         field -= basedesc->getFieldCount(object);
     }
-    switch (field) {
-        case 0: return "targetUrl";
-        case 1: return "originatorUrl";
-        case 2: return "protocol";
-        case 3: return "keepAlive";
-        case 4: return "serial";
-        case 5: return "heading";
-        case 6: return "payload";
-        default: return NULL;
-    }
+    static const char *fieldNames[] = {
+        "targetUrl",
+        "originatorUrl",
+        "protocol",
+        "keepAlive",
+        "serial",
+        "heading",
+        "payload",
+    };
+    return (field>=0 && field<7) ? fieldNames[field] : NULL;
+}
+
+int httptBaseMessageDescriptor::findField(void *object, const char *fieldName) const
+{
+    cClassDescriptor *basedesc = getBaseClassDescriptor();
+    int base = basedesc ? basedesc->getFieldCount(object) : 0;
+    if (fieldName[0]=='t' && strcmp(fieldName, "targetUrl")==0) return base+0;
+    if (fieldName[0]=='o' && strcmp(fieldName, "originatorUrl")==0) return base+1;
+    if (fieldName[0]=='p' && strcmp(fieldName, "protocol")==0) return base+2;
+    if (fieldName[0]=='k' && strcmp(fieldName, "keepAlive")==0) return base+3;
+    if (fieldName[0]=='s' && strcmp(fieldName, "serial")==0) return base+4;
+    if (fieldName[0]=='h' && strcmp(fieldName, "heading")==0) return base+5;
+    if (fieldName[0]=='p' && strcmp(fieldName, "payload")==0) return base+6;
+    return basedesc ? basedesc->findField(object, fieldName) : -1;
 }
 
 const char *httptBaseMessageDescriptor::getFieldTypeString(void *object, int field) const
@@ -296,16 +311,16 @@ const char *httptBaseMessageDescriptor::getFieldTypeString(void *object, int fie
             return basedesc->getFieldTypeString(object, field);
         field -= basedesc->getFieldCount(object);
     }
-    switch (field) {
-        case 0: return "string";
-        case 1: return "string";
-        case 2: return "int";
-        case 3: return "bool";
-        case 4: return "int";
-        case 5: return "string";
-        case 6: return "string";
-        default: return NULL;
-    }
+    static const char *fieldTypeStrings[] = {
+        "string",
+        "string",
+        "int",
+        "bool",
+        "int",
+        "string",
+        "string",
+    };
+    return (field>=0 && field<7) ? fieldTypeStrings[field] : NULL;
 }
 
 const char *httptBaseMessageDescriptor::getFieldProperty(void *object, int field, const char *propertyname) const
@@ -338,24 +353,24 @@ int httptBaseMessageDescriptor::getArraySize(void *object, int field) const
     }
 }
 
-bool httptBaseMessageDescriptor::getFieldAsString(void *object, int field, int i, char *resultbuf, int bufsize) const
+std::string httptBaseMessageDescriptor::getFieldAsString(void *object, int field, int i) const
 {
     cClassDescriptor *basedesc = getBaseClassDescriptor();
     if (basedesc) {
         if (field < basedesc->getFieldCount(object))
-            return basedesc->getFieldAsString(object,field,i,resultbuf,bufsize);
+            return basedesc->getFieldAsString(object,field,i);
         field -= basedesc->getFieldCount(object);
     }
     httptBaseMessage *pp = (httptBaseMessage *)object; (void)pp;
     switch (field) {
-        case 0: oppstring2string(pp->targetUrl(),resultbuf,bufsize); return true;
-        case 1: oppstring2string(pp->originatorUrl(),resultbuf,bufsize); return true;
-        case 2: long2string(pp->protocol(),resultbuf,bufsize); return true;
-        case 3: bool2string(pp->keepAlive(),resultbuf,bufsize); return true;
-        case 4: long2string(pp->serial(),resultbuf,bufsize); return true;
-        case 5: oppstring2string(pp->heading(),resultbuf,bufsize); return true;
-        case 6: oppstring2string(pp->payload(),resultbuf,bufsize); return true;
-        default: return false;
+        case 0: return oppstring2string(pp->targetUrl());
+        case 1: return oppstring2string(pp->originatorUrl());
+        case 2: return long2string(pp->protocol());
+        case 3: return bool2string(pp->keepAlive());
+        case 4: return long2string(pp->serial());
+        case 5: return oppstring2string(pp->heading());
+        case 6: return oppstring2string(pp->payload());
+        default: return "";
     }
 }
 
@@ -388,9 +403,16 @@ const char *httptBaseMessageDescriptor::getFieldStructName(void *object, int fie
             return basedesc->getFieldStructName(object, field);
         field -= basedesc->getFieldCount(object);
     }
-    switch (field) {
-        default: return NULL;
-    }
+    static const char *fieldStructNames[] = {
+        NULL,
+        NULL,
+        NULL,
+        NULL,
+        NULL,
+        NULL,
+        NULL,
+    };
+    return (field>=0 && field<7) ? fieldStructNames[field] : NULL;
 }
 
 void *httptBaseMessageDescriptor::getFieldStructPointer(void *object, int field, int i) const
@@ -520,12 +542,13 @@ class httptRequestMessageDescriptor : public cClassDescriptor
     virtual const char *getProperty(const char *propertyname) const;
     virtual int getFieldCount(void *object) const;
     virtual const char *getFieldName(void *object, int field) const;
+    virtual int findField(void *object, const char *fieldName) const;
     virtual unsigned int getFieldTypeFlags(void *object, int field) const;
     virtual const char *getFieldTypeString(void *object, int field) const;
     virtual const char *getFieldProperty(void *object, int field, const char *propertyname) const;
     virtual int getArraySize(void *object, int field) const;
 
-    virtual bool getFieldAsString(void *object, int field, int i, char *resultbuf, int bufsize) const;
+    virtual std::string getFieldAsString(void *object, int field, int i) const;
     virtual bool setFieldAsString(void *object, int field, int i, const char *value) const;
 
     virtual const char *getFieldStructName(void *object, int field) const;
@@ -568,14 +591,14 @@ unsigned int httptRequestMessageDescriptor::getFieldTypeFlags(void *object, int 
             return basedesc->getFieldTypeFlags(object, field);
         field -= basedesc->getFieldCount(object);
     }
-    switch (field) {
-        case 0: return FD_ISEDITABLE;
-        case 1: return FD_ISEDITABLE;
-        case 2: return FD_ISEDITABLE;
-        case 3: return FD_ISEDITABLE;
-        case 4: return FD_ISEDITABLE;
-        default: return 0;
-    }
+    static unsigned int fieldTypeFlags[] = {
+        FD_ISEDITABLE,
+        FD_ISEDITABLE,
+        FD_ISEDITABLE,
+        FD_ISEDITABLE,
+        FD_ISEDITABLE,
+    };
+    return (field>=0 && field<5) ? fieldTypeFlags[field] : 0;
 }
 
 const char *httptRequestMessageDescriptor::getFieldName(void *object, int field) const
@@ -586,14 +609,26 @@ const char *httptRequestMessageDescriptor::getFieldName(void *object, int field)
             return basedesc->getFieldName(object, field);
         field -= basedesc->getFieldCount(object);
     }
-    switch (field) {
-        case 0: return "badRequest";
-        case 1: return "method";
-        case 2: return "uri";
-        case 3: return "firstBytePos";
-        case 4: return "lastBytePos";
-        default: return NULL;
-    }
+    static const char *fieldNames[] = {
+        "badRequest",
+        "method",
+        "uri",
+        "firstBytePos",
+        "lastBytePos",
+    };
+    return (field>=0 && field<5) ? fieldNames[field] : NULL;
+}
+
+int httptRequestMessageDescriptor::findField(void *object, const char *fieldName) const
+{
+    cClassDescriptor *basedesc = getBaseClassDescriptor();
+    int base = basedesc ? basedesc->getFieldCount(object) : 0;
+    if (fieldName[0]=='b' && strcmp(fieldName, "badRequest")==0) return base+0;
+    if (fieldName[0]=='m' && strcmp(fieldName, "method")==0) return base+1;
+    if (fieldName[0]=='u' && strcmp(fieldName, "uri")==0) return base+2;
+    if (fieldName[0]=='f' && strcmp(fieldName, "firstBytePos")==0) return base+3;
+    if (fieldName[0]=='l' && strcmp(fieldName, "lastBytePos")==0) return base+4;
+    return basedesc ? basedesc->findField(object, fieldName) : -1;
 }
 
 const char *httptRequestMessageDescriptor::getFieldTypeString(void *object, int field) const
@@ -604,14 +639,14 @@ const char *httptRequestMessageDescriptor::getFieldTypeString(void *object, int 
             return basedesc->getFieldTypeString(object, field);
         field -= basedesc->getFieldCount(object);
     }
-    switch (field) {
-        case 0: return "bool";
-        case 1: return "int";
-        case 2: return "string";
-        case 3: return "int";
-        case 4: return "int";
-        default: return NULL;
-    }
+    static const char *fieldTypeStrings[] = {
+        "bool",
+        "int",
+        "string",
+        "int",
+        "int",
+    };
+    return (field>=0 && field<5) ? fieldTypeStrings[field] : NULL;
 }
 
 const char *httptRequestMessageDescriptor::getFieldProperty(void *object, int field, const char *propertyname) const
@@ -644,22 +679,22 @@ int httptRequestMessageDescriptor::getArraySize(void *object, int field) const
     }
 }
 
-bool httptRequestMessageDescriptor::getFieldAsString(void *object, int field, int i, char *resultbuf, int bufsize) const
+std::string httptRequestMessageDescriptor::getFieldAsString(void *object, int field, int i) const
 {
     cClassDescriptor *basedesc = getBaseClassDescriptor();
     if (basedesc) {
         if (field < basedesc->getFieldCount(object))
-            return basedesc->getFieldAsString(object,field,i,resultbuf,bufsize);
+            return basedesc->getFieldAsString(object,field,i);
         field -= basedesc->getFieldCount(object);
     }
     httptRequestMessage *pp = (httptRequestMessage *)object; (void)pp;
     switch (field) {
-        case 0: bool2string(pp->badRequest(),resultbuf,bufsize); return true;
-        case 1: long2string(pp->method(),resultbuf,bufsize); return true;
-        case 2: oppstring2string(pp->uri(),resultbuf,bufsize); return true;
-        case 3: long2string(pp->firstBytePos(),resultbuf,bufsize); return true;
-        case 4: long2string(pp->lastBytePos(),resultbuf,bufsize); return true;
-        default: return false;
+        case 0: return bool2string(pp->badRequest());
+        case 1: return long2string(pp->method());
+        case 2: return oppstring2string(pp->uri());
+        case 3: return long2string(pp->firstBytePos());
+        case 4: return long2string(pp->lastBytePos());
+        default: return "";
     }
 }
 
@@ -690,9 +725,14 @@ const char *httptRequestMessageDescriptor::getFieldStructName(void *object, int 
             return basedesc->getFieldStructName(object, field);
         field -= basedesc->getFieldCount(object);
     }
-    switch (field) {
-        default: return NULL;
-    }
+    static const char *fieldStructNames[] = {
+        NULL,
+        NULL,
+        NULL,
+        NULL,
+        NULL,
+    };
+    return (field>=0 && field<5) ? fieldStructNames[field] : NULL;
 }
 
 void *httptRequestMessageDescriptor::getFieldStructPointer(void *object, int field, int i) const
@@ -850,12 +890,13 @@ class httptReplyMessageDescriptor : public cClassDescriptor
     virtual const char *getProperty(const char *propertyname) const;
     virtual int getFieldCount(void *object) const;
     virtual const char *getFieldName(void *object, int field) const;
+    virtual int findField(void *object, const char *fieldName) const;
     virtual unsigned int getFieldTypeFlags(void *object, int field) const;
     virtual const char *getFieldTypeString(void *object, int field) const;
     virtual const char *getFieldProperty(void *object, int field, const char *propertyname) const;
     virtual int getArraySize(void *object, int field) const;
 
-    virtual bool getFieldAsString(void *object, int field, int i, char *resultbuf, int bufsize) const;
+    virtual std::string getFieldAsString(void *object, int field, int i) const;
     virtual bool setFieldAsString(void *object, int field, int i, const char *value) const;
 
     virtual const char *getFieldStructName(void *object, int field) const;
@@ -898,16 +939,16 @@ unsigned int httptReplyMessageDescriptor::getFieldTypeFlags(void *object, int fi
             return basedesc->getFieldTypeFlags(object, field);
         field -= basedesc->getFieldCount(object);
     }
-    switch (field) {
-        case 0: return FD_ISEDITABLE;
-        case 1: return FD_ISEDITABLE;
-        case 2: return FD_ISEDITABLE;
-        case 3: return FD_ISEDITABLE;
-        case 4: return FD_ISEDITABLE;
-        case 5: return FD_ISEDITABLE;
-        case 6: return FD_ISEDITABLE;
-        default: return 0;
-    }
+    static unsigned int fieldTypeFlags[] = {
+        FD_ISEDITABLE,
+        FD_ISEDITABLE,
+        FD_ISEDITABLE,
+        FD_ISEDITABLE,
+        FD_ISEDITABLE,
+        FD_ISEDITABLE,
+        FD_ISEDITABLE,
+    };
+    return (field>=0 && field<7) ? fieldTypeFlags[field] : 0;
 }
 
 const char *httptReplyMessageDescriptor::getFieldName(void *object, int field) const
@@ -918,16 +959,30 @@ const char *httptReplyMessageDescriptor::getFieldName(void *object, int field) c
             return basedesc->getFieldName(object, field);
         field -= basedesc->getFieldCount(object);
     }
-    switch (field) {
-        case 0: return "result";
-        case 1: return "contentType";
-        case 2: return "phrase";
-        case 3: return "relatedUri";
-        case 4: return "firstBytePos";
-        case 5: return "lastBytePos";
-        case 6: return "instanceLength";
-        default: return NULL;
-    }
+    static const char *fieldNames[] = {
+        "result",
+        "contentType",
+        "phrase",
+        "relatedUri",
+        "firstBytePos",
+        "lastBytePos",
+        "instanceLength",
+    };
+    return (field>=0 && field<7) ? fieldNames[field] : NULL;
+}
+
+int httptReplyMessageDescriptor::findField(void *object, const char *fieldName) const
+{
+    cClassDescriptor *basedesc = getBaseClassDescriptor();
+    int base = basedesc ? basedesc->getFieldCount(object) : 0;
+    if (fieldName[0]=='r' && strcmp(fieldName, "result")==0) return base+0;
+    if (fieldName[0]=='c' && strcmp(fieldName, "contentType")==0) return base+1;
+    if (fieldName[0]=='p' && strcmp(fieldName, "phrase")==0) return base+2;
+    if (fieldName[0]=='r' && strcmp(fieldName, "relatedUri")==0) return base+3;
+    if (fieldName[0]=='f' && strcmp(fieldName, "firstBytePos")==0) return base+4;
+    if (fieldName[0]=='l' && strcmp(fieldName, "lastBytePos")==0) return base+5;
+    if (fieldName[0]=='i' && strcmp(fieldName, "instanceLength")==0) return base+6;
+    return basedesc ? basedesc->findField(object, fieldName) : -1;
 }
 
 const char *httptReplyMessageDescriptor::getFieldTypeString(void *object, int field) const
@@ -938,16 +993,16 @@ const char *httptReplyMessageDescriptor::getFieldTypeString(void *object, int fi
             return basedesc->getFieldTypeString(object, field);
         field -= basedesc->getFieldCount(object);
     }
-    switch (field) {
-        case 0: return "int";
-        case 1: return "int";
-        case 2: return "string";
-        case 3: return "string";
-        case 4: return "int";
-        case 5: return "int";
-        case 6: return "int";
-        default: return NULL;
-    }
+    static const char *fieldTypeStrings[] = {
+        "int",
+        "int",
+        "string",
+        "string",
+        "int",
+        "int",
+        "int",
+    };
+    return (field>=0 && field<7) ? fieldTypeStrings[field] : NULL;
 }
 
 const char *httptReplyMessageDescriptor::getFieldProperty(void *object, int field, const char *propertyname) const
@@ -977,24 +1032,24 @@ int httptReplyMessageDescriptor::getArraySize(void *object, int field) const
     }
 }
 
-bool httptReplyMessageDescriptor::getFieldAsString(void *object, int field, int i, char *resultbuf, int bufsize) const
+std::string httptReplyMessageDescriptor::getFieldAsString(void *object, int field, int i) const
 {
     cClassDescriptor *basedesc = getBaseClassDescriptor();
     if (basedesc) {
         if (field < basedesc->getFieldCount(object))
-            return basedesc->getFieldAsString(object,field,i,resultbuf,bufsize);
+            return basedesc->getFieldAsString(object,field,i);
         field -= basedesc->getFieldCount(object);
     }
     httptReplyMessage *pp = (httptReplyMessage *)object; (void)pp;
     switch (field) {
-        case 0: long2string(pp->result(),resultbuf,bufsize); return true;
-        case 1: long2string(pp->contentType(),resultbuf,bufsize); return true;
-        case 2: oppstring2string(pp->phrase(),resultbuf,bufsize); return true;
-        case 3: oppstring2string(pp->relatedUri(),resultbuf,bufsize); return true;
-        case 4: long2string(pp->firstBytePos(),resultbuf,bufsize); return true;
-        case 5: long2string(pp->lastBytePos(),resultbuf,bufsize); return true;
-        case 6: long2string(pp->instanceLength(),resultbuf,bufsize); return true;
-        default: return false;
+        case 0: return long2string(pp->result());
+        case 1: return long2string(pp->contentType());
+        case 2: return oppstring2string(pp->phrase());
+        case 3: return oppstring2string(pp->relatedUri());
+        case 4: return long2string(pp->firstBytePos());
+        case 5: return long2string(pp->lastBytePos());
+        case 6: return long2string(pp->instanceLength());
+        default: return "";
     }
 }
 
@@ -1027,9 +1082,16 @@ const char *httptReplyMessageDescriptor::getFieldStructName(void *object, int fi
             return basedesc->getFieldStructName(object, field);
         field -= basedesc->getFieldCount(object);
     }
-    switch (field) {
-        default: return NULL;
-    }
+    static const char *fieldStructNames[] = {
+        NULL,
+        NULL,
+        NULL,
+        NULL,
+        NULL,
+        NULL,
+        NULL,
+    };
+    return (field>=0 && field<7) ? fieldStructNames[field] : NULL;
 }
 
 void *httptReplyMessageDescriptor::getFieldStructPointer(void *object, int field, int i) const

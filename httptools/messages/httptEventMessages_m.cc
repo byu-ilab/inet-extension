@@ -1,5 +1,5 @@
 //
-// Generated file, do not edit! Created by opp_msgc 4.0 from httptools/messages/httptEventMessages.msg.
+// Generated file, do not edit! Created by opp_msgc 4.1 from httptools/messages/httptEventMessages.msg.
 //
 
 // Disable warnings about unused variables, empty switch stmts, etc:
@@ -143,12 +143,13 @@ class httptServerStatusUpdateMsgDescriptor : public cClassDescriptor
     virtual const char *getProperty(const char *propertyname) const;
     virtual int getFieldCount(void *object) const;
     virtual const char *getFieldName(void *object, int field) const;
+    virtual int findField(void *object, const char *fieldName) const;
     virtual unsigned int getFieldTypeFlags(void *object, int field) const;
     virtual const char *getFieldTypeString(void *object, int field) const;
     virtual const char *getFieldProperty(void *object, int field, const char *propertyname) const;
     virtual int getArraySize(void *object, int field) const;
 
-    virtual bool getFieldAsString(void *object, int field, int i, char *resultbuf, int bufsize) const;
+    virtual std::string getFieldAsString(void *object, int field, int i) const;
     virtual bool setFieldAsString(void *object, int field, int i, const char *value) const;
 
     virtual const char *getFieldStructName(void *object, int field) const;
@@ -191,14 +192,14 @@ unsigned int httptServerStatusUpdateMsgDescriptor::getFieldTypeFlags(void *objec
             return basedesc->getFieldTypeFlags(object, field);
         field -= basedesc->getFieldCount(object);
     }
-    switch (field) {
-        case 0: return FD_ISEDITABLE;
-        case 1: return FD_ISEDITABLE;
-        case 2: return FD_ISEDITABLE;
-        case 3: return FD_ISEDITABLE;
-        case 4: return FD_ISEDITABLE;
-        default: return 0;
-    }
+    static unsigned int fieldTypeFlags[] = {
+        FD_ISEDITABLE,
+        FD_ISEDITABLE,
+        FD_ISEDITABLE,
+        FD_ISEDITABLE,
+        FD_ISEDITABLE,
+    };
+    return (field>=0 && field<5) ? fieldTypeFlags[field] : 0;
 }
 
 const char *httptServerStatusUpdateMsgDescriptor::getFieldName(void *object, int field) const
@@ -209,14 +210,26 @@ const char *httptServerStatusUpdateMsgDescriptor::getFieldName(void *object, int
             return basedesc->getFieldName(object, field);
         field -= basedesc->getFieldCount(object);
     }
-    switch (field) {
-        case 0: return "www";
-        case 1: return "setTime";
-        case 2: return "eventKind";
-        case 3: return "pvalue";
-        case 4: return "pamortize";
-        default: return NULL;
-    }
+    static const char *fieldNames[] = {
+        "www",
+        "setTime",
+        "eventKind",
+        "pvalue",
+        "pamortize",
+    };
+    return (field>=0 && field<5) ? fieldNames[field] : NULL;
+}
+
+int httptServerStatusUpdateMsgDescriptor::findField(void *object, const char *fieldName) const
+{
+    cClassDescriptor *basedesc = getBaseClassDescriptor();
+    int base = basedesc ? basedesc->getFieldCount(object) : 0;
+    if (fieldName[0]=='w' && strcmp(fieldName, "www")==0) return base+0;
+    if (fieldName[0]=='s' && strcmp(fieldName, "setTime")==0) return base+1;
+    if (fieldName[0]=='e' && strcmp(fieldName, "eventKind")==0) return base+2;
+    if (fieldName[0]=='p' && strcmp(fieldName, "pvalue")==0) return base+3;
+    if (fieldName[0]=='p' && strcmp(fieldName, "pamortize")==0) return base+4;
+    return basedesc ? basedesc->findField(object, fieldName) : -1;
 }
 
 const char *httptServerStatusUpdateMsgDescriptor::getFieldTypeString(void *object, int field) const
@@ -227,14 +240,14 @@ const char *httptServerStatusUpdateMsgDescriptor::getFieldTypeString(void *objec
             return basedesc->getFieldTypeString(object, field);
         field -= basedesc->getFieldCount(object);
     }
-    switch (field) {
-        case 0: return "string";
-        case 1: return "simtime_t";
-        case 2: return "int";
-        case 3: return "double";
-        case 4: return "double";
-        default: return NULL;
-    }
+    static const char *fieldTypeStrings[] = {
+        "string",
+        "simtime_t",
+        "int",
+        "double",
+        "double",
+    };
+    return (field>=0 && field<5) ? fieldTypeStrings[field] : NULL;
 }
 
 const char *httptServerStatusUpdateMsgDescriptor::getFieldProperty(void *object, int field, const char *propertyname) const
@@ -264,22 +277,22 @@ int httptServerStatusUpdateMsgDescriptor::getArraySize(void *object, int field) 
     }
 }
 
-bool httptServerStatusUpdateMsgDescriptor::getFieldAsString(void *object, int field, int i, char *resultbuf, int bufsize) const
+std::string httptServerStatusUpdateMsgDescriptor::getFieldAsString(void *object, int field, int i) const
 {
     cClassDescriptor *basedesc = getBaseClassDescriptor();
     if (basedesc) {
         if (field < basedesc->getFieldCount(object))
-            return basedesc->getFieldAsString(object,field,i,resultbuf,bufsize);
+            return basedesc->getFieldAsString(object,field,i);
         field -= basedesc->getFieldCount(object);
     }
     httptServerStatusUpdateMsg *pp = (httptServerStatusUpdateMsg *)object; (void)pp;
     switch (field) {
-        case 0: oppstring2string(pp->www(),resultbuf,bufsize); return true;
-        case 1: double2string(pp->setTime(),resultbuf,bufsize); return true;
-        case 2: long2string(pp->eventKind(),resultbuf,bufsize); return true;
-        case 3: double2string(pp->pvalue(),resultbuf,bufsize); return true;
-        case 4: double2string(pp->pamortize(),resultbuf,bufsize); return true;
-        default: return false;
+        case 0: return oppstring2string(pp->www());
+        case 1: return double2string(pp->setTime());
+        case 2: return long2string(pp->eventKind());
+        case 3: return double2string(pp->pvalue());
+        case 4: return double2string(pp->pamortize());
+        default: return "";
     }
 }
 
@@ -310,9 +323,14 @@ const char *httptServerStatusUpdateMsgDescriptor::getFieldStructName(void *objec
             return basedesc->getFieldStructName(object, field);
         field -= basedesc->getFieldCount(object);
     }
-    switch (field) {
-        default: return NULL;
-    }
+    static const char *fieldStructNames[] = {
+        NULL,
+        NULL,
+        NULL,
+        NULL,
+        NULL,
+    };
+    return (field>=0 && field<5) ? fieldStructNames[field] : NULL;
 }
 
 void *httptServerStatusUpdateMsgDescriptor::getFieldStructPointer(void *object, int field, int i) const

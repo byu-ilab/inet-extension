@@ -28,7 +28,7 @@ network ByteRangeTestNetwork
         //int numClients;
         //int numServers;
 
-        @display("bgb=296,384");
+        @display("bgb=746,256");
     types:
         channel C extends DatarateChannel
         {
@@ -46,19 +46,19 @@ network ByteRangeTestNetwork
         }
         client: StandardHostWithTCPSocketAPI { //s[numClients]: StandardHost {
             parameters:
-                @display("p=100,322,row,100;i=device/pc3");
+                @display("p=612,137,row,100;i=device/pc3");
         }
         server: StandardHostWithTCPSocketAPI { //s[numServers]: StandardHost {
             parameters:
-                @display("p=245,72,row,100;i=device/pc2");
+                @display("p=135,137,row,100;i=device/pc2");
         }
         cache: StandardHostWithTCPSocketAPI {
             parameters:
-                @display("p=135,171,i=device/pc1");
+                @display("p=302,137,i,device/pc1");
         }
         router: Router {
             parameters:
-                @display("p=206,257");
+                @display("p=438,137");
         }
 
     connections:
