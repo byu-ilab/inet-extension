@@ -11,7 +11,7 @@
 
 #include <string>
 #include "XMLTokenType.h"
-#include "UnitTest.h"
+//#include "UnitTest.h"
 
 //------------------------------------------------------------------------------
 
