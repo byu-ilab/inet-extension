@@ -53,6 +53,9 @@ protected:
 	string upstream_cache;
 	int request_timeout;
 	CacheRequestMgr pendingRequests;
+	int socket_cap;
+	int cur_socket;
+	int* activeSockets;
 
 	// stats
 	uint64 requestsReceived;
