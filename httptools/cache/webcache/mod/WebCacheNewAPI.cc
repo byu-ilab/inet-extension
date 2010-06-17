@@ -35,6 +35,12 @@ WebCacheNewAPI::WebCacheNewAPI() : pendingRequests(), contentFilter(), shouldFil
 
 	hits = 0;
 	misses = 0;
+
+	socket_cap = 8;
+	cur_socket = 0;
+	activeSockets = new int[socket_cap];
+	for(int i=0; i<socket_cap; i++)
+		activeSockets[i] = -1;
 }
 
 WebCacheNewAPI::~WebCacheNewAPI() {
@@ -324,8 +330,10 @@ void WebCacheNewAPI::processUpstreamResponse(int socket_id, cPacket * msg, ConnI
 		pendingRequests.removeAndDeleteRequestsForResource(wr->getID());
 	}
 	updateDisplay();
-	closeSocket(socket_id); // close the socket to upstream server.
-	currentSocketsOpenToServer--;
+
+	//closeSocket(socket_id); // close the socket to upstream server.
+			//Don't close here in case it can be used again right away to request something else from the server
+	//currentSocketsOpenToServer--;
 	delete reply;
 	delete data;
 }
@@ -376,7 +384,19 @@ void WebCacheNewAPI::processDownstreamRequest(int socket_id, cPacket * msg, Conn
 			ConnInfo * us_cinfo = new ConnInfo;
 			us_cinfo->sockType = CLIENT;
 			us_cinfo->ds_request = request->dup();
-			openUpstreamSocket(us_cinfo);
+
+			//Rotate through a specified num of sockets. If not active(the socket has been closed) then open a new socket to take its place.
+			int active_fd = activeSockets[cur_socket];
+			if (active_fd != -1)
+				makeUpstreamRequest(active_fd, us_cinfo);
+			else{
+				active_fd = openUpstreamSocket(us_cinfo);
+				activeSockets[cur_socket] = active_fd;
+			}
+			if (cur_socket+1 < socket_cap)
+				cur_socket++;
+			else
+				cur_socket=0;
 		}
 	}
 
@@ -461,6 +481,12 @@ void WebCacheNewAPI::closeSocket(int socket_id) {
 	pendingRequests.removeAndDeleteAllRequestsOnInterface(socket_id);
 	tcp_api->close(socket_id);
 	//sockets.erase(i);
+	for(int i=0; i<socket_cap; i++){
+		if(activeSockets[i]==socket_id){
+			activeSockets[i] = -1;
+			return;
+		}
+	}
 }
 
 void WebCacheNewAPI::updateDisplay() {
