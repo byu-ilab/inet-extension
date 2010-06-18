@@ -51,4 +51,5 @@ simple WebCacheNewAPI like TCPSocketAPIAppInterface, httptServerBaseInterface
         	// time an upstream connection should wait without any activity
         int request_timeout = default(10); // time for an upstream connection to wait.
         string filterConfig = default(""); // the filepath to the filter configuration file, relative to the location of the cc file
+        int maxUpstreamSockets = default(8);
 }

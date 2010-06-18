@@ -18,11 +18,12 @@
 
 Define_Module(WebCacheNewAPI);
 
-// EnableDebugging(false); // TODO
 #define DEBUG_CLASS false
 
-WebCacheNewAPI::WebCacheNewAPI() : pendingRequests(), contentFilter(), shouldFilter(false) {
-
+WebCacheNewAPI::WebCacheNewAPI()
+	: pendingUpstreamRequests(), pendingDownstreamRequests(), contentFilter()
+{
+	shouldFilter = false;
 	resourceCache = NULL;
 
 	requestsReceived = 0;
@@ -36,27 +37,30 @@ WebCacheNewAPI::WebCacheNewAPI() : pendingRequests(), contentFilter(), shouldFil
 	hits = 0;
 	misses = 0;
 
-	socket_cap = 8;
+	socket_cap = 0;
 	cur_socket = 0;
-	activeSockets = new int[socket_cap];
-	for(int i=0; i<socket_cap; i++)
-		activeSockets[i] = -1;
+	upstreamSocketDescriptors = NULL;
 }
 
 WebCacheNewAPI::~WebCacheNewAPI() {
 	if (resourceCache)
 	{
-	  delete resourceCache;
+		delete resourceCache;
+	}
+
+	if (upstreamSocketDescriptors)
+	{
+		delete[] upstreamSocketDescriptors;
 	}
 }
 void WebCacheNewAPI::initialize() {
 	httptServerBase::initialize();
 
-	upstream_cache = par("serverwww").stdstringValue();
+	upstream_server = par("serverwww").stdstringValue();
 	request_timeout = par("request_timeout");
 
 	int64 cache_size = par("cacheSize").longValue();
-		ASSERT(cache_size > 0);
+		ASSERT(0 < cache_size);
 	resourceCache = new LRUCache((uint64) cache_size);
 
 	string config_filename = par("filterConfig").stdstringValue();
@@ -64,6 +68,15 @@ void WebCacheNewAPI::initialize() {
 	{
 		shouldFilter = true;
 		contentFilter.configureFromXML(config_filename);
+	}
+
+	// POINT OF INTEREST
+	socket_cap = par("maxUpstreamSockets");
+		ASSERT( 0 < socket_cap );
+	upstreamSocketDescriptors = new int[socket_cap];
+	for (int i =0; i < socket_cap; i++)
+	{
+		upstreamSocketDescriptors[i] = US_SOCK_NONE;
 	}
 
 	updateDisplay();
@@ -125,6 +138,7 @@ void WebCacheNewAPI::handleMessage(cMessage * msg) {
 	    tcp_api->listen(fd);
 
 	    tcp_api->accept (fd);
+	    // TODO use sockType WCST_LISTENER or remove this from the enum?
 	}
 //	if (msg->isSelfMessage()){
 //    	//opp_error("WebCacheNewAPI::handleMessage(): received a non self message");
@@ -151,13 +165,16 @@ void WebCacheNewAPI::acceptCallback(int socket_id, int ret_status, void * yourPt
 
 	if (TCPSocketAPI::isCallbackError(ret_status))
 	{
-		error("unknown socket error: %s", TCPSocketAPI::getCallbackErrorName(ret_status).c_str());
+		// The acceptCallback shouldn'r return an error, if it does then the TCP socket API
+		// changed
+		error("Unknown socket error: %s", TCPSocketAPI::getCallbackErrorName(ret_status).c_str());
 	}
 
 	// read data from new socket
 	ConnInfo * ci = new ConnInfo();
-	ci->sockType = SERVER;
-	ci->ds_request = NULL;
+	ci->sockType =  WCST_SERVER;
+	//ci->ds_request = NULL;
+	ci->numPendingResponses = -1;
 
 	tcp_api->recv(ret_status, ci);
 	serverSocketsOpened++;
@@ -170,23 +187,25 @@ void WebCacheNewAPI::connectCallback(int socket_id, int ret_status, void * myPtr
 
 	Enter_Method_Silent();
 
-	// TODO check that socket_id is valid socket, i.e. in the set?
-
 	ConnInfo * data = static_cast<ConnInfo *>(myPtr);
+
+	/* Error Checking and Handling */
+	// TODO check that socket_id is valid socket, i.e. in the set?
+	bool handleError = false;
 	if (!data)
 	{
 		LOG_DEBUG("No connection info returned!");
-		closeSocket(socket_id);
-
-		clientSocketsBroken++;
-		currentSocketsOpenToServer--;
-
-		return;
+		handleError = true;
 	}
 
 	if (TCPSocketAPI::isCallbackError(ret_status))
 	{
 		LOG_DEBUG("Socket error: "<<TCPSocketAPI::getCallbackErrorName(ret_status));
+		handleError = true;
+	}
+
+	if (handleError)
+	{
 		closeSocket(socket_id);
 
 		clientSocketsBroken++;
@@ -194,6 +213,7 @@ void WebCacheNewAPI::connectCallback(int socket_id, int ret_status, void * myPtr
 
 		return;
 	}
+	/* End Error Checking and Handling */
 
 	makeUpstreamRequest(socket_id, data);
 }
@@ -205,16 +225,20 @@ void WebCacheNewAPI::connectCallback(int socket_id, int ret_status, void * myPtr
 // @param yourPtr -- the pointer to the data passed to the accept method
 void WebCacheNewAPI::recvCallback(int socket_id, int ret_status,
 	cPacket * msg, void * myPtr){
+
 	Enter_Method_Silent();
+
 	// recv is called on downstream connections to receive requests,
 	// and it is called on upstream connections to receive the replies for requests.
 
-
 	ConnInfo * data = static_cast<ConnInfo *>(myPtr);
+
+	/* Error Checking and Handling */
 	if (!data)
 	{
 		LOG_DEBUG("No watch data returned!");
 		closeSocket(socket_id);
+		// no statistics can be updated
 		return;
 	}
 
@@ -225,16 +249,17 @@ void WebCacheNewAPI::recvCallback(int socket_id, int ret_status,
 		LOG_DEBUG("Callback error is: "<<TCPSocketAPI::getCallbackErrorName(ret_status));
 		closeSocket(socket_id);
 
+		// check if it is a broken connection
 		if (ret_status == TCPSocketAPI::CB_E_RESET ||
 				ret_status == TCPSocketAPI::CB_E_REFUSED ||
 				ret_status == TCPSocketAPI::CB_E_UNKNOWN)
 		{
-			if (data->sockType == SERVER)
+			if (data->sockType ==  WCST_SERVER)
 			{
 				serverSocketsBroken++;
 				LOG_DEBUG("Server sockets broken so far: "<<serverSocketsBroken);
 			}
-			else if (data->sockType == CLIENT)
+			else if (data->sockType == WCST_CLIENT)
 			{
 				clientSocketsBroken++;
 				currentSocketsOpenToServer--;
@@ -245,11 +270,25 @@ void WebCacheNewAPI::recvCallback(int socket_id, int ret_status,
 		return;
 	}
 
-	if (data->sockType == CLIENT)
+	ASSERT(msg);
+	/* End Error Checking and Handling */
+
+	if (data->sockType == WCST_CLIENT)
 	{
 		processUpstreamResponse(socket_id, msg, data);
+		if (0 < data->numPendingResponses)
+		{
+			data->numPendingResponses--;
+			tcp_api->recv(socket_id, data);
+		}
+		else
+		{
+			makeUpstreamRequest();
+		}
 		return;
 	}
+
+	// else data->sockType == WCST_SERVER
 
 	// handleReceivedMessage will return an error reply if there is a problem with the
 	// message, otherwise control will get passed to handleGetRequest which will return
@@ -259,7 +298,7 @@ void WebCacheNewAPI::recvCallback(int socket_id, int ret_status,
 	{
 		delete msg;
 		tcp_api->send(socket_id, errorReply);
-		tcp_api->recv(socket_id,myPtr);
+		tcp_api->recv(socket_id, myPtr);
 	}
 	else
 	{
@@ -271,28 +310,83 @@ void WebCacheNewAPI::recvCallback(int socket_id, int ret_status,
  * Sends a request to an upstream cache or server.
  * @param ds_request the request received from a client downstream.
  */
-void WebCacheNewAPI::makeUpstreamRequest(int socket_id, ConnInfo * data) {
+void WebCacheNewAPI::makeUpstreamRequest(httptRequestMessage * ds_request_template) { //int socket_id, ConnInfo * data) {
 
-	httptRequestMessage * us_request = data->ds_request->dup();
+	// if a request template is specified then duplicate it and modify it as necessary
+	if (ds_request_template)
+	{
+		httptRequestMessage * us_request = ds_request_template->dup();
+		us_request->setTargetUrl(upstream_server.c_str());
+		us_request->setOriginatorUrl(wwwName.c_str());
+		us_request->setFirstBytePos(BRS_UNSPECIFIED);
+		us_request->setLastBytePos(BRS_UNSPECIFIED);// just to be safe
 
-	us_request->setTargetUrl(par("serverwww"));
-	us_request->setOriginatorUrl(wwwName.c_str());
-	us_request->setFirstBytePos(BRS_UNSPECIFIED);
-	us_request->setLastBytePos(BRS_UNSPECIFIED);// just to be safe
+		pendingUpstreamRequests.insert(us_request);
+	}
 
-	ConnInfo * ci =new ConnInfo;
-	ci->sockType = CLIENT;
-	ci->ds_request = NULL;
+	// open a connection if necessary and find a connected socket
+	if (pendingUpstreamRequests.isEmpty())
+	{ // then there are no requests to send
+		return;
+	}
 
-	LOG_DEBUG("requesting from server: "<<us_request->heading());
-	tcp_api->send(socket_id,us_request);
-	tcp_api->recv(socket_id,ci);
-	delete data->ds_request;
-	delete data;
+	int selected_fd = US_SOCK_NONE;
+	ConnInfo * selected_cinfo = NULL;
+	int current_fd = US_SOCK_NONE;
+	int fd_index = 0;
+	while (fd_index < socket_cap)
+	{
+		current_fd = upstreamSocketDescriptors[fd_index];
+		if ( current_fd == US_SOCK_NONE )
+		{
+			ConnInfo * us_cinfo = new ConnInfo;
+			us_cinfo->sockType = WCST_CLIENT;
+			us_cinfo->numPendingResponses = 0;
+			openUpstreamSocket(us_cinfo);
+			upstreamSocketDescriptors[fd_index] == US_SOCK_CONNECTING;
+		}
+		else if ( current_fd != US_SOCK_CONNECTING )
+		{
+			ConnInfo * cur_info = static_cast<ConnInfo *>(tcp_api->getMyPtr(current_fd));
+			if (cur_info->numPendingResponses < target_load_for_us_socket)
+			{
+				selected_fd = current_fd;
+				selected_cinfo = cur_info;
+				break;
+			}
+			else if (fd_index == socket_cap - 1
+				/* (implicitly) && target_load_for_us_socket <= cur_info->numPendingResponses */)
+			{
+				selected_fd = current_fd;
+				selected_cinfo = cur_info;
+				target_load_for_us_socket++;
+				break;
+			}
+		}
+
+		fd_index++;
+	}
+
+	if (selected_fd == US_SOCK_NONE)
+	{ // then no upstream sockets are connected yet
+		return;
+	}
+
+	// send a request on the socket
+	httptRequestMessage * us_request = check_and_cast<httptRequestMessage *>(pendingUpstreamRequests.pop());
+	selected_cinfo->numPendingResponses++;
+	LOG_DEBUG("Requesting from server: "<<us_request->heading()<<" on socket: "<<socket_id);
+	tcp_api->send(socket_id, us_request);
+
+	// if this is the first request sent on the socket then signal it to recv
+	if (selected_cinfo->numPendingResponses == 1)
+	{
+		tcp_api->recv(socket_id, selected_cinfo);
+	}
 }
 
 // Receive a response containing move data from an upstream cache or server.
-void WebCacheNewAPI::processUpstreamResponse(int socket_id, cPacket * msg, ConnInfo * data) {
+void WebCacheNewAPI::processUpstreamResponse(int socket_id, cPacket * msg, /* TODO make cosnt ? */ ConnInfo * data) {
 
 	httptReplyMessage * reply = dynamic_cast<httptReplyMessage *>(msg);
 
@@ -312,6 +406,7 @@ void WebCacheNewAPI::processUpstreamResponse(int socket_id, cPacket * msg, ConnI
 		string ext = parseResourceName(uri)[2];
 		if (!shouldFilter || /* implicit shouldFilter && */ contentFilter.containsExtension(ext))
 		{
+			// verify that there is enough space to store the object
 			if (wr->getSize() <= resourceCache->getCapacity()) {
 			  resourceCache->add(wr);
 			  LOG_DEBUG("added: "<<wr->getID());
@@ -320,14 +415,14 @@ void WebCacheNewAPI::processUpstreamResponse(int socket_id, cPacket * msg, ConnI
 		// else just forward it to waiting clients
 
 		// send a response to each waiting client.
-		list<RequestRecord> requests_to_service = pendingRequests.getRequestsForResource(wr->getID());
+		list<RequestRecord> requests_to_service = pendingDownstreamRequests.getRequestsForResource(wr->getID());
 		list<RequestRecord>::iterator it;
 		for (it = requests_to_service.begin(); it != requests_to_service.end(); it++)
 		{
 			respondToClientRequest((*it).interface_id, (*it).request_msg_ptr, wr);
 		}
 
-		pendingRequests.removeAndDeleteRequestsForResource(wr->getID());
+		pendingDownstreamRequests.removeAndDeleteRequestsForResource(wr->getID());
 	}
 	updateDisplay();
 
@@ -335,9 +430,9 @@ void WebCacheNewAPI::processUpstreamResponse(int socket_id, cPacket * msg, ConnI
 			//Don't close here in case it can be used again right away to request something else from the server
 	//currentSocketsOpenToServer--;
 	delete reply;
-	delete data;
+	//DO NOT delete data;
 }
-
+// TODO make pointers const?
 void WebCacheNewAPI::respondToClientRequest(int socket_id, httptRequestMessage * request, Resource * resource)
 {
 	ASSERT(request && resource);
@@ -351,23 +446,26 @@ void WebCacheNewAPI::respondToClientRequest(int socket_id, httptRequestMessage *
 
 bool WebCacheNewAPI::isErrorMessage(httptReplyMessage *msg)
 {
+	// TODO accept 206 responses?  the cache never makes a request for partial content to its upstream server
 	return msg->result() != 200;
 }
 
 httptReplyMessage * WebCacheNewAPI::handleGetRequest(httptRequestMessage * msg, string resource_url)
 {
-	// we may not be able to return a response immediately
+	// we may not be able to return a response immediately if it is a cache miss
 	return NULL;
 }
+
 // A client (or cache) requests a file from me.
 // If I have it, send it along.  Otherwise, initiate a request from an upstream host.
 void WebCacheNewAPI::processDownstreamRequest(int socket_id, cPacket * msg, ConnInfo * data) {
+
 	httptRequestMessage * request = check_and_cast<httptRequestMessage *>(msg);
 	requestsReceived++;
 	LOG_DEBUG("received request for: "<<request->heading());
 
 	string url = extractURLFromRequest(request);
-	Resource * wr_temp = new WebResource(url, 0); // works because comparator used only looks at the ID not the size
+	Resource * wr_temp = new WebResource(url, 0); // works because the comparator used only looks at the ID not the size
 	Resource * wr_incache = resourceCache->has(wr_temp);
 
 	if (wr_incache) {
@@ -379,36 +477,47 @@ void WebCacheNewAPI::processDownstreamRequest(int socket_id, cPacket * msg, Conn
 	} else {
 		misses++;
 		// request resource, only if it is the first request of its type
-		bool isNew = pendingRequests.addRequest(socket_id, url, request);
+		bool isNew = pendingDownstreamRequests.addRequest(socket_id, url, request);
 		if (isNew) {
+			makeUpstreamRequest(request);//ANY_US_SOCKET, request);
+			/*
 			ConnInfo * us_cinfo = new ConnInfo;
-			us_cinfo->sockType = CLIENT;
-			us_cinfo->ds_request = request->dup();
+			us_cinfo->sockType = WCST_CLIENT;
+//			us_cinfo->ds_request = request->dup();
+			us_cinfo->numPendingResponses = 0;
 
 			//Rotate through a specified num of sockets. If not active(the socket has been closed) then open a new socket to take its place.
 			int active_fd = activeSockets[cur_socket];
-			if (active_fd != -1)
-				makeUpstreamRequest(active_fd, us_cinfo);
-			else{
-				active_fd = openUpstreamSocket(us_cinfo);
-				activeSockets[cur_socket] = active_fd;
+			if (active_fd == US_SOCK_NONE)
+			{
+				openUpstreamSocket(us_cinfo);
+				activeSockets[cur_socket] = US_SOCK_CONNECTING;
 			}
+			else if (active_fd == US_SOCK_CONNECTING)
+			{
+				// add to an upstream request queue? or just call send on the socket?
+			}
+			else
+			{
+				makeUpstreamRequest(active_fd, us_cinfo);
+			}
+
 			if (cur_socket+1 < socket_cap)
 				cur_socket++;
 			else
 				cur_socket=0;
+			*/
 		}
 	}
 
-	// ask client for anything else it might send:
+	// ask downstream client for anything else it might send:
 	tcp_api->recv(socket_id,data);
 
 	updateDisplay();
 	delete wr_temp;
 
-	// DO NOT delete 'request' or 'data,' request may be stored in pendingRequests,
-	// and/or it was deleted in the if clause.  'data' is being used to recv on the
-	// client socket.
+	// DO NOT delete 'request' or 'data', request may be stored in pendingDownstreamRequests,
+	// and/or it was deleted in the if clause.  'data' is being used to recv on the downstream socket
 }
 /**
  * takes a URL from a request message.  for now, this must be a correctly formatted one.
@@ -462,7 +571,7 @@ int WebCacheNewAPI::openUpstreamSocket(ConnInfo * data) {
 	int connect_port;
 	char szModuleName[127];
 
-	controller->getServerInfo(upstream_cache.c_str(),szModuleName,connect_port);
+	controller->getServerInfo(upstream_server.c_str(),szModuleName,connect_port);
 	LOG_DEBUG("detain it right here");
 	tcp_api->connect(fd , szModuleName, connect_port, (void *) data);
 
@@ -478,12 +587,13 @@ void WebCacheNewAPI::closeSocket(int socket_id) {
 	if (data) {
 		delete data;
 	}
-	pendingRequests.removeAndDeleteAllRequestsOnInterface(socket_id);
+	pendingDownstreamRequests.removeAndDeleteAllRequestsOnInterface(socket_id);
 	tcp_api->close(socket_id);
 	//sockets.erase(i);
+	// POINT OF INTEREST
 	for(int i=0; i<socket_cap; i++){
-		if(activeSockets[i]==socket_id){
-			activeSockets[i] = -1;
+		if(upstreamSocketDescriptors[i]==socket_id){
+			upstreamSocketDescriptors[i] = -1;
 			return;
 		}
 	}
@@ -508,7 +618,7 @@ void WebCacheNewAPI::updateDisplay() {
 		string unitstr = getByteUnitAsString(unit);
 		double convfactor = getMultiplicativeFactor(unit_B, unittype_bibyte, unit, unittype_bibyte);
 		double capacity = (double) cacheSize * convfactor;
-		sprintf( buf, "Req: %ld\nHit: %.1f\%\nCap: %.1f%s\nFull: %.1f\%", requestsReceived,h,
+		sprintf( buf, "Req: %ld\nHit: %.1f \% \nCap: %.1f %s \nFull: %.1f \%", requestsReceived,h,
 				capacity, unitstr.c_str(), full);
 		getParentModule()->getDisplayString().setTagArg("t",0,buf);
 	} /*else if (ev.isGUI() ){
