@@ -21,7 +21,7 @@ Define_Module(WebCacheNewAPI);
 #define DEBUG_CLASS false
 
 WebCacheNewAPI::WebCacheNewAPI()
-	: pendingUpstreamRequests(), pendingDownstreamRequests(), contentFilter()
+	: /*pendingUpstreamRequests(),*/ pendingDownstreamRequests(), contentFilter()
 {
 	shouldFilter = false;
 	resourceCache = NULL;
@@ -37,9 +37,10 @@ WebCacheNewAPI::WebCacheNewAPI()
 	hits = 0;
 	misses = 0;
 
-	socket_cap = 0;
-	cur_socket = 0;
-	upstreamSocketDescriptors = NULL;
+//	socket_cap = 0;
+//	cur_socket = 0;
+//	upstreamSocketDescriptors = NULL;
+	upstreamSocketPool = NULL;
 }
 
 WebCacheNewAPI::~WebCacheNewAPI() {
@@ -48,9 +49,14 @@ WebCacheNewAPI::~WebCacheNewAPI() {
 		delete resourceCache;
 	}
 
-	if (upstreamSocketDescriptors)
+//	if (upstreamSocketDescriptors)
+//	{
+//		delete[] upstreamSocketDescriptors;
+//	}
+
+	if (upstreamSocketPool)
 	{
-		delete[] upstreamSocketDescriptors;
+		delete upstreamSocketPool;
 	}
 }
 void WebCacheNewAPI::initialize() {
@@ -71,13 +77,28 @@ void WebCacheNewAPI::initialize() {
 	}
 
 	// POINT OF INTEREST
-	socket_cap = par("maxUpstreamSockets");
+	int socket_cap = par("maxUpstreamSockets");
 		ASSERT( 0 < socket_cap );
-	upstreamSocketDescriptors = new int[socket_cap];
-	for (int i =0; i < socket_cap; i++)
-	{
-		upstreamSocketDescriptors[i] = US_SOCK_NONE;
-	}
+//	upstreamSocketDescriptors = new int[socket_cap];
+//	for (int i =0; i < socket_cap; i++)
+//	{
+//		upstreamSocketDescriptors[i] = US_SOCK_NONE;
+//	}
+
+	// find module for server.
+	int connect_port;
+	char szModuleName[127];
+
+	controller->getServerInfo(upstream_server.c_str(),szModuleName,connect_port);
+
+	tcp_api = findTCPSocketAPI(this);
+
+	ConnInfo * us_cinfo = new ConnInfo();
+	us_cinfo->sockType = WCST_CLIENT;
+	us_cinfo->numPendingResponses = 0;
+
+	upstreamSocketPool = new ActiveTCPSocketPool(tcp_api, this, socket_cap,
+			szModuleName, connect_port, request_timeout, UNLIMITED_LOAD, (void *) us_cinfo);
 
 	updateDisplay();
 
@@ -91,7 +112,7 @@ void WebCacheNewAPI::initialize() {
 	WATCH(hits);
 	WATCH(misses);
 
-	tcp_api = findTCPSocketAPI(this);
+//	tcp_api = findTCPSocketAPI(this);
     cMessage * start = new cMessage("START",START);
     scheduleAt(simTime()+activationTime,start);
 }
@@ -180,43 +201,43 @@ void WebCacheNewAPI::acceptCallback(int socket_id, int ret_status, void * yourPt
 	serverSocketsOpened++;
 }
 
-// @param socket_id -- the id of the connected socket
-// @param ret_status -- the status of the previously invoked connect method
-// @param yourPtr -- the pointer to the data passed to the connect method
-void WebCacheNewAPI::connectCallback(int socket_id, int ret_status, void * myPtr){
-
-	Enter_Method_Silent();
-
-	ConnInfo * data = static_cast<ConnInfo *>(myPtr);
-
-	/* Error Checking and Handling */
-	// TODO check that socket_id is valid socket, i.e. in the set?
-	bool handleError = false;
-	if (!data)
-	{
-		LOG_DEBUG("No connection info returned!");
-		handleError = true;
-	}
-
-	if (TCPSocketAPI::isCallbackError(ret_status))
-	{
-		LOG_DEBUG("Socket error: "<<TCPSocketAPI::getCallbackErrorName(ret_status));
-		handleError = true;
-	}
-
-	if (handleError)
-	{
-		closeSocket(socket_id);
-
-		clientSocketsBroken++;
-		currentSocketsOpenToServer--;
-
-		return;
-	}
-	/* End Error Checking and Handling */
-
-	makeUpstreamRequest(socket_id, data);
-}
+//// @param socket_id -- the id of the connected socket
+//// @param ret_status -- the status of the previously invoked connect method
+//// @param yourPtr -- the pointer to the data passed to the connect method
+//void WebCacheNewAPI::connectCallback(int socket_id, int ret_status, void * myPtr){
+//
+//	Enter_Method_Silent();
+//
+//	ConnInfo * data = static_cast<ConnInfo *>(myPtr);
+//
+//	/* Error Checking and Handling */
+//	// TODO check that socket_id is valid socket, i.e. in the set?
+//	bool handleError = false;
+//	if (!data)
+//	{
+//		LOG_DEBUG("No connection info returned!");
+//		handleError = true;
+//	}
+//
+//	if (TCPSocketAPI::isCallbackError(ret_status))
+//	{
+//		LOG_DEBUG("Socket error: "<<TCPSocketAPI::getCallbackErrorName(ret_status));
+//		handleError = true;
+//	}
+//
+//	if (handleError)
+//	{
+//		closeSocket(socket_id);
+//
+//		clientSocketsBroken++;
+//		currentSocketsOpenToServer--;
+//
+//		return;
+//	}
+//	/* End Error Checking and Handling */
+//
+//	makeUpstreamRequest(socket_id, data);
+//}
 
 // @param socket_id -- the id of the accepted socket
 // @param ret_status -- the status of the previously invoked recv method or
@@ -261,9 +282,9 @@ void WebCacheNewAPI::recvCallback(int socket_id, int ret_status,
 			}
 			else if (data->sockType == WCST_CLIENT)
 			{
-				clientSocketsBroken++;
-				currentSocketsOpenToServer--;
-				LOG_DEBUG("Client sockets broken so far: "<<clientSocketsBroken);
+//				clientSocketsBroken++;
+//				currentSocketsOpenToServer--;
+//				LOG_DEBUG("Client sockets broken so far: "<<clientSocketsBroken);
 			}
 			// else there is no variable to update
 		}
@@ -276,15 +297,16 @@ void WebCacheNewAPI::recvCallback(int socket_id, int ret_status,
 	if (data->sockType == WCST_CLIENT)
 	{
 		processUpstreamResponse(socket_id, msg, data);
-		if (0 < data->numPendingResponses)
-		{
-			data->numPendingResponses--;
-			tcp_api->recv(socket_id, data);
-		}
-		else
-		{
-			makeUpstreamRequest();
-		}
+//		if (0 < data->numPendingResponses)
+//		{
+//			data->numPendingResponses--;
+//			tcp_api->recv(socket_id, data);
+//		}
+//		else
+//		{
+//			makeUpstreamRequest();
+//		}
+		LOG_DEBUG_FUN_END("handled upstream response")
 		return;
 	}
 
@@ -304,6 +326,7 @@ void WebCacheNewAPI::recvCallback(int socket_id, int ret_status,
 	{
 		processDownstreamRequest(socket_id, msg, data);
 	}
+	LOG_DEBUG_FUN_END("handled downstream request")
 }
 
 /**
@@ -321,68 +344,69 @@ void WebCacheNewAPI::makeUpstreamRequest(httptRequestMessage * ds_request_templa
 		us_request->setFirstBytePos(BRS_UNSPECIFIED);
 		us_request->setLastBytePos(BRS_UNSPECIFIED);// just to be safe
 
-		pendingUpstreamRequests.insert(us_request);
+		//pendingUpstreamRequests.insert(us_request);
+		upstreamSocketPool->submitRequest(us_request);
 	}
 
-	// open a connection if necessary and find a connected socket
-	if (pendingUpstreamRequests.isEmpty())
-	{ // then there are no requests to send
-		return;
-	}
-
-	int selected_fd = US_SOCK_NONE;
-	ConnInfo * selected_cinfo = NULL;
-	int current_fd = US_SOCK_NONE;
-	int fd_index = 0;
-	while (fd_index < socket_cap)
-	{
-		current_fd = upstreamSocketDescriptors[fd_index];
-		if ( current_fd == US_SOCK_NONE )
-		{
-			ConnInfo * us_cinfo = new ConnInfo;
-			us_cinfo->sockType = WCST_CLIENT;
-			us_cinfo->numPendingResponses = 0;
-			openUpstreamSocket(us_cinfo);
-			upstreamSocketDescriptors[fd_index] == US_SOCK_CONNECTING;
-		}
-		else if ( current_fd != US_SOCK_CONNECTING )
-		{
-			ConnInfo * cur_info = static_cast<ConnInfo *>(tcp_api->getMyPtr(current_fd));
-			if (cur_info->numPendingResponses < target_load_for_us_socket)
-			{
-				selected_fd = current_fd;
-				selected_cinfo = cur_info;
-				break;
-			}
-			else if (fd_index == socket_cap - 1
-				/* (implicitly) && target_load_for_us_socket <= cur_info->numPendingResponses */)
-			{
-				selected_fd = current_fd;
-				selected_cinfo = cur_info;
-				target_load_for_us_socket++;
-				break;
-			}
-		}
-
-		fd_index++;
-	}
-
-	if (selected_fd == US_SOCK_NONE)
-	{ // then no upstream sockets are connected yet
-		return;
-	}
-
-	// send a request on the socket
-	httptRequestMessage * us_request = check_and_cast<httptRequestMessage *>(pendingUpstreamRequests.pop());
-	selected_cinfo->numPendingResponses++;
-	LOG_DEBUG("Requesting from server: "<<us_request->heading()<<" on socket: "<<socket_id);
-	tcp_api->send(socket_id, us_request);
-
-	// if this is the first request sent on the socket then signal it to recv
-	if (selected_cinfo->numPendingResponses == 1)
-	{
-		tcp_api->recv(socket_id, selected_cinfo);
-	}
+//	// open a connection if necessary and find a connected socket
+//	if (pendingUpstreamRequests.isEmpty())
+//	{ // then there are no requests to send
+//		return;
+//	}
+//
+//	int selected_fd = US_SOCK_NONE;
+//	ConnInfo * selected_cinfo = NULL;
+//	int current_fd = US_SOCK_NONE;
+//	int fd_index = 0;
+//	while (fd_index < socket_cap)
+//	{
+//		current_fd = upstreamSocketDescriptors[fd_index];
+//		if ( current_fd == US_SOCK_NONE )
+//		{
+//			ConnInfo * us_cinfo = new ConnInfo;
+//			us_cinfo->sockType = WCST_CLIENT;
+//			us_cinfo->numPendingResponses = 0;
+//			openUpstreamSocket(us_cinfo);
+//			upstreamSocketDescriptors[fd_index] == US_SOCK_CONNECTING;
+//		}
+//		else if ( current_fd != US_SOCK_CONNECTING )
+//		{
+//			ConnInfo * cur_info = static_cast<ConnInfo *>(tcp_api->getMyPtr(current_fd));
+//			if (cur_info->numPendingResponses < target_load_for_us_socket)
+//			{
+//				selected_fd = current_fd;
+//				selected_cinfo = cur_info;
+//				break;
+//			}
+//			else if (fd_index == socket_cap - 1
+//				/* (implicitly) && target_load_for_us_socket <= cur_info->numPendingResponses */)
+//			{
+//				selected_fd = current_fd;
+//				selected_cinfo = cur_info;
+//				target_load_for_us_socket++;
+//				break;
+//			}
+//		}
+//
+//		fd_index++;
+//	}
+//
+//	if (selected_fd == US_SOCK_NONE)
+//	{ // then no upstream sockets are connected yet
+//		return;
+//	}
+//
+//	// send a request on the socket
+//	httptRequestMessage * us_request = check_and_cast<httptRequestMessage *>(pendingUpstreamRequests.pop());
+//	selected_cinfo->numPendingResponses++;
+//	LOG_DEBUG("Requesting from server: "<<us_request->heading()<<" on socket: "<<socket_id);
+//	tcp_api->send(socket_id, us_request);
+//
+//	// if this is the first request sent on the socket then signal it to recv
+//	if (selected_cinfo->numPendingResponses == 1)
+//	{
+//		tcp_api->recv(socket_id, selected_cinfo);
+//	}
 }
 
 // Receive a response containing move data from an upstream cache or server.
@@ -561,25 +585,25 @@ string WebCacheNewAPI::extractURLFromResponse(httptReplyMessage * response) {
 //	opp_error("WebCacheNewAPI::handleTimeout: not supposed to be here.");
 //}
 
-int WebCacheNewAPI::openUpstreamSocket(ConnInfo * data) {
-	int fd = tcp_api->socket(this);
-	tcp_api->setTimeout(fd, request_timeout);
-
-	//sockets.insert(fd);
-
-	// find module for server.
-	int connect_port;
-	char szModuleName[127];
-
-	controller->getServerInfo(upstream_server.c_str(),szModuleName,connect_port);
-	LOG_DEBUG("detain it right here");
-	tcp_api->connect(fd , szModuleName, connect_port, (void *) data);
-
-	clientSocketsOpened++;
-	currentSocketsOpenToServer++;
-
-	return fd;
-}
+//int WebCacheNewAPI::openUpstreamSocket(ConnInfo * data) {
+//	int fd = tcp_api->socket(this);
+//	tcp_api->setTimeout(fd, request_timeout);
+//
+//	//sockets.insert(fd);
+//
+//	// find module for server.
+//	int connect_port;
+//	char szModuleName[127];
+//
+//	controller->getServerInfo(upstream_server.c_str(),szModuleName,connect_port);
+//	LOG_DEBUG("detain it right here");
+//	tcp_api->connect(fd , szModuleName, connect_port, (void *) data);
+//
+//	clientSocketsOpened++;
+//	currentSocketsOpenToServer++;
+//
+//	return fd;
+//}
 
 void WebCacheNewAPI::closeSocket(int socket_id) {
 	//std::set<int>::iterator i = sockets.find(socket_id);
@@ -591,12 +615,12 @@ void WebCacheNewAPI::closeSocket(int socket_id) {
 	tcp_api->close(socket_id);
 	//sockets.erase(i);
 	// POINT OF INTEREST
-	for(int i=0; i<socket_cap; i++){
-		if(upstreamSocketDescriptors[i]==socket_id){
-			upstreamSocketDescriptors[i] = -1;
-			return;
-		}
-	}
+//	for(int i=0; i<socket_cap; i++){
+//		if(upstreamSocketDescriptors[i]==socket_id){
+//			upstreamSocketDescriptors[i] = -1;
+//			return;
+//		}
+//	}
 }
 
 void WebCacheNewAPI::updateDisplay() {

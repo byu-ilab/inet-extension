@@ -10,6 +10,8 @@
 
 #include "TCPSocketAPI.h"
 
+#include "DebugDef.h"
+
 #include <set>
 #include <deque>
 #include <map>
@@ -26,7 +28,7 @@
 
 enum RequestStatus { RS_PENDING, RS_SENT, RS_UNKNOWN };
 
-class ActiveTCPSocketPool : public TCPSocketAPI::CallbackInteface
+class ActiveTCPSocketPool : public TCPSocketAPI::CallbackInterface
 {
 
 protected:

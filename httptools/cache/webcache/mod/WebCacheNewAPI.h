@@ -29,6 +29,7 @@
 #include "simunits.h"
 #include "WebContentExtensionFilter.h"
 #include "DebugDef.h"
+#include "ActiveTCPSocketPool.h"
 
 #define ANY_US_SOCKET -1
 #define US_SOCK_NONE -1
@@ -66,16 +67,18 @@ protected:
 	// internals
 	Cache * resourceCache;
 	TCPSocketAPI * tcp_api;
-	string upstream_server;
-	int request_timeout;
-	cQueue pendingUpstreamRequests;
+	string upstream_server; // NEEDED ?
+	int request_timeout; // NEEDED ?
 	CacheRequestMgr pendingDownstreamRequests;
 
-	int socket_cap;
-	int cur_socket;
-	// maps socket descriptors to connection info
-	std::multiset<int, ConnInfo *> upstreamSocketDescriptors;
-	int target_load_for_us_socket;
+	ActiveTCPSocketPool * upstreamSocketPool;
+
+//	cQueue pendingUpstreamRequests;
+//	int socket_cap;
+//	int cur_socket;
+//	// maps socket descriptors to connection info
+//	std::multiset<int, ConnInfo *> upstreamSocketDescriptors;
+//	int target_load_for_us_socket;
 
 	// stats
 	uint64 requestsReceived;
@@ -100,7 +103,7 @@ protected:
 
 	// TCPSocketAPI::CallbackInterface functions
 	virtual void acceptCallback  (int socket_id, int ret_status, void * yourPtr); // this happens after each call  to accept.
-	virtual void connectCallback(int socket_id, int ret_status, void * myPtr); // this happens after each call to connect
+//	virtual void connectCallback(int socket_id, int ret_status, void * myPtr); // this happens after each call to connect
 	virtual void recvCallback(int socket_id, int ret_status, cPacket * msg, void * myPtr); // this happens after each call to recv
 
 	// overriden from httptServerBase
@@ -113,7 +116,7 @@ protected:
 	virtual void makeUpstreamRequest(/*int socket_id,*/ httptRequestMessage * ds_request_template=NULL); //ConnInfo * data); // cache send req. to upper-level cache or server.
 	virtual void processUpstreamResponse(int socket_id, cPacket * msg, ConnInfo * data); // get response from upper-level server.
 	virtual void processDownstreamRequest(int socket_id, cPacket * msg, ConnInfo * data); // handle request from client (or cache)
-	virtual int  openUpstreamSocket(ConnInfo *data);
+//	virtual int  openUpstreamSocket(ConnInfo *data);
 	//virtual void handleTimeout(int socket_id);
 	virtual void closeSocket(int socket_id);
 	virtual void respondToClientRequest(int socket_id, httptRequestMessage * request, Resource * resouce);
