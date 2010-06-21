@@ -1,5 +1,5 @@
 //
-// Generated file, do not edit! Created by opp_msgc 4.0 from transport/contract/SocketTimeoutMsg.msg.
+// Generated file, do not edit! Created by opp_msgc 4.0 from ../inet/src/transport/contract/SocketTimeoutMsg.msg.
 //
 
 #ifndef _SOCKETTIMEOUTMSG_M_H_
@@ -16,7 +16,7 @@
 
 
 /**
- * Class generated from <tt>transport/contract/SocketTimeoutMsg.msg</tt> by opp_msgc.
+ * Class generated from <tt>../inet/src/transport/contract/SocketTimeoutMsg.msg</tt> by opp_msgc.
  * <pre>
  * message SocketTimeoutMsg {
  *     int socketId;

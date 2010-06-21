@@ -157,8 +157,8 @@ httptReplyMessage* VideoServer::handleGetRequest( httptRequestMessage *request, 
 //	reply->setType(vrequest->getType());
 //	reply->setSegmentNumber(vrequest->getSegmentNumber());
 //	reply->setQualityLevel(vrequest->getQualityLevel());
-
-	return generateByteRangeReply(request, resource_uri, res_size, rt_vidseg);
+	httptReplyMessage * rep = generateByteRangeReply(request, resource_uri, res_size, rt_vidseg);
+	return rep;
 
 //	if (vrequest->firstBytePos() != BRS_UNSPECIFIED) {
 //		fillinByteRangeReply(reply, vrequest, resource, res_size, res_type);
