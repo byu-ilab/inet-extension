@@ -48,6 +48,7 @@ public:
 	CacheRequestMgr();
 	virtual ~CacheRequestMgr();
 	list<int> clientsAskingForResource(string);
+	int numberOfClientsAskingForResource(string);
 	list<RequestRecord> getRequestsForResource(string);
 	void removeRequestsForResource(string);
 	void removeAndDeleteRequestsForResource(string);

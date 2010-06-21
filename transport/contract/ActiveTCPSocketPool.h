@@ -55,6 +55,8 @@ protected:
 	int _current_target_load; //< the desired load to be put on each socket
 	void * _owner_recv_info_ptr; //< the information to be returned to the owner on recv
 	PendingRequestsForSocketMap _sockets_cbdata; //< maps socket id to the number of pending responses on that socket
+	PendingRequestsForSocketMap::iterator _scb_itr;
+
 	int _current_request_id; //< the current request id
 	std::string _server_address;
 	int _server_port;
@@ -101,6 +103,14 @@ protected:
 	virtual void updateLoad ();
 	virtual int openSocket();
 	virtual void closeSocket(int socket_id);
+
+	// returns true if the entry for the indicated socket was newly added and
+	// false if an entry had previously been set and was reset
+	virtual bool setPendingResponsesOnSocket(int socket_id, int value);
+	virtual void incrementPendingResponsesOnSocket(int socket_id);
+	virtual void decrementPendingResponsesOnSocket(int socket_id);
+	virtual int getPendingResponsesOnSocket(int socket_id);
+	virtual void removePendingResponsesOnSocket(int socket_id);
 };
 
 #endif /* ACTIVETCPSOCKETPOOL_H_ */

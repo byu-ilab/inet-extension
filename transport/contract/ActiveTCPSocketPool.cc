@@ -7,7 +7,7 @@
 
 #include "ActiveTCPSocketPool.h"
 
-#define DEBUG_CLASS true
+#define DEBUG_CLASS false
 
 ActiveTCPSocketPool::ActiveTCPSocketPool(TCPSocketAPI * socketapi, TCPSocketAPI::CallbackInterface * pool_owner,
 		int max_num_sockets, const std::string server_address, int server_port, simtime_t timeout,
@@ -49,16 +49,13 @@ void ActiveTCPSocketPool::connectCallback(int socket_id, int ret_status, void * 
 {
 	LOG_DEBUG_FUN_BEGIN("")
 
-	PendingRequestsForSocketMap::iterator scb_itr = _sockets_cbdata.find(socket_id);
-	ASSERT(scb_itr != _sockets_cbdata.end()); // socket_id should always be valid
-
 	if (TCPSocketAPI::isCallbackError(ret_status))
 	{
 		closeSocket(socket_id);
 	}
 	else
 	{
-		*(scb_itr->second) = SCB_NO_PENDING_RESPONSES;
+		setPendingResponsesOnSocket(socket_id, SCB_NO_PENDING_RESPONSES);
 		_num_ready_sockets++;
 	}
 
@@ -73,20 +70,23 @@ void ActiveTCPSocketPool::recvCallback(int socket_id, int ret_status, cPacket * 
 {
 	LOG_DEBUG_FUN_BEGIN("")
 
-	PendingRequestsForSocketMap::iterator scb_itr = _sockets_cbdata.find(socket_id);
-	ASSERT(scb_itr != _sockets_cbdata.end()); // socket_id should always be valid
-
 	if (TCPSocketAPI::isCallbackError(ret_status))
 	{
 		closeSocket(socket_id);
+		return;
 	}
-	else
-	{
-		*(scb_itr->second)--;
+//	else
+//	{
+		decrementPendingResponsesOnSocket(socket_id);
 		_pool_owner->recvCallback(MASKED_SOCKET, ret_status, msg, _owner_recv_info_ptr);
-	}
+//	}
 
 	updateLoad();
+	if (1 < getPendingResponsesOnSocket(socket_id))
+	{
+		LOG_DEBUG_LN("receiving on socket "<<socket_id<<" at t="<<simTime());
+		_socketapi->recv(socket_id, NULL);
+	}
 
 	LOG_DEBUG_FUN_END("")
 }
@@ -161,6 +161,7 @@ void ActiveTCPSocketPool::updateLoad ()
 		}
 	}
 	// else diff_als_drs == 0
+	LOG_DEBUG_LN("current target load: "<<_current_target_load);
 
 	// send requests on all of the sockets
 //	int selected_fd = -1;
@@ -168,30 +169,33 @@ void ActiveTCPSocketPool::updateLoad ()
 //	int num_sockets_not_ready = 0;
 
 	scd_itr = _sockets_cbdata.begin();
-	while (scd_itr != _sockets_cbdata.end()) //true)
+	while (scd_itr != _sockets_cbdata.end() && !_pending_requests.empty()) //true)
 	{
 //		if (scd_itr == _sockets_cbdata.end())
 //		{ // then increment the target load to find a socket
 //			_current_target_load++;
 //			scd_itr = _sockets_cbdata.begin();
 //		}
-
-		int * pending_responses = scd_itr->second;
-		if ( SCB_NO_PENDING_RESPONSES <= *pending_responses && *pending_responses < _current_target_load )
+		int current_socket_id = scd_itr->first;
+		//int * pending_responses = scd_itr->second;
+		int pending_responses = getPendingResponsesOnSocket(current_socket_id);
+		if ( SCB_NO_PENDING_RESPONSES <= pending_responses && pending_responses < _current_target_load )
 		{
 			// send a request on the socket
-			while (*pending_responses < _current_target_load && !_pending_requests.empty())
+			while (getPendingResponsesOnSocket(current_socket_id) < _current_target_load && !_pending_requests.empty())
 			{
 				RequestRecord * rr_ptr = _pending_requests.front();
 				_pending_requests.pop_front();
-				LOG_DEBUG_LN("sending "<<rr_ptr->request->getName()<<" on socket "<<scd_itr->first);
+				LOG_DEBUG_LN("sending \""<<rr_ptr->request->getName()<<
+						"\" on socket "<<current_socket_id<<" at t="<<simTime());
 				_socketapi->send(scd_itr->first, rr_ptr->request);
-				(*pending_responses)++;
+				incrementPendingResponsesOnSocket(current_socket_id);
 				_sent_requests.insert(rr_ptr->request_id);
 				delete rr_ptr;
 				// if this is the first request sent on the socket then signal it to recv
-				if (*pending_responses == 1)
+				if (getPendingResponsesOnSocket(current_socket_id) == 1)
 				{
+					LOG_DEBUG_LN("receiving on socket "<<scd_itr->first<<" at t="<<simTime());
 					_socketapi->recv(scd_itr->first, NULL);
 				}
 			}
@@ -245,8 +249,7 @@ int ActiveTCPSocketPool::openSocket()
 		_socketapi->setTimeout(fd, _socket_timeout);
 	}
 
-	int * pending_responses = new int(SCB_NOT_READY);
-	_sockets_cbdata[fd] = pending_responses;
+	setPendingResponsesOnSocket(fd, SCB_NOT_READY);
 
 	LOG_DEBUG_LN("connecting socket "<<fd<<" to "<<_server_address<<":"<<_server_port);
 	_socketapi->connect(fd, _server_address, _server_port, NULL);
@@ -258,16 +261,10 @@ int ActiveTCPSocketPool::openSocket()
 void ActiveTCPSocketPool::closeSocket(int socket_id)
 {
 	LOG_DEBUG_FUN_BEGIN("")
-	PendingRequestsForSocketMap::iterator scb_itr = _sockets_cbdata.find(socket_id);
-	ASSERT(scb_itr != _sockets_cbdata.end());
 
 	_socketapi->close(socket_id);
+	removePendingResponsesOnSocket(socket_id);
 
-	if (scb_itr->second)
-	{
-		delete scb_itr->second;
-	}
-	_sockets_cbdata.erase(scb_itr);
 	_num_ready_sockets--;
 	LOG_DEBUG_FUN_END("")
 }
@@ -371,4 +368,73 @@ ActiveTCPSocketPool::RequestRecord * ActiveTCPSocketPool::findPendingRequestReco
 	}
 	LOG_DEBUG_FUN_END("")
 	return NULL;
+}
+
+bool ActiveTCPSocketPool::setPendingResponsesOnSocket(int socket_id, int value)
+{
+	LOG_DEBUG_FUN_BEGIN("")
+	_scb_itr = _sockets_cbdata.find(socket_id);
+
+	if (_scb_itr == _sockets_cbdata.end())
+	{
+		_sockets_cbdata[socket_id] = new int(value);
+		LOG_DEBUG_LN("pending responses on socket "<<socket_id<<": "<<value);
+		LOG_DEBUG_FUN_END("")
+		return true;
+	}
+
+	*(_scb_itr->second) = value;
+	LOG_DEBUG_LN("pending responses on socket "<<socket_id<<": "<<value);
+	LOG_DEBUG_FUN_END("")
+	return false;
+}
+
+
+void ActiveTCPSocketPool::incrementPendingResponsesOnSocket(int socket_id)
+{
+	LOG_DEBUG_FUN_BEGIN("")
+	_scb_itr = _sockets_cbdata.find(socket_id);
+		ASSERT(_scb_itr != _sockets_cbdata.end()); // socket_id should always be valid
+
+	(*_scb_itr->second)++;
+	LOG_DEBUG_LN("pending responses on socket "<<socket_id<<": "<<*(_scb_itr->second));
+	LOG_DEBUG_FUN_END("")
+}
+
+void ActiveTCPSocketPool::decrementPendingResponsesOnSocket(int socket_id)
+{
+	LOG_DEBUG_FUN_BEGIN("")
+	_scb_itr = _sockets_cbdata.find(socket_id);
+		ASSERT(_scb_itr != _sockets_cbdata.end()); // socket_id should always be valid
+
+	(*_scb_itr->second)--;
+	LOG_DEBUG_LN("pending responses on socket "<<socket_id<<": "<<*(_scb_itr->second));
+	LOG_DEBUG_FUN_END("")
+}
+
+
+int ActiveTCPSocketPool::getPendingResponsesOnSocket(int socket_id)
+{
+	LOG_DEBUG_FUN_BEGIN("")
+	_scb_itr = _sockets_cbdata.find(socket_id);
+			ASSERT(_scb_itr != _sockets_cbdata.end()); // socket_id should always be valid
+
+	LOG_DEBUG_LN("pending responses on socket "<<socket_id<<": "<<*(_scb_itr->second));
+	LOG_DEBUG_FUN_END("")
+	return *(_scb_itr->second);
+}
+
+void ActiveTCPSocketPool::removePendingResponsesOnSocket(int socket_id)
+{
+	_scb_itr = _sockets_cbdata.find(socket_id);
+	if (_scb_itr == _sockets_cbdata.end())
+	{
+		return;
+	}
+
+	if (_scb_itr->second)
+	{
+		delete _scb_itr->second;
+	}
+	_sockets_cbdata.erase(_scb_itr);
 }

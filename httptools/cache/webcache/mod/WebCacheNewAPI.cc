@@ -100,6 +100,9 @@ void WebCacheNewAPI::initialize() {
 	upstreamSocketPool = new ActiveTCPSocketPool(tcp_api, this, socket_cap,
 			szModuleName, connect_port, request_timeout, UNLIMITED_LOAD, (void *) us_cinfo);
 
+	resend_request_threshold = par("resendRequestThreshold");
+		ASSERT(0 < resend_request_threshold);
+
 	updateDisplay();
 
 	WATCH(serverSocketsOpened);
@@ -502,7 +505,7 @@ void WebCacheNewAPI::processDownstreamRequest(int socket_id, cPacket * msg, Conn
 		misses++;
 		// request resource, only if it is the first request of its type
 		bool isNew = pendingDownstreamRequests.addRequest(socket_id, url, request);
-		if (isNew) {
+		if (isNew || resend_request_threshold < pendingDownstreamRequests.numberOfClientsAskingForResource(url)) {
 			makeUpstreamRequest(request);//ANY_US_SOCKET, request);
 			/*
 			ConnInfo * us_cinfo = new ConnInfo;

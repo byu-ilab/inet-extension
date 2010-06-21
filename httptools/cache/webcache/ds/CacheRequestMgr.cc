@@ -29,6 +29,11 @@ list<int> CacheRequestMgr::clientsAskingForResource(string uri) {
 	return clients;
 }
 
+int CacheRequestMgr::numberOfClientsAskingForResource(string uri)
+{
+	return (int) clientsAskingForResource(uri).size();
+}
+
 list<RequestRecord> CacheRequestMgr::getRequestsForResource(string uri)
 {
 	list<RequestRecord> resource_requests;
@@ -88,7 +93,7 @@ void CacheRequestMgr::removeAndDeleteAllRequestsOnInterface(int interface_id)
 	list<RequestRecord>::iterator it;
 	for (it = requests.begin(); it != requests.end(); it++)
 	{
-		if ((*it).interface_id = interface_id)
+		if ((*it).interface_id == interface_id)
 		{
 			if ((*it).request_msg_ptr)
 			{

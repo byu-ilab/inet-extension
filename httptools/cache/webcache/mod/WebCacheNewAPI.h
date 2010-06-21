@@ -72,6 +72,7 @@ protected:
 	CacheRequestMgr pendingDownstreamRequests;
 
 	ActiveTCPSocketPool * upstreamSocketPool;
+	int resend_request_threshold;
 
 //	cQueue pendingUpstreamRequests;
 //	int socket_cap;
