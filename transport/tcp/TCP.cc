@@ -27,7 +27,7 @@
 
 Define_Module(TCP);
 // EnableDebugging(true); // TODO
-#define DEBUG_CLASS true
+#define DEBUG_CLASS false
 
 bool TCP::testing;
 bool TCP::logverbose;

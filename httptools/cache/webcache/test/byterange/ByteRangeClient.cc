@@ -17,6 +17,8 @@
 
 Define_Module(ByteRangeClient);
 
+#define DEBUG_CLASS true
+
 void ByteRangeClient::initialize()
 {
 	wwwName = par("address").stdstringValue();
@@ -25,7 +27,7 @@ void ByteRangeClient::initialize()
 		wwwName += getParentModule()->getFullName();
 		wwwName += ".omnet.net";
 	}
-	BR_INFO << "Initializing HTTP server. Using WWW name " << wwwName << endl;
+	LOG_DEBUG_LN("Initializing HTTP Byte Range Client. Using WWW name " << wwwName);
 	port = par("port");
 		ASSERT(0 <= port && port < 65536);
 
@@ -90,8 +92,8 @@ void ByteRangeClient::connectCallback(int socket_id, int ret_status, void * myPt
 
 	if (TCPSocketAPI::isCallbackError(ret_status))
 	{
-		BR_INFO << "Error connecting on request "<<rri_ptr->request_id<<
-			" to request byte range "<<rri_ptr->range_id<<endl;
+		LOG_DEBUG_LN("Error connecting on request "<<rri_ptr->request_id<<
+			" to request byte range "<<rri_ptr->range_id);
 		delete rri_ptr;
 		_socketapi->close(socket_id);
 		//createSocket(range_id);
@@ -136,8 +138,8 @@ void ByteRangeClient::recvCallback(int socket_id, int ret_status, cPacket * msg,
 
 	if (TCPSocketAPI::isCallbackError(ret_status))
 	{
-		BR_INFO << "Error receiving on request "<<rri_ptr->request_id<<
-					" to request byte range "<<rri_ptr->range_id<<endl;
+		LOG_DEBUG_LN("Error receiving on request "<<rri_ptr->request_id<<
+					" to request byte range "<<rri_ptr->range_id);
 		delete rri_ptr;//id_ptr;
 		_socketapi->close(socket_id);
 		return;
@@ -154,36 +156,36 @@ void ByteRangeClient::recvCallback(int socket_id, int ret_status, cPacket * msg,
 
 	if (reply->result() != 206)
 	{
-		BR_INFO << "result code: "<<reply->result()<<"\nexpected: 206\n";
+		LOG_DEBUG_LN("result code: "<<reply->result()<<"\nexpected: 206");
 	}
 
 	int range_id = rri_ptr->range_id;
 
 	if (reply->firstBytePos() != range_id * _range_size)
 	{
-		BR_INFO << "first byte of returned message is: "<<reply->firstBytePos()<<
-			"\nexpected: "<<range_id*_range_size<<endl;
+		LOG_DEBUG_LN("first byte of returned message is: "<<reply->firstBytePos()<<
+			"\nexpected: "<<range_id*_range_size);
 	}
 
 	if (range_id == _num_ranges - 1)
 	{
 		if (reply->lastBytePos() != _file_size -1 )
 		{
-			BR_INFO << "last byte of returned message is: "<<reply->lastBytePos()<<
-				"\nexpected: "<<_file_size-1<<endl;
+			LOG_DEBUG_LN("last byte of returned message is: "<<reply->lastBytePos()<<
+				"\nexpected: "<<_file_size-1);
 		}
 	}
 	else if (reply->lastBytePos() !=  (range_id+1) * _range_size - 1 )
 	{
-		BR_INFO << "last byte of returned message is: "<<reply->lastBytePos()<<
-			"\nexpected: "<<(range_id+1)*_range_size-1<<endl;
+		LOG_DEBUG_LN("last byte of returned message is: "<<reply->lastBytePos()<<
+			"\nexpected: "<<(range_id+1)*_range_size-1);
 
 	}
 
 	if (reply->instanceLength() != _file_size)
 	{
-		BR_INFO << "instance length is: "<<reply->instanceLength()<<
-			"\nexpected: "<<_file_size<<endl;
+		LOG_DEBUG_LN("instance length is: "<<reply->instanceLength()<<
+			"\nexpected: "<<_file_size);
 	}
 
 	delete reply;
@@ -222,7 +224,7 @@ int ByteRangeClient::createSocket(int request_id, int range_id)
 	_controller->getServerInfo(par("serverwww").stringValue(), serverhostname, serverport);
 
 	//std::string servername = _controller->getServerModule(par("serverwww"))->getName();
-	BR_INFO << "extracted server name: "<<serverhostname<<endl;
+	LOG_DEBUG_LN("extracted server name: "<<serverhostname);
 	return _socketapi->makeActiveSocket(this, "", -1,
 			serverhostname, serverport /*par("serverport")*/, (void *) rri);
 }
@@ -271,7 +273,7 @@ void ByteRangeClient::sendBRRequest(int socket_id, int request_id, int range_id)
 	}
 
 	_num_requests_made++;
-	BR_INFO << "sending request "<<_num_requests_made<<endl;
+	LOG_DEBUG_LN("sending request "<<_num_requests_made);
 	_socketapi->send(socket_id, request);
 }
 

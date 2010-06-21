@@ -25,10 +25,10 @@
 #include <map>
 #include <set>
 #include <vector>
-enum SockType{SERVER,CLIENT,LISTENER};
+enum WebCacheSockType{SERVER,CLIENT,LISTENER};
 struct CACHE_SOCK_DS
 {
-	SockType sockType; // type of socket (server means socket where cache acts as a server, client means socket where cache acts as client)
+	WebCacheSockType sockType; // type of socket (server means socket where cache acts as a server, client means socket where cache acts as client)
 	TCPSocket *socket;					// A reference to the socket object.
 	MESSAGE_QUEUE_TYPE messageQueue; 	//> Queue of pending messages.
 	int pendingReplies;						// A counter for the number of outstanding replies.

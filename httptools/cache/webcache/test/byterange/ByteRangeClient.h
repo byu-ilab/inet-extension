@@ -23,8 +23,10 @@
 #include "httptLogdefs.h"
 #include "httptNodeBase.h"
 
-#include <iostream>
-#define BR_INFO std::cout
+#include "DebugDef.h"
+
+//#include <iostream>
+//#define BR_INFO std::cout
 
 struct RangeRequestInfo
 {
