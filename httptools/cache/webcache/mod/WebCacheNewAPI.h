@@ -29,6 +29,7 @@
 #include "simunits.h"
 #include "WebContentExtensionFilter.h"
 #include "DebugDef.h"
+#include "DeleteSafeDefs.h"
 #include "ActiveTCPSocketPool.h"
 
 #define ANY_US_SOCKET -1
@@ -96,6 +97,8 @@ protected:
 
 	WebContentExtensionFilter contentFilter;
 	bool shouldFilter;
+
+	map<int, ConnInfo *> socketConnInfoMap;
 
 	// Overridden from cSimpleModule
 	virtual void initialize();

@@ -37,6 +37,7 @@ protected:
 	httptController * controller;
 
 public:
+	virtual ~httptServerBase() {}
 	/** Overridden from cSimpleModule */
 	//@{
 	virtual void initialize();

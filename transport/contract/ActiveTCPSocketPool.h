@@ -11,7 +11,7 @@
 #include "TCPSocketAPI.h"
 
 #include "DebugDef.h"
-
+#include "DeleteSafeDefs.h"
 #include <set>
 #include <deque>
 #include <map>
@@ -39,7 +39,7 @@ protected:
 		cPacket * request;
 
 		RequestRecord(int id, cPacket * req) { request_id = id; request = req; }
-		virtual ~RequestRecord () {}
+		virtual ~RequestRecord () { request = NULL; }
 	};
 
 	typedef std::deque<RequestRecord *> RequestRecordQueue;
@@ -71,6 +71,8 @@ public:
 			simtime_t timeout, int max_load = UNLIMITED_LOAD, void * your_recv_info_ptr=NULL);
 
 	virtual ~ActiveTCPSocketPool();
+
+	virtual void * getMyRecvCallbackData();
 
 	// doesn't call the pool owner's connectCallback, the socket pool knows how to handle connections
 	virtual void connectCallback(int socket_id, int ret_status, void * myPtr);

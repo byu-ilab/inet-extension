@@ -32,6 +32,15 @@
 
 Define_Module(httptController);
 
+httptController::~httptController()
+{
+	deleteSafe(rdServerSelection);
+	// Clean up the server references
+	map<string, WEB_SERVER_ENTRY *>::iterator iter;
+	for(iter = webSiteList.begin(); iter != webSiteList.end(); ++iter)
+		deleteSafe((*iter).second);
+}
+
 void httptController::initialize(int stage)
 {
 	EV_DEBUG << "Initializing stage " << stage << endl;
@@ -92,9 +101,9 @@ void httptController::finish()
 		EV_SUMMARY << "Server " << (*iter).first << ": Access count " << en->accessCount << endl;
 	}
 
-	// Clean up the server references
-	for(iter = webSiteList.begin(); iter != webSiteList.end(); ++iter)
-		delete (*iter).second;
+//	// Clean up the server references
+//	for(iter = webSiteList.begin(); iter != webSiteList.end(); ++iter)
+//		delete (*iter).second;
 }
 
 void httptController::handleMessage(cMessage *msg)

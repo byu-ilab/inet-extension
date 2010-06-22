@@ -44,10 +44,10 @@ WebCacheNewAPI::WebCacheNewAPI()
 }
 
 WebCacheNewAPI::~WebCacheNewAPI() {
-	if (resourceCache)
-	{
-		delete resourceCache;
-	}
+
+	LOG_DEBUG_FUN_BEGIN("");
+
+	deleteSafe(resourceCache);
 
 //	if (upstreamSocketDescriptors)
 //	{
@@ -56,8 +56,17 @@ WebCacheNewAPI::~WebCacheNewAPI() {
 
 	if (upstreamSocketPool)
 	{
+		ConnInfo * ci = static_cast<ConnInfo *>(upstreamSocketPool->getMyRecvCallbackData());
+		deleteSafe(ci);
 		delete upstreamSocketPool;
 	}
+
+	for (map<int, ConnInfo *>::iterator itr = socketConnInfoMap.begin(); itr != socketConnInfoMap.end(); ++itr)
+	{ // can't use the tcp_api because it may already have been destroyed
+		deleteSafe(itr->second);
+	}
+
+	LOG_DEBUG_FUN_END("");
 }
 void WebCacheNewAPI::initialize() {
 	httptServerBase::initialize();
@@ -189,7 +198,7 @@ void WebCacheNewAPI::acceptCallback(int socket_id, int ret_status, void * yourPt
 
 	if (TCPSocketAPI::isCallbackError(ret_status))
 	{
-		// The acceptCallback shouldn'r return an error, if it does then the TCP socket API
+		// The acceptCallback shouldn't return an error, if it does then the TCP socket API
 		// changed
 		error("Unknown socket error: %s", TCPSocketAPI::getCallbackErrorName(ret_status).c_str());
 	}
@@ -199,6 +208,8 @@ void WebCacheNewAPI::acceptCallback(int socket_id, int ret_status, void * yourPt
 	ci->sockType =  WCST_SERVER;
 	//ci->ds_request = NULL;
 	ci->numPendingResponses = -1;
+
+	socketConnInfoMap[ret_status] = ci;
 
 	tcp_api->recv(ret_status, ci);
 	serverSocketsOpened++;
@@ -291,6 +302,7 @@ void WebCacheNewAPI::recvCallback(int socket_id, int ret_status,
 			}
 			// else there is no variable to update
 		}
+		//deleteSafe(socketConnInfoMap[socket_id]);
 		return;
 	}
 
@@ -430,12 +442,14 @@ void WebCacheNewAPI::processUpstreamResponse(int socket_id, cPacket * msg, /* TO
 		string uri = extractURLFromResponse(reply);
 		Resource * wr = new WebResource(uri,reply->getByteLength(), reply->contentType(), reply->payload());
 
+		bool added = false;
 		string ext = parseResourceName(uri)[2];
 		if (!shouldFilter || /* implicit shouldFilter && */ contentFilter.containsExtension(ext))
 		{
 			// verify that there is enough space to store the object
 			if (wr->getSize() <= resourceCache->getCapacity()) {
 			  resourceCache->add(wr);
+			  added = true;
 			  LOG_DEBUG("added: "<<wr->getID());
 			}
 		}
@@ -450,6 +464,7 @@ void WebCacheNewAPI::processUpstreamResponse(int socket_id, cPacket * msg, /* TO
 		}
 
 		pendingDownstreamRequests.removeAndDeleteRequestsForResource(wr->getID());
+		deleteSafeIf(wr, !added);
 	}
 	updateDisplay();
 

@@ -92,6 +92,7 @@ class httptNodeBase : public cSimpleModule
 
 	public:
 		httptNodeBase();
+		virtual ~httptNodeBase() {}
 
 		/** Return the WWW name of the node */
 		const char* getWWW();

@@ -41,9 +41,23 @@ ActiveTCPSocketPool::~ActiveTCPSocketPool()
 {
 	LOG_DEBUG_FUN_BEGIN("")
 	// DO NOT delete _socketapi or _pool_owner
+	for (_scb_itr = _sockets_cbdata.begin(); _scb_itr != _sockets_cbdata.end(); ++_scb_itr)
+	{
+		deleteSafe(_scb_itr->second);
+	}
+	for (RequestRecordQueue::iterator pr_itr = _pending_requests.begin(); pr_itr != _pending_requests.end(); ++pr_itr)
+	{
+		deleteSafe((*pr_itr)->request);
+		deleteSafe(*pr_itr);
+	}
 	LOG_DEBUG_FUN_END("")
 }
 
+
+void * ActiveTCPSocketPool::getMyRecvCallbackData()
+{
+	return _owner_recv_info_ptr;
+}
 
 void ActiveTCPSocketPool::connectCallback(int socket_id, int ret_status, void * myPtr)
 {
@@ -92,7 +106,7 @@ void ActiveTCPSocketPool::recvCallback(int socket_id, int ret_status, cPacket * 
 }
 
 // assumes responsibility for the cPacket
-int  ActiveTCPSocketPool::submitRequest(cPacket * request)
+int ActiveTCPSocketPool::submitRequest (cPacket * request)
 {
 	LOG_DEBUG_FUN_BEGIN("")
 
@@ -101,11 +115,11 @@ int  ActiveTCPSocketPool::submitRequest(cPacket * request)
 
 	RequestRecord * rr = new RequestRecord(_current_request_id++, request);
 	_pending_requests.push_back(rr);
-	updateLoad();
+	updateLoad(); // update load may delete the request record so don't return rr->request_id
 
 	LOG_DEBUG_FUN_END("")
 
-	return rr->request_id;
+	return (_current_request_id - 1); // updateLoad may delete the request record so don't return rr->request_id
 }
 
 void ActiveTCPSocketPool::updateLoad ()

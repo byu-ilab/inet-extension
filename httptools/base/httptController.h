@@ -41,7 +41,7 @@
 #include "httptUtils.h"
 #include "httptRandom.h"
 #include "httptEventMessages_m.h"
-
+#include "DeleteSafeDefs.h"
 using namespace std;
 
 // Definitions for the insertion of registered servers into the picklist.
@@ -120,6 +120,7 @@ class httptController : public cSimpleModule
 	/** @name public initerface used by server and browser objects in the simulation */
 	//@{
 	public:
+		virtual ~httptController();
 		/**
 		 * @brief Register a WWW server object.
 		 * Called by server objects at startup. @see httptServerBase.
