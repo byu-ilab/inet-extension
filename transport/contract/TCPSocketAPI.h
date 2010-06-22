@@ -19,6 +19,7 @@
 
 #include <omnetpp.h>
 #include "INETDefs.h"
+#include "DeleteSafeDefs.h"
 #include "httptLogdefs.h"
 
 #include "TCPSocket.h"

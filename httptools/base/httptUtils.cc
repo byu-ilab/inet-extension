@@ -295,9 +295,11 @@ string httpCodeAsString(int code)
 string getReverseString(const string & toreverse)
 {
 	string retstr = "";
-	for (int i = toreverse.size()-1; i >= 0; i--)
+	string::iterator itr = retstr.end();
+	//for (int i = toreverse.size()-1; i >= 0; i--)
+	for (int i = 0; i < (int) toreverse.size(); i++)
 	{
-		retstr += toreverse.at(i);
+		itr = retstr.insert(itr, toreverse.at(i));
 	}
 	return retstr;
 }

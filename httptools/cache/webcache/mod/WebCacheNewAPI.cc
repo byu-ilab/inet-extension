@@ -309,6 +309,8 @@ void WebCacheNewAPI::recvCallback(int socket_id, int ret_status,
 	ASSERT(msg);
 	/* End Error Checking and Handling */
 
+	take(msg);
+
 	if (data->sockType == WCST_CLIENT)
 	{
 		processUpstreamResponse(socket_id, msg, data);

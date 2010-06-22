@@ -399,6 +399,7 @@ void TCP::removeConnection(TCPConnection *conn)
     if (it!=usedEphemeralPorts.end())
         usedEphemeralPorts.erase(it);
 
+    /* DEBUG > */
     if (usedEphemeralPorts.size() != 0)
     {
 		LOG_DEBUG_WHERE
@@ -440,6 +441,7 @@ void TCP::removeConnection(TCPConnection *conn)
 			LOG_DEBUG_APPEND(std::endl);
 		}
     }
+    /* < DEBUG */
 
     delete conn;
 }

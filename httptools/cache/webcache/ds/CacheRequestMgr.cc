@@ -10,6 +10,11 @@ CacheRequestMgr::CacheRequestMgr() : requests() {
 }
 
 CacheRequestMgr::~CacheRequestMgr() {
+	list<RequestRecord>::iterator it;
+	for (it = requests.begin(); it != requests.end(); it++)
+	{
+		deleteSafe((*it).request_msg_ptr);
+	}
 }
 
 list<int> CacheRequestMgr::clientsAskingForResource(string uri) {

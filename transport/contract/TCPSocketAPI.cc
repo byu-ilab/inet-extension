@@ -33,6 +33,7 @@ TCPSocketAPI::~TCPSocketAPI() {
 	_socket_map.deleteSockets();
 	_pending_sockets_map.deleteSockets();
 
+	// delete the registered callbacks
 	std::map<int, CallbackData *>::iterator rcb_itr = _registered_callbacks.begin();
 	while (rcb_itr != _registered_callbacks.end())
 	{
@@ -40,12 +41,29 @@ TCPSocketAPI::~TCPSocketAPI() {
 		rcb_itr++;
 	}
 
+	// delete the timers
 	std::map<int, SocketTimeoutMsg *>::iterator tmr_itr = _timeout_timers.begin();
 	while (tmr_itr != _timeout_timers.end()) {
 		if (tmr_itr->second) {
 			cancelAndDelete(tmr_itr->second);
 		}
 		tmr_itr++;
+	}
+
+	// delete messages sitting in the reception buffers
+	std::map<int, std::deque<cPacket *> >::iterator rb_itr = _reception_buffers.begin();
+	std::deque<cPacket *>::iterator q_itr;
+	std::deque<cPacket *>::iterator qend_itr;
+	while (rb_itr != _reception_buffers.end())
+	{
+		q_itr = rb_itr->second.begin();
+		qend_itr = rb_itr->second.end();
+		while (q_itr != qend_itr)
+		{
+			deleteSafe((*q_itr));
+			q_itr++;
+		}
+		rb_itr++;
 	}
 }
 

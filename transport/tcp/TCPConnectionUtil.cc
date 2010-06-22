@@ -161,16 +161,16 @@ TCPConnection *TCPConnection::cloneListeningConnection()
     conn->receiveQueue = check_and_cast<TCPReceiveQueue *>(createOne(receiveQueueClass));
     conn->receiveQueue->setConnection(conn);
 
-    // create SACK retransmit queue
-    rexmitQueue = new TCPSACKRexmitQueue();
-    rexmitQueue->setConnection(this);
+    // create SACK retransmit queue // SHOULD BE conn->rexmitQueue NOT this->rexmitQueue - KPB
+    conn->rexmitQueue = new TCPSACKRexmitQueue();
+    conn->rexmitQueue->setConnection(conn);
 
     const char *tcpAlgorithmClass = tcpAlgorithm->getClassName();
     conn->tcpAlgorithm = check_and_cast<TCPAlgorithm *>(createOne(tcpAlgorithmClass));
     conn->tcpAlgorithm->setConnection(conn);
 
     conn->state = conn->tcpAlgorithm->getStateVariables();
-    configureStateVariables();
+    conn->configureStateVariables();
     conn->tcpAlgorithm->initialize();
 
     // put it into LISTEN, with our localAddr/localPort
