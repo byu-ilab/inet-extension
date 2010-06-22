@@ -68,8 +68,8 @@ protected:
 	// internals
 	Cache * resourceCache;
 	TCPSocketAPI * tcp_api;
-	string upstream_server; // NEEDED ?
-	int request_timeout; // NEEDED ?
+	string upstream_server;
+	int request_timeout;
 	CacheRequestMgr pendingDownstreamRequests;
 
 	ActiveTCPSocketPool * upstreamSocketPool;
