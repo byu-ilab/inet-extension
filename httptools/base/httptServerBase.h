@@ -28,6 +28,7 @@
 #include "httptNodeBase.h"
 #include "ModuleAccess.h"
 #include "DebugDef.h"
+#include "TCPPortRangeDefs.h"
 
 class httptServerBase: public httptNodeBase
 {
