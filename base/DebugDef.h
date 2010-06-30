@@ -28,6 +28,8 @@
 
 	#define LOG_DEBUG_FUN_BEGIN(STREAM_SEQ) LOG_DEBUG_LN(FUN_BEGIN<<" "<<STREAM_SEQ)
 	#define LOG_DEBUG_FUN_END(STREAM_SEQ) LOG_DEBUG_LN(FUN_END<<" "<<STREAM_SEQ)
+	#define PAUSE_DEBUG(STREAM_SEQ) LOG_DEBUG_WHERE LOG_DEBUG_APPEND(STREAM_SEQ) if (DEBUG_CLASS) { char dummy; cin >> dummy; }
+	#define DEBUG_BLOCK(CODE) if (DEBUG_CLASS) { CODE; }
 #else
 	//#define EnableDebugging(VALUE)
 	#define LOG_DEBUG(STREAM_SEQ)
@@ -36,6 +38,8 @@
 	#define LOG_DEBUG_LN(STREAM_SEQ)
 	#define LOG_DEBUG_FUN_BEGIN
 	#define LOG_DEBUG_FUN_END
+	#define PAUSE_DEBUG(STREAM_SEQ)
+	#define DEBUG_BLOCK(CODE)
 #endif /* DEBUG */
 
 #endif /* DEBUGDEF_H_ */

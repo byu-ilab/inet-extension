@@ -32,6 +32,10 @@ void DropTailQueue::initialize()
 
     outGate = gate("out");
 
+    recordTrendOnly = par("recordTrendOnly");
+    lastEvent = QE_DEQUEUE;
+    lastEventTime = 0;
+
     // configuration
     frameCapacity = par("frameCapacity");
 }
@@ -48,7 +52,21 @@ bool DropTailQueue::enqueue(cMessage *msg)
     else
     {
         queue.insert(msg);
-        qlenVec.record(queue.length());
+
+        if (recordTrendOnly)
+        {
+        	if ( lastEvent == QE_DEQUEUE )
+        	{
+        		qlenVec.recordWithTimestamp(lastEventTime, queue.length()-1);
+        	}
+        }
+        else
+        {
+        	qlenVec.record(queue.length());
+        }
+
+        lastEvent = QE_ENQUEUE;
+        lastEventTime = simTime();
         return false;
     }
 }
@@ -61,8 +79,20 @@ cMessage *DropTailQueue::dequeue()
    cMessage *pk = (cMessage *)queue.pop();
 
     // statistics
-    qlenVec.record(queue.length());
+   if (recordTrendOnly)
+   {
+	   if ( lastEvent == QE_ENQUEUE )
+	   {
+		   qlenVec.recordWithTimestamp(lastEventTime, queue.length()+1);
+	   }
+   }
+   else
+   {
+	   qlenVec.record(queue.length());
+   }
 
+    lastEvent = QE_DEQUEUE;
+    lastEventTime = simTime();
     return pk;
 }
 

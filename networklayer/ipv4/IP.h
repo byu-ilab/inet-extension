@@ -159,6 +159,11 @@ class INET_API IP : public QueueBase
     virtual void initialize();
 
     /**
+     * To record scalars
+     */
+    virtual void finish();
+
+    /**
      * Processing of IP datagrams. Called when a datagram reaches the front
      * of the queue.
      */

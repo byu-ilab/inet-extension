@@ -41,6 +41,9 @@ WebCacheNewAPI::WebCacheNewAPI()
 //	cur_socket = 0;
 //	upstreamSocketDescriptors = NULL;
 	upstreamSocketPool = NULL;
+
+	upstream_txdelay_histogram = NULL;
+	upstream_txdelay_vector = NULL;
 }
 
 WebCacheNewAPI::~WebCacheNewAPI() {
@@ -65,6 +68,9 @@ WebCacheNewAPI::~WebCacheNewAPI() {
 	{ // can't use the tcp_api because it may already have been destroyed
 		deleteSafe(itr->second);
 	}
+
+	deleteSafe(upstream_txdelay_histogram);
+	deleteSafe(upstream_txdelay_vector);
 
 	LOG_DEBUG_FUN_END("");
 }
@@ -114,6 +120,9 @@ void WebCacheNewAPI::initialize() {
 
 	updateDisplay();
 
+	upstream_txdelay_histogram = new cDoubleHistogram("cache.sockets.upstream.txdelay");
+	upstream_txdelay_vector = new cOutVector("cache.sockets.upstream.txdelay");
+
 	WATCH(serverSocketsOpened);
 	WATCH(serverSocketsBroken);
 
@@ -138,12 +147,12 @@ void WebCacheNewAPI::finish() {
 	recordScalar("server.sock.opened", serverSocketsOpened);
 	recordScalar("server.sock.broken", serverSocketsBroken);
 
-	// Report sockets related statistics.
-	EV_SUMMARY << "Client Sockets opened: " << clientSocketsOpened << endl;
-	EV_SUMMARY << "Client Broken connections: " << clientSocketsBroken << endl;
-	// Record the sockets related statistics
-	recordScalar("client.sock.opened", clientSocketsOpened);
-	recordScalar("client.sock.broken", clientSocketsBroken);
+//	// Report sockets related statistics.
+//	EV_SUMMARY << "Client Sockets opened: " << clientSocketsOpened << endl;
+//	EV_SUMMARY << "Client Broken connections: " << clientSocketsBroken << endl;
+//	// Record the sockets related statistics
+//	recordScalar("client.sock.opened", clientSocketsOpened);
+//	recordScalar("client.sock.broken", clientSocketsBroken);
 
 	// record cache-related statistics
 	EV_SUMMARY<<"Cache Hits: "<< hits<<endl;
@@ -160,6 +169,17 @@ void WebCacheNewAPI::finish() {
 	EV_SUMMARY<<"Current Used Cache Space: " << ( (double) usedSpace * convfactor ) << " " << unitstr <<endl;
 
 	EV_SUMMARY<<"Current Unused Cache Space: " << ((double) freeSpace * convfactor ) << " " << unitstr <<endl;
+
+	// for any outstanding requests
+	URIVarientSimTimeMap::iterator utx_itr;
+	for (utx_itr = upstream_txstart_map.begin(); utx_itr != upstream_txstart_map.end(); utx_itr++)
+	{
+		simtime_t txdelay = simTime() - utx_itr->second.time;
+		upstream_txdelay_vector->record(txdelay);
+		upstream_txdelay_histogram->collect(txdelay);
+	}
+
+	upstream_txdelay_histogram->record();
 }
 
 void WebCacheNewAPI::handleMessage(cMessage * msg) {
@@ -362,6 +382,7 @@ void WebCacheNewAPI::makeUpstreamRequest(httptRequestMessage * ds_request_templa
 		us_request->setLastBytePos(BRS_UNSPECIFIED);// just to be safe
 
 		//pendingUpstreamRequests.insert(us_request);
+		upstream_txstart_map[URIVarientKey(us_request->uri(), DEFAULT_URI_VARIENT)] = MsgIdTimestamp(DEFAULT_MSG_ID, simTime());
 		upstreamSocketPool->submitRequest(us_request);
 	}
 
@@ -438,6 +459,16 @@ void WebCacheNewAPI::processUpstreamResponse(int socket_id, cPacket * msg, /* TO
 		return;
 	}
 	logResponse(reply);
+
+	// calculate the txdelay
+	URIVarientSimTimeMap::iterator utx_itr = upstream_txstart_map.find(URIVarientKey(reply->relatedUri(), DEFAULT_URI_VARIENT));
+	if (utx_itr != upstream_txstart_map.end())
+	{
+		simtime_t txdelay = simTime() - utx_itr->second.time;
+		upstream_txdelay_vector->record(txdelay);
+		upstream_txdelay_histogram->collect(txdelay);
+		upstream_txstart_map.erase(utx_itr);
+	}
 
 	if (!isErrorMessage(reply)) {
 		// determine whether the resource should be/can be added to the cache
@@ -629,7 +660,7 @@ void WebCacheNewAPI::closeSocket(int socket_id) {
 	//std::set<int>::iterator i = sockets.find(socket_id);
 	ConnInfo * data = static_cast<ConnInfo *>(tcp_api->getMyPtr(socket_id));
 	if (data) {
-		delete data;
+		delete data; // TODO remove it from the map as well
 	}
 	pendingDownstreamRequests.removeAndDeleteAllRequestsOnInterface(socket_id);
 	tcp_api->close(socket_id);

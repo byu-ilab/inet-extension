@@ -22,6 +22,8 @@
 #include <omnetpp.h>
 #include "PassiveQueueBase.h"
 
+enum QUEUE_EVENT { QE_NONE, QE_ENQUEUE, QE_DEQUEUE };
+
 /**
  * Drop-front queue. See NED for more info.
  */
@@ -38,6 +40,10 @@ class INET_API DropTailQueue : public PassiveQueueBase
     // statistics
     cOutVector qlenVec;
     cOutVector dropVec;
+
+    bool recordTrendOnly;
+    QUEUE_EVENT lastEvent;
+    simtime_t lastEventTime;
 
   protected:
     virtual void initialize();
