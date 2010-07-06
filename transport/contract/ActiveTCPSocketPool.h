@@ -9,6 +9,7 @@
 #define ACTIVETCPSOCKETPOOL_H_
 
 #include "TCPSocketAPI.h"
+#include "TCPPortRangeDefs.h"
 
 #include "DebugDef.h"
 #include "DeleteSafeDefs.h"
@@ -17,6 +18,8 @@
 #include <map>
 
 #define UNLIMITED_LOAD -1
+#define MAX_LOAD INT32_MAX
+#define MIN_LOAD 1
 
 #define REQUEST_ID_MIN 1
 #define REQUEST_ID_MAX INT32_MAX
@@ -84,15 +87,15 @@ public:
 	// assumes responsibility for the cPacket
 	virtual int  submitRequest(cPacket * request);
 
-	// returns the request and doesn't send it as long as it is still pending, returns NULL otherwise
-	// Relinquishes responsibility for the cPacket
-	virtual cPacket * cancelPendingRequest(int reqest_id);
-
-	// returns true if the pending request was canceled and deleted
-	virtual bool cancelAndDeletePendingRequest(int request_id);
-
-	// returns true if there were pending requests that were canceled and deleted
-	virtual bool cancelAndDeleteAllPendingRequests();
+//	// returns the request and doesn't send it as long as it is still pending, returns NULL otherwise
+//	// Relinquishes responsibility for the cPacket
+//	virtual cPacket * cancelPendingRequest(int reqest_id);
+//
+//	// returns true if the pending request was canceled and deleted
+//	virtual bool cancelAndDeletePendingRequest(int request_id);
+//
+//	// returns true if there were pending requests that were canceled and deleted
+//	virtual bool cancelAndDeleteAllPendingRequests();
 
 	// returns the status of the request, will be RS_PENDING if the request is in the pending
 	// map, will be RS_SENT if the request has been sent, and will be RS_UNKNOWN if the
@@ -111,7 +114,7 @@ protected:
 	virtual bool setPendingResponsesOnSocket(int socket_id, int value);
 	virtual void incrementPendingResponsesOnSocket(int socket_id);
 	virtual void decrementPendingResponsesOnSocket(int socket_id);
-	virtual int getPendingResponsesOnSocket(int socket_id);
+	virtual int  getPendingResponsesOnSocket(int socket_id);
 	virtual void removePendingResponsesOnSocket(int socket_id);
 };
 

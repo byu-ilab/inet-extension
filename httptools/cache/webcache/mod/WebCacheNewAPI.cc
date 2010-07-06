@@ -113,7 +113,7 @@ void WebCacheNewAPI::initialize() {
 	us_cinfo->numPendingResponses = 0;
 
 	upstreamSocketPool = new ActiveTCPSocketPool(tcp_api, this, socket_cap,
-			szModuleName, connect_port, request_timeout, UNLIMITED_LOAD, (void *) us_cinfo);
+			szModuleName, connect_port, request_timeout, 1 /*UNLIMITED_LOAD*/, (void *) us_cinfo);
 
 	resend_request_threshold = par("resendRequestThreshold");
 		ASSERT(0 < resend_request_threshold);

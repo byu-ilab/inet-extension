@@ -26,10 +26,8 @@
 #include "IPAddressResolver.h"
 #include "WebResource.h"
 #include "CacheRequestMgr.h"
-#include "simunits.h"
+#include <omnetppextension.h>
 #include "WebContentExtensionFilter.h"
-#include "DebugDef.h"
-#include "DeleteSafeDefs.h"
 #include "ActiveTCPSocketPool.h"
 #include "URIVarientSimTimeMap.h"
 

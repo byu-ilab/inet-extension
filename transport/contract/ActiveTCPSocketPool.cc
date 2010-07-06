@@ -2,7 +2,7 @@
  * ActiveTCPSocketPool.cc
  *
  *  Created on: Jun 18, 2010
- *      Author: black
+ *      Author: Kevin Black
  */
 
 #include "ActiveTCPSocketPool.h"
@@ -15,12 +15,14 @@ ActiveTCPSocketPool::ActiveTCPSocketPool(TCPSocketAPI * socketapi, TCPSocketAPI:
 {
 	LOG_DEBUG_FUN_BEGIN("")
 
+	/* Check preconditions */
 	ASSERT(socketapi);
 	ASSERT(pool_owner);
 	ASSERT(0 < max_num_sockets);
 	ASSERT(!server_address.empty());
-	ASSERT(0 <= server_port && server_port <= 65535);
-	ASSERT(max_load == UNLIMITED_LOAD || ( 0 < max_load  && max_load < ( INT32_MAX / max_num_sockets ) ) );
+	ASSERT(TCP_PORT_RANGE_MIN <= server_port && server_port <= TCP_PORT_RANGE_MAX);
+	ASSERT(max_load == UNLIMITED_LOAD || ( MIN_LOAD <= max_load  && max_load < ( MAX_LOAD / max_num_sockets ) ) );
+	/* End check preconditions */
 
 	_socketapi = socketapi;
 	_pool_owner = pool_owner;
@@ -115,7 +117,7 @@ int ActiveTCPSocketPool::submitRequest (cPacket * request)
 
 	RequestRecord * rr = new RequestRecord(_current_request_id++, request);
 	_pending_requests.push_back(rr);
-	updateLoad(); // update load may delete the request record so don't return rr->request_id
+	updateLoad(); // updateLoad may delete the request record so don't return rr->request_id
 
 	LOG_DEBUG_FUN_END("")
 
@@ -132,6 +134,8 @@ void ActiveTCPSocketPool::updateLoad ()
 		return;
 	}
 	// else there is something to send
+
+	// find a socket to use
 
 	// compute the current target load and manage number of sockets
 	int used_load_slots = 0;
@@ -283,59 +287,59 @@ void ActiveTCPSocketPool::closeSocket(int socket_id)
 	LOG_DEBUG_FUN_END("")
 }
 
-// returns the request and doesn't send it as long as it is still pending, returns NULL otherwise
-// Relinquishes responsibility for the cPacket
-cPacket * ActiveTCPSocketPool::cancelPendingRequest(int request_id)
-{
-	LOG_DEBUG_FUN_BEGIN("")
-	RequestRecord * rr_ptr = findPendingRequestRecord(request_id);
-	if (rr_ptr)
-	{
-		LOG_DEBUG_FUN_END("")
-		return rr_ptr->request;
-	}
-	LOG_DEBUG_FUN_END("")
-	return NULL;
-}
-
-// returns true if the pending request was canceled and deleted
-bool ActiveTCPSocketPool::cancelAndDeletePendingRequest(int request_id)
-{
-	LOG_DEBUG_FUN_BEGIN("")
-	RequestRecord * rr_ptr = findPendingRequestRecord(request_id);
-
-	if (rr_ptr && rr_ptr->request)
-	{
-		delete rr_ptr->request;
-		LOG_DEBUG_FUN_END("")
-		return true;
-	}
-	LOG_DEBUG_FUN_END("")
-	return false;
-}
-
-// returns true if there were pending requests that were canceled and deleted
-bool ActiveTCPSocketPool::cancelAndDeleteAllPendingRequests()
-{
-	LOG_DEBUG_FUN_BEGIN("")
-
-	if (_pending_requests.empty())
-	{
-		LOG_DEBUG_FUN_END("")
-		return false;
-	}
-
-	RequestRecordQueue::iterator pr_itr = _pending_requests.begin();
-	while (pr_itr != _pending_requests.end())
-	{
-		if ( (*pr_itr)->request ) {
-			delete (*pr_itr)->request;
-		}
-		pr_itr = _pending_requests.erase(pr_itr);
-	}
-	LOG_DEBUG_FUN_END("")
-	return true;
-}
+//// returns the request and doesn't send it as long as it is still pending, returns NULL otherwise
+//// Relinquishes responsibility for the cPacket
+//cPacket * ActiveTCPSocketPool::cancelPendingRequest(int request_id)
+//{
+//	LOG_DEBUG_FUN_BEGIN("")
+//	RequestRecord * rr_ptr = findPendingRequestRecord(request_id);
+//	if (rr_ptr)
+//	{
+//		LOG_DEBUG_FUN_END("")
+//		return rr_ptr->request;
+//	}
+//	LOG_DEBUG_FUN_END("")
+//	return NULL;
+//}
+//
+//// returns true if the pending request was canceled and deleted
+//bool ActiveTCPSocketPool::cancelAndDeletePendingRequest(int request_id)
+//{
+//	LOG_DEBUG_FUN_BEGIN("")
+//	RequestRecord * rr_ptr = findPendingRequestRecord(request_id);
+//
+//	if (rr_ptr && rr_ptr->request)
+//	{
+//		delete rr_ptr->request;
+//		LOG_DEBUG_FUN_END("")
+//		return true;
+//	}
+//	LOG_DEBUG_FUN_END("")
+//	return false;
+//}
+//
+//// returns true if there were pending requests that were canceled and deleted
+//bool ActiveTCPSocketPool::cancelAndDeleteAllPendingRequests()
+//{
+//	LOG_DEBUG_FUN_BEGIN("")
+//
+//	if (_pending_requests.empty())
+//	{
+//		LOG_DEBUG_FUN_END("")
+//		return false;
+//	}
+//
+//	RequestRecordQueue::iterator pr_itr = _pending_requests.begin();
+//	while (pr_itr != _pending_requests.end())
+//	{
+//		if ( (*pr_itr)->request ) {
+//			delete (*pr_itr)->request;
+//		}
+//		pr_itr = _pending_requests.erase(pr_itr);
+//	}
+//	LOG_DEBUG_FUN_END("")
+//	return true;
+//}
 
 // returns the status of the request, will be RS_PENDING if the request is in the pending
 // map, will be RS_SENT if the request has been sent, and will be RS_UNKNOWN if the
