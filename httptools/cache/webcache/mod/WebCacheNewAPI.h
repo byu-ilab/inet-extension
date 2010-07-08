@@ -26,14 +26,16 @@
 #include "IPAddressResolver.h"
 #include "WebResource.h"
 #include "CacheRequestMgr.h"
-#include "simunits.h"
+#include <omnetppextension.h>
 #include "WebContentExtensionFilter.h"
-#include "DebugDef.h"
 #include "ActiveTCPSocketPool.h"
+#include "URIVarientSimTimeMap.h"
 
 #define ANY_US_SOCKET -1
 #define US_SOCK_NONE -1
 #define US_SOCK_CONNECTING -2
+#define DEFAULT_URI_VARIENT 1
+#define DEFAULT_MSG_ID 1
 // TODO or CONTINUE don't let requests be sent on the socket unless it is connected.
 // perhaps the best thing to do would be to make a pending upstream request queue
 // then when an upstream socket is connected it can get the first request from the
@@ -56,7 +58,7 @@ struct ConnInfo
 	int numPendingResponses;
 };
 
-class WebCacheNewAPI:
+class WebCacheNewAPI :
 	public httptServerBase, TCPSocketAPI::CallbackInterface {
 
 public:
@@ -67,8 +69,8 @@ protected:
 	// internals
 	Cache * resourceCache;
 	TCPSocketAPI * tcp_api;
-	string upstream_server; // NEEDED ?
-	int request_timeout; // NEEDED ?
+	string upstream_server;
+	int request_timeout;
 	CacheRequestMgr pendingDownstreamRequests;
 
 	ActiveTCPSocketPool * upstreamSocketPool;
@@ -98,6 +100,12 @@ protected:
 
 	WebContentExtensionFilter contentFilter;
 	bool shouldFilter;
+
+	map<int, ConnInfo *> socketConnInfoMap;
+
+	URIVarientSimTimeMap upstream_txstart_map;
+	cOutVector * upstream_txdelay_vector;
+	cDoubleHistogram * upstream_txdelay_histogram;
 
 	// Overridden from cSimpleModule
 	virtual void initialize();

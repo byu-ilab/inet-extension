@@ -59,6 +59,15 @@ void IP::initialize()
     WATCH(numForwarded);
 }
 
+void IP::finish()
+{
+	recordScalar("datagrams multicast", numMulticast);
+	recordScalar("datagrams locally delivered", numLocalDeliver);
+	recordScalar("datagrams dropped", numDropped);
+	recordScalar("datagrams unroutable", numUnroutable);
+	recordScalar("datagrams forwarded", numForwarded);
+}
+
 void IP::updateDisplayString()
 {
     char buf[80] = "";

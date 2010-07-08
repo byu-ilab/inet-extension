@@ -31,7 +31,7 @@ void httptServerBase::initialize()
 	}
 	EV_DEBUG << "Initializing HTTP server. Using WWW name " << wwwName << endl;
 	port = par("port");
-		ASSERT(0 <= port && port < 65536);
+		ASSERT(TCP_PORT_RANGE_MIN <= port && port <= TCP_PORT_RANGE_MAX);
 
 	httpProtocol = par("httpProtocol");
 		ASSERT(httpProtocol == HTTP_10 || httpProtocol == HTTP_11);

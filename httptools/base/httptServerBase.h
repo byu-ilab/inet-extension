@@ -28,6 +28,7 @@
 #include "httptNodeBase.h"
 #include "ModuleAccess.h"
 #include "DebugDef.h"
+#include "TCPPortRangeDefs.h"
 
 class httptServerBase: public httptNodeBase
 {
@@ -37,6 +38,7 @@ protected:
 	httptController * controller;
 
 public:
+	virtual ~httptServerBase() {}
 	/** Overridden from cSimpleModule */
 	//@{
 	virtual void initialize();

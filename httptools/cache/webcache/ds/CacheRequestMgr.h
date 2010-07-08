@@ -12,6 +12,7 @@
 #include <string>
 #include <iostream>
 #include "httptMessages_m.h"
+#include "DeleteSafeDefs.h"
 using namespace std;
 
 //typedef pair<int,string> RequestRecord;

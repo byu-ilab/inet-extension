@@ -21,6 +21,8 @@
 using namespace std;
 class Resource {
 public:
+	virtual ~Resource () {}
+
 	virtual string getID()=0;
 	virtual uint64 getSize()=0;
 	virtual int    getType()=0;

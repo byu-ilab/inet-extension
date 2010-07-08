@@ -21,6 +21,7 @@
 #include <vector>
 #include <omnetpp.h>
 #include "INETDefs.h"
+#include "DeleteSafeDefs.h"
 #include "MACAddress.h"
 #include "InterfaceToken.h"
 #include "NotifierConsts.h"
@@ -107,7 +108,7 @@ class INET_API InterfaceEntry : public cNamedObject
 
   public:
     InterfaceEntry();
-    virtual ~InterfaceEntry() {}
+    virtual ~InterfaceEntry();// {}
     virtual std::string info() const;
     virtual std::string detailedInfo() const;
 

@@ -19,10 +19,12 @@
 
 #include <omnetpp.h>
 #include "INETDefs.h"
+#include "DeleteSafeDefs.h"
 #include "httptLogdefs.h"
 
 #include "TCPSocket.h"
 #include "TCPSocketMap.h"
+#include "TCPPortRangeDefs.h"
 #include "IPAddressResolver.h"
 #include "SocketTimeoutMsg_m.h"
 #include "TCPCommand_m.h"

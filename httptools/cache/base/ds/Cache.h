@@ -22,6 +22,8 @@
 
 class Cache {
 public:
+	virtual ~Cache () {}
+
 	/**
 	 * Indicates whether the cache holds a resource.
 	 * Returns the resource if it exists, and NULL if it does not.
