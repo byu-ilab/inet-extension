@@ -493,7 +493,7 @@ void TCPSocketAPI::recv (int socket_id, void * yourPtr) {
 	}
 
 	CallbackData * cbdata = _registered_callbacks[socket_id];
-	if (cbdata->state != CB_S_WAIT)
+	if (cbdata->state != CB_S_WAIT && cbdata->state != CB_S_RECV )
 	{
 		signalCBStateInconsistentError(__fname, cbdata->state);
 	}

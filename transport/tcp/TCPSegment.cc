@@ -39,6 +39,8 @@ TCPSegment::~TCPSegment()
         payloadList.pop_front();
         dropAndDelete(msg);
     }
+   // simtime_t alive = simTime() - creation;
+    //cout<<alive<<endl;
 }
 
 void TCPSegment::parsimPack(cCommBuffer *b)

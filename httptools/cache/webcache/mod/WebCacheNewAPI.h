@@ -83,6 +83,8 @@ protected:
 
 	// stats
 	uint64 requestsReceived;
+	uint64 responsesSent;
+	uint64 responsesFromServer;
 
 	uint64 serverSocketsBroken;
 	uint64 serverSocketsOpened;

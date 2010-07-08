@@ -369,6 +369,7 @@ void TCP::addForkedConnection(TCPConnection *conn, TCPConnection *newConn, IPvXA
     key.connId = conn->connId;
     tcpAppConnMap.erase(key);
     key.connId = conn->connId = ev.getUniqueNumber();
+    conn->updateVectorNames(false);
     tcpAppConnMap[key] = conn;
 
     // ...and newConn will live on with the old connId

@@ -44,6 +44,7 @@ class INET_API VideoServer :
 		unsigned long socketsBroken;
 		unsigned long socketsOpened;
 		unsigned long requestsReceived;
+		unsigned long responsesSent;
 
 	/** @name cSimpleModule redefinitions */
 	//@{

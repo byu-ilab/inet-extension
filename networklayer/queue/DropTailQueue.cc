@@ -34,6 +34,8 @@ void DropTailQueue::initialize()
 
     // configuration
     frameCapacity = par("frameCapacity");
+    queueLength=0;
+    WATCH(queueLength);
 }
 
 bool DropTailQueue::enqueue(cMessage *msg)
@@ -48,6 +50,7 @@ bool DropTailQueue::enqueue(cMessage *msg)
     else
     {
         queue.insert(msg);
+        queueLength = queue.length();
         qlenVec.record(queue.length());
         return false;
     }
@@ -59,6 +62,7 @@ cMessage *DropTailQueue::dequeue()
         return NULL;
 
    cMessage *pk = (cMessage *)queue.pop();
+   queueLength = queue.length();
 
     // statistics
     qlenVec.record(queue.length());

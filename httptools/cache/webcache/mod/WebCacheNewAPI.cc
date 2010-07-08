@@ -27,6 +27,9 @@ WebCacheNewAPI::WebCacheNewAPI()
 	resourceCache = NULL;
 
 	requestsReceived = 0;
+	responsesSent=0;
+	responsesFromServer=0;
+
 	serverSocketsBroken=0;
 	serverSocketsOpened=0;
 
@@ -426,6 +429,9 @@ void WebCacheNewAPI::processUpstreamResponse(int socket_id, cPacket * msg, /* TO
 	logResponse(reply);
 
 	if (!isErrorMessage(reply)) {
+
+		responsesFromServer++;
+
 		// determine whether the resource should be/can be added to the cache
 		string uri = extractURLFromResponse(reply);
 		Resource * wr = new WebResource(uri,reply->getByteLength(), reply->contentType(), reply->payload());
@@ -468,6 +474,7 @@ void WebCacheNewAPI::respondToClientRequest(int socket_id, httptRequestMessage *
 	httptReplyMessage * reply = generateByteRangeReply(request, resource->getID(), resource->getSize(), resource->getType());
 	reply->setPayload(resource->getContent().c_str());
 	LOG_DEBUG("sent to client: "<<reply->heading()<<" for resource: "<<reply->relatedUri());
+	responsesSent++;
 	tcp_api->send(socket_id, reply);
 }
 
@@ -645,7 +652,7 @@ void WebCacheNewAPI::updateDisplay() {
 		string unitstr = getByteUnitAsString(unit);
 		double convfactor = getMultiplicativeFactor(unit_B, unittype_bibyte, unit, unittype_bibyte);
 		double capacity = (double) cacheSize * convfactor;
-		sprintf( buf, "Req: %ld\nHit: %.1f \% \nCap: %.1f %s \nFull: %.1f \%", requestsReceived,h,
+		sprintf( buf, "Rc/Rs: %ld/%ld\nHit: %.1f \% \nCap: %.1f %s \nFull: %.1f \%", requestsReceived,3*responsesFromServer,h,
 				capacity, unitstr.c_str(), full);
 		getParentModule()->getDisplayString().setTagArg("t",0,buf);
 	} /*else if (ev.isGUI() ){

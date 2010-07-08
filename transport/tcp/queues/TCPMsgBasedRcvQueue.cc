@@ -55,7 +55,6 @@ std::string TCPMsgBasedRcvQueue::info() const
 uint32 TCPMsgBasedRcvQueue::insertBytesFromSegment(TCPSegment *tcpseg)
 {
     TCPVirtualDataRcvQueue::insertBytesFromSegment(tcpseg);
-
     cPacket *msg;
     uint32 endSeqNo;
     while ((msg=tcpseg->removeFirstPayloadMessage(endSeqNo))!=NULL)

@@ -451,7 +451,7 @@ TCPEventCode TCPConnection::processSegment1stThru8th(TCPSegment *tcpseg)
 
                 uint32 old_usedRcvBuffer = state->usedRcvBuffer;
                 state->rcv_nxt = receiveQueue->insertBytesFromSegment(tcpseg);
-
+                cout<<"Inserting bytes at "<<simTime()<<" for connection "<<connId<<endl;
                 // out-of-order segment?
                 if (old_rcv_nxt==state->rcv_nxt)
                 {
@@ -504,6 +504,7 @@ TCPEventCode TCPConnection::processSegment1stThru8th(TCPSegment *tcpseg)
                         msg->setControlInfo(cmd);
                         EV << "\nsegment "<<num;
                         sendToApp(msg);
+                        cout<<"segment finished at "<<simTime()<<" for connection "<<connId<<endl; // TA
                     }
                     EV << "\nDone sending data to app";
 
