@@ -27,6 +27,8 @@ void PassiveQueueBase::initialize()
     WATCH(packetRequested);
 
     // statistics
+    qrcvdSignal = registerSignal(SIGNAME_QRCVD);
+    qdropSignal = registerSignal(SIGNAME_QDROP);
     numQueueReceived = 0;
     numQueueDropped = 0;
     WATCH(numQueueReceived);
@@ -35,7 +37,8 @@ void PassiveQueueBase::initialize()
 
 void PassiveQueueBase::handleMessage(cMessage *msg)
 {
-    numQueueReceived++;
+	numQueueReceived++;
+	emit(qrcvdSignal, (int) 1);
     if (packetRequested>0)
     {
         packetRequested--;
@@ -45,7 +48,10 @@ void PassiveQueueBase::handleMessage(cMessage *msg)
     {
         bool dropped = enqueue(msg);
         if (dropped)
-            numQueueDropped++;
+        {
+        	numQueueDropped++;
+        	emit(qdropSignal, (int) 1);
+        }
     }
 
     if (ev.isGUI())
@@ -73,7 +79,7 @@ void PassiveQueueBase::requestPacket()
 
 void PassiveQueueBase::finish()
 {
-    recordScalar("packets received by queue", numQueueReceived);
-    recordScalar("packets dropped by queue", numQueueDropped);
+//    recordScalar("packets received by queue", numQueueReceived);
+//    recordScalar("packets dropped by queue", numQueueDropped);
 }
 

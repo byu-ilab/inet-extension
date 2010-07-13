@@ -36,6 +36,10 @@ class INET_API PassiveQueueBase : public cSimpleModule, public IPassiveQueue
     int packetRequested;
 
     // statistics
+#define SIGNAME_QRCVD "qrcvd"
+#define SIGNAME_QDROP "qdrop"
+    simsignal_t qrcvdSignal;
+    simsignal_t qdropSignal;
     int numQueueReceived;
     int numQueueDropped;
 

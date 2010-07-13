@@ -27,14 +27,16 @@ void DropTailQueue::initialize()
     PassiveQueueBase::initialize();
     queue.setName("l2queue");
 
-    qlenVec.setName("queue length");
-    dropVec.setName("drops");
+//    qlenVec.setName("queue length");
+//    dropVec.setName("drops");
+    qlenSignal = registerSignal(SIGNAME_QLEN);
+    qdropSignal = registerSignal(SIGNAME_QDROP);
 
     outGate = gate("out");
 
-    recordTrendOnly = par("recordTrendOnly");
-    lastEvent = QE_DEQUEUE;
-    lastEventTime = 0;
+//    recordTrendOnly = par("recordTrendOnly");
+//    lastEvent = QE_DEQUEUE;
+//    lastEventTime = 0;
 
     // configuration
     frameCapacity = par("frameCapacity");
@@ -46,27 +48,30 @@ bool DropTailQueue::enqueue(cMessage *msg)
     {
         EV << "Queue full, dropping packet.\n";
         delete msg;
-        dropVec.record(1);
+//        emit(qdropSignal, (int) 1); // emitted by PassiveQueueBase
+//        dropVec.record(1);
         return true;
     }
     else
     {
         queue.insert(msg);
 
-        if (recordTrendOnly)
-        {
-        	if ( lastEvent == QE_DEQUEUE )
-        	{
-        		qlenVec.recordWithTimestamp(lastEventTime, queue.length()-1);
-        	}
-        }
-        else
-        {
-        	qlenVec.record(queue.length());
-        }
+        emit(qlenSignal, queue.length());
 
-        lastEvent = QE_ENQUEUE;
-        lastEventTime = simTime();
+//        if (recordTrendOnly)
+//        {
+//        	if ( lastEvent == QE_DEQUEUE )
+//        	{
+//        		qlenVec.recordWithTimestamp(lastEventTime, queue.length()-1);
+//        	}
+//        }
+//        else
+//        {
+//        	qlenVec.record(queue.length());
+//        }
+
+//        lastEvent = QE_ENQUEUE;
+//        lastEventTime = simTime();
         return false;
     }
 }
@@ -79,20 +84,21 @@ cMessage *DropTailQueue::dequeue()
    cMessage *pk = (cMessage *)queue.pop();
 
     // statistics
-   if (recordTrendOnly)
-   {
-	   if ( lastEvent == QE_ENQUEUE )
-	   {
-		   qlenVec.recordWithTimestamp(lastEventTime, queue.length()+1);
-	   }
-   }
-   else
-   {
-	   qlenVec.record(queue.length());
-   }
-
-    lastEvent = QE_DEQUEUE;
-    lastEventTime = simTime();
+   emit(qlenSignal, queue.length());
+//   if (recordTrendOnly)
+//   {
+//	   if ( lastEvent == QE_ENQUEUE )
+//	   {
+//		   qlenVec.recordWithTimestamp(lastEventTime, queue.length()+1);
+//	   }
+//   }
+//   else
+//   {
+//	   qlenVec.record(queue.length());
+//   }
+//
+//    lastEvent = QE_DEQUEUE;
+//    lastEventTime = simTime();
     return pk;
 }
 

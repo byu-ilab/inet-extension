@@ -25,6 +25,16 @@ package inet.networklayer.queue;
 simple DropTailQueue like OutputQueue
 {
     parameters:
+        // emits 1 as an int whenever a packet is received by the queue
+        @signal[qrcvd](type="int");
+        // emits the length of the queue every time a packet is enqueued or dequeued
+        @signal[qlen](type="int");
+        // emits 1 as an int every time a packet is dropped
+        @signal[qdrop](type="int");
+        @statistic[queuercvd](title="packets received by queue"; source="qrcvd"; record=count);
+        @statistic[queuelength](title="queue length"; source="qlen"; record=vector);
+        @statistic[queuedrops](title="packets dropped by queue"; source="qdrop"; record=vector,count);
+        
         int frameCapacity = default(100);
         bool recordTrendOnly = default(false);
         @display("i=block/queue");

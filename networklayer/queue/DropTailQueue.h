@@ -22,7 +22,7 @@
 #include <omnetpp.h>
 #include "PassiveQueueBase.h"
 
-enum QUEUE_EVENT { QE_NONE, QE_ENQUEUE, QE_DEQUEUE };
+//enum QUEUE_EVENT { QE_NONE, QE_ENQUEUE, QE_DEQUEUE };
 
 /**
  * Drop-front queue. See NED for more info.
@@ -38,12 +38,16 @@ class INET_API DropTailQueue : public PassiveQueueBase
     cGate *outGate;
 
     // statistics
-    cOutVector qlenVec;
-    cOutVector dropVec;
+#define SIGNAME_QLEN  "qlen"
+//#define SIGNAME_QDROP "qdrop"
+    simsignal_t qlenSignal;
+//    simsignal_t qdropSignal; // Recorded by PassiveQueueBase
+//    cOutVector qlenVec;
+//    cOutVector dropVec;
 
-    bool recordTrendOnly;
-    QUEUE_EVENT lastEvent;
-    simtime_t lastEventTime;
+//    bool recordTrendOnly;
+//    QUEUE_EVENT lastEvent;
+//    simtime_t lastEventTime;
 
   protected:
     virtual void initialize();
