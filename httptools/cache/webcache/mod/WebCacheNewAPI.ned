@@ -20,7 +20,20 @@ package inet.httptools.cache.webcache.mod;
 simple WebCacheNewAPI like TCPSocketAPIAppInterface, httptServerBaseInterface
 {
     parameters:
-        // From TCPSocketAPIApp
+        // emits the transmission delay every time a response is received
+        @signal[txdelay](type="double encapsulated in DynamicResultValue");
+        @statistic[usreqtxdelay](title="upstream request transmission delay";
+        	pattern="cache*.requests.upstream.txdelay"; source="txdelay"; record=dvector);
+        	
+        // emits the event sum/total when a request event occurs
+        @signal[reqevent](type="unsigned long encapsulated in DynamicResultValue");
+        @statistic[reqevents](title="request events"; pattern="cache*.requests.**"; source="reqevent"; record=dcount);
+        
+        // emits the event sum/total when a socket event occurs
+        @signal[sockevent](type="unsigned long encapsulated in DynamicResultValue");
+        @statistic[sockevents](title="socket events"; pattern="cache*.socket*.**"; source="sockevent"; record=dcount);
+        
+        // From TCPSocketAPIAppInterface
         	// the socketAPI name
         string socketapi;								// the socketAPI name.
         
@@ -44,7 +57,6 @@ simple WebCacheNewAPI like TCPSocketAPIAppInterface, httptServerBaseInterface
         
         // attributes specific to the WebCacheNewAPI
         	// cache capacity
-        	// TODO make it TB, need to change LRU to use long
         int cacheSize @unit(B)= default(10KB);  // capacity of cache in bytes
         	// domain name of upstream server/cache
         string serverwww = default(""); // domain name of upstream server/cache.

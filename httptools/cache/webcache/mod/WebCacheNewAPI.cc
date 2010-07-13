@@ -21,10 +21,20 @@ Define_Module(WebCacheNewAPI);
 #define DEBUG_CLASS false
 
 WebCacheNewAPI::WebCacheNewAPI()
-	: /*pendingUpstreamRequests(),*/ pendingDownstreamRequests(), contentFilter()
+	: /*pendingUpstreamRequests(),*/ pendingDownstreamRequests(), contentFilter(),
+	  downstreamRequestsReceived("cache.requests.downstream.received", (unsigned long) 0),
+	  hits("cache.requests.downstream.hits", (unsigned long) 0),
+	  misses("cache.requests.downstream.misses", (unsigned long) 0),
+	  serverSocketsBroken("cache.sockets.server.broken", (unsigned long) 0),
+	  serverSocketsOpened("cache.sockets.server.opened", (unsigned long) 0),
+	  upstreamRequestTxdelay("cache.requests.upstream.txdelay", SimTime(0) )
 {
 	shouldFilter = false;
 	resourceCache = NULL;
+//
+//	downstreamRequestsReceived = 0;
+//	serverSocketsBroken = 0;
+//	serverSocketsOpened = 0;
 
 	requestsReceived = 0;
 	responsesSent=0;
@@ -33,20 +43,20 @@ WebCacheNewAPI::WebCacheNewAPI()
 	serverSocketsBroken=0;
 	serverSocketsOpened=0;
 
-	clientSocketsBroken = 0;
-	clientSocketsOpened = 0;
-	currentSocketsOpenToServer = 0;
+//	clientSocketsBroken = 0;
+//	clientSocketsOpened = 0;
+//	currentSocketsOpenToServer = 0;
 
-	hits = 0;
-	misses = 0;
+//	hits = 0;
+//	misses = 0;
 
 //	socket_cap = 0;
 //	cur_socket = 0;
 //	upstreamSocketDescriptors = NULL;
 	upstreamSocketPool = NULL;
 
-	upstream_txdelay_histogram = NULL;
-	upstream_txdelay_vector = NULL;
+//	upstream_txdelay_histogram = NULL;
+//	upstream_txdelay_vector = NULL;
 }
 
 WebCacheNewAPI::~WebCacheNewAPI() {
@@ -72,8 +82,8 @@ WebCacheNewAPI::~WebCacheNewAPI() {
 		deleteSafe(itr->second);
 	}
 
-	deleteSafe(upstream_txdelay_histogram);
-	deleteSafe(upstream_txdelay_vector);
+//	deleteSafe(upstream_txdelay_histogram);
+//	deleteSafe(upstream_txdelay_vector);
 
 	LOG_DEBUG_FUN_END("");
 }
@@ -115,26 +125,32 @@ void WebCacheNewAPI::initialize() {
 	us_cinfo->sockType = WCST_CLIENT;
 	us_cinfo->numPendingResponses = 0;
 
+	int max_load = 1;
 	upstreamSocketPool = new ActiveTCPSocketPool(tcp_api, this, socket_cap,
-			szModuleName, connect_port, request_timeout, 1 /*UNLIMITED_LOAD*/, (void *) us_cinfo);
+			szModuleName, connect_port, request_timeout, max_load /*UNLIMITED_LOAD*/, (void *) us_cinfo);
 
 	resend_request_threshold = par("resendRequestThreshold");
 		ASSERT(0 < resend_request_threshold);
 
 	updateDisplay();
 
-	upstream_txdelay_histogram = new cDoubleHistogram("cache.sockets.upstream.txdelay");
-	upstream_txdelay_vector = new cOutVector("cache.sockets.upstream.txdelay");
+//	upstream_txdelay_histogram = new cDoubleHistogram("cache.sockets.upstream.txdelay");
+//	upstream_txdelay_vector = new cOutVector("cache.sockets.upstream.txdelay");
 
-	WATCH(serverSocketsOpened);
-	WATCH(serverSocketsBroken);
+//	WATCH(serverSocketsOpened);
+//	WATCH(serverSocketsBroken);
 
-	WATCH(clientSocketsOpened);
-	WATCH(clientSocketsBroken);
-	WATCH(currentSocketsOpenToServer);
+//	WATCH(clientSocketsOpened);
+//	WATCH(clientSocketsBroken);
+//	WATCH(currentSocketsOpenToServer);
 
-	WATCH(hits);
-	WATCH(misses);
+//	WATCH(hits);
+//	WATCH(misses);
+
+	// register signal names
+	reqev_signal = registerSignal(SIGNAME_REQEV);
+	servsockev_signal = registerSignal(SIGNAME_SOCKEV);
+	txdelay_signal = registerSignal(SIGNAME_TXDELAY);
 
 //	tcp_api = findTCPSocketAPI(this);
     cMessage * start = new cMessage("START",START);
@@ -143,12 +159,12 @@ void WebCacheNewAPI::initialize() {
 
 void WebCacheNewAPI::finish() {
 	// Report sockets related statistics.
-	EV_SUMMARY << "Server Sockets opened: " << serverSocketsOpened << endl;
-	EV_SUMMARY << "Server Broken connections: " << serverSocketsBroken << endl;
+	EV_SUMMARY << "Server Sockets opened: " << serverSocketsOpened.unsignedLongValue() << endl;
+	EV_SUMMARY << "Server Broken connections: " << serverSocketsBroken.unsignedLongValue() << endl;
 
 	// Record the sockets related statistics
-	recordScalar("server.sock.opened", serverSocketsOpened);
-	recordScalar("server.sock.broken", serverSocketsBroken);
+//	recordScalar("server.sock.opened", serverSocketsOpened);
+//	recordScalar("server.sock.broken", serverSocketsBroken);
 
 //	// Report sockets related statistics.
 //	EV_SUMMARY << "Client Sockets opened: " << clientSocketsOpened << endl;
@@ -158,8 +174,8 @@ void WebCacheNewAPI::finish() {
 //	recordScalar("client.sock.broken", clientSocketsBroken);
 
 	// record cache-related statistics
-	EV_SUMMARY<<"Cache Hits: "<< hits<<endl;
-	EV_SUMMARY<<"Cache Misses: "<< misses<<endl;
+//	EV_SUMMARY<<"Cache Hits: "<< hits<<endl;
+//	EV_SUMMARY<<"Cache Misses: "<< misses<<endl;
 
 	// figure out the units
 	uint64 totalSpace = resourceCache->getCapacity();
@@ -178,11 +194,13 @@ void WebCacheNewAPI::finish() {
 	for (utx_itr = upstream_txstart_map.begin(); utx_itr != upstream_txstart_map.end(); utx_itr++)
 	{
 		simtime_t txdelay = simTime() - utx_itr->second.time;
-		upstream_txdelay_vector->record(txdelay);
-		upstream_txdelay_histogram->collect(txdelay);
+		upstreamRequestTxdelay.setValue(txdelay);
+		emit(txdelay_signal, &upstreamRequestTxdelay);
+//		upstream_txdelay_vector->record(txdelay);
+//		upstream_txdelay_histogram->collect(txdelay);
 	}
 
-	upstream_txdelay_histogram->record();
+//	upstream_txdelay_histogram->record();
 }
 
 void WebCacheNewAPI::handleMessage(cMessage * msg) {
@@ -219,23 +237,22 @@ void WebCacheNewAPI::acceptCallback(int socket_id, int ret_status, void * yourPt
 	// signal next accept
 	tcp_api->accept(socket_id);
 
-	if (TCPSocketAPI::isCallbackError(ret_status))
-	{
-		// The acceptCallback shouldn't return an error, if it does then the TCP socket API
-		// changed
-		error("Unknown socket error: %s", TCPSocketAPI::getCallbackErrorName(ret_status).c_str());
-	}
+	// The acceptCallback shouldn't receive errors via ret_status, if it does then
+	// the TCP socket API changed
+	ASSERT(!TCPSocketAPI::isCallbackError(ret_status));
 
 	// read data from new socket
 	ConnInfo * ci = new ConnInfo();
 	ci->sockType =  WCST_SERVER;
 	//ci->ds_request = NULL;
-	ci->numPendingResponses = -1;
+	ci->numPendingResponses = -1; //XXX
 
 	socketConnInfoMap[ret_status] = ci;
 
 	tcp_api->recv(ret_status, ci);
-	serverSocketsOpened++;
+
+	serverSocketsOpened.increment();
+	emit(servsockev_signal, &serverSocketsOpened);
 }
 
 //// @param socket_id -- the id of the connected socket
@@ -289,16 +306,18 @@ void WebCacheNewAPI::recvCallback(int socket_id, int ret_status,
 	// recv is called on downstream connections to receive requests,
 	// and it is called on upstream connections to receive the replies for requests.
 
+	ASSERT(myPtr != NULL);
+
 	ConnInfo * data = static_cast<ConnInfo *>(myPtr);
 
 	/* Error Checking and Handling */
-	if (!data)
-	{
-		LOG_DEBUG("No watch data returned!");
-		closeSocket(socket_id);
-		// no statistics can be updated
-		return;
-	}
+//	if (!data)
+//	{
+//		LOG_DEBUG("No watch data returned!");
+//		closeSocket(socket_id);
+//		// no statistics can be updated
+//		return;
+//	}
 
 	// Use a switch statement if different actions should be taken for a given error
 	if (TCPSocketAPI::isCallbackError(ret_status))
@@ -314,8 +333,9 @@ void WebCacheNewAPI::recvCallback(int socket_id, int ret_status,
 		{
 			if (data->sockType ==  WCST_SERVER)
 			{
-				serverSocketsBroken++;
-				LOG_DEBUG("Server sockets broken so far: "<<serverSocketsBroken);
+				serverSocketsBroken.increment();
+				emit(servsockev_signal, &serverSocketsBroken);
+				LOG_DEBUG("Server sockets broken so far: "<<serverSocketsBroken.unsignedLongValue());
 			}
 			else if (data->sockType == WCST_CLIENT)
 			{
@@ -453,14 +473,14 @@ void WebCacheNewAPI::makeUpstreamRequest(httptRequestMessage * ds_request_templa
 // Receive a response containing move data from an upstream cache or server.
 void WebCacheNewAPI::processUpstreamResponse(int socket_id, cPacket * msg, /* TODO make cosnt ? */ ConnInfo * data) {
 
-	httptReplyMessage * reply = dynamic_cast<httptReplyMessage *>(msg);
+	httptReplyMessage * reply = check_and_cast<httptReplyMessage *>(msg); // used to be only a dynamic_cast
 
-	if (!reply) {
-		LOG_DEBUG("Message is not an httptReply!");
-		closeSocket(socket_id);
-		currentSocketsOpenToServer--;
-		return;
-	}
+//	if (!reply) {
+//		LOG_DEBUG("Message is not an httptReply!");
+//		closeSocket(socket_id);
+//		currentSocketsOpenToServer--;
+//		return;
+//	}
 	logResponse(reply);
 
 	// calculate the txdelay
@@ -468,8 +488,10 @@ void WebCacheNewAPI::processUpstreamResponse(int socket_id, cPacket * msg, /* TO
 	if (utx_itr != upstream_txstart_map.end())
 	{
 		simtime_t txdelay = simTime() - utx_itr->second.time;
-		upstream_txdelay_vector->record(txdelay);
-		upstream_txdelay_histogram->collect(txdelay);
+		upstreamRequestTxdelay.setValue(txdelay);
+		emit(txdelay_signal, &upstreamRequestTxdelay);
+//		upstream_txdelay_vector->record(txdelay);
+//		upstream_txdelay_histogram->collect(txdelay);
 		upstream_txstart_map.erase(utx_itr);
 	}
 
@@ -543,7 +565,8 @@ httptReplyMessage * WebCacheNewAPI::handleGetRequest(httptRequestMessage * msg, 
 void WebCacheNewAPI::processDownstreamRequest(int socket_id, cPacket * msg, ConnInfo * data) {
 
 	httptRequestMessage * request = check_and_cast<httptRequestMessage *>(msg);
-	requestsReceived++;
+	downstreamRequestsReceived.increment();
+	emit(reqev_signal, &downstreamRequestsReceived);
 	LOG_DEBUG("received request for: "<<request->heading());
 
 	string url = extractURLFromRequest(request);
@@ -552,12 +575,14 @@ void WebCacheNewAPI::processDownstreamRequest(int socket_id, cPacket * msg, Conn
 
 	if (wr_incache) {
 		resourceCache->renew(wr_incache); // update timestamp on LRU cache.
-		hits++;
+		hits.increment();
+		emit(reqev_signal, &hits);
 
 		respondToClientRequest(socket_id, request, wr_incache);
 		delete request;
 	} else {
-		misses++;
+		misses.increment();
+		emit(reqev_signal, &misses);
 		// request resource, only if it is the first request of its type
 		bool isNew = pendingDownstreamRequests.addRequest(socket_id, url, request);
 		if (isNew || resend_request_threshold < pendingDownstreamRequests.numberOfClientsAskingForResource(url)) {
@@ -687,8 +712,9 @@ void WebCacheNewAPI::updateDisplay() {
 		//httptServerBase::updateDisplay(); // DON'T do this if you don't want ugly arrows
 		char buf[1024];
 		float h = 0;
-		if (requestsReceived > 0)
-			h = 100.0 * hits / requestsReceived;
+		unsigned long dsReqsReceived = downstreamRequestsReceived.unsignedLongValue();
+		if (dsReqsReceived > 0)
+			h = 100.0 * hits.unsignedLongValue() / dsReqsReceived;
 		unsigned long cacheSize = resourceCache->getCapacity(); //(int)par("cacheSize");
 		unsigned long remaining = resourceCache->getRemainingCapacity();
 		float full =0;
@@ -700,7 +726,7 @@ void WebCacheNewAPI::updateDisplay() {
 		string unitstr = getByteUnitAsString(unit);
 		double convfactor = getMultiplicativeFactor(unit_B, unittype_bibyte, unit, unittype_bibyte);
 		double capacity = (double) cacheSize * convfactor;
-		sprintf( buf, "Rc/Rs: %ld/%ld\nHit: %.1f \% \nCap: %.1f %s \nFull: %.1f \%", requestsReceived,3*responsesFromServer,h,
+		sprintf( buf, "Req: %ld\nHit: %.1f \% \nCap: %.1f %s \nFull: %.1f \%", downstreamRequestsReceived.unsignedLongValue(),h,
 				capacity, unitstr.c_str(), full);
 		getParentModule()->getDisplayString().setTagArg("t",0,buf);
 	} /*else if (ev.isGUI() ){

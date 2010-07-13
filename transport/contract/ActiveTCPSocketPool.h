@@ -2,7 +2,7 @@
  * ActiveTCPSocketPool.h
  *
  *  Created on: Jun 18, 2010
- *      Author: black
+ *      Author: Kevin Black
  */
 
 #ifndef ACTIVETCPSOCKETPOOL_H_
@@ -30,6 +30,8 @@
 #define MASKED_SOCKET -1
 
 enum RequestStatus { RS_PENDING, RS_SENT, RS_UNKNOWN };
+
+/// TODO accept a pattern to emit signals on
 
 class ActiveTCPSocketPool : public TCPSocketAPI::CallbackInterface
 {

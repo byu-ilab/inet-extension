@@ -15,6 +15,7 @@
 
 #ifndef WEBCACHENEWAPI_H_
 #define WEBCACHENEWAPI_H_
+#include <omnetppextension.h>
 #include <stdlib.h>
 #include <map>
 #include <set>
@@ -26,20 +27,19 @@
 #include "IPAddressResolver.h"
 #include "WebResource.h"
 #include "CacheRequestMgr.h"
-#include <omnetppextension.h>
 #include "WebContentExtensionFilter.h"
 #include "ActiveTCPSocketPool.h"
 #include "URIVarientSimTimeMap.h"
+#include <dynamicresultrecorder.h>
+
+typedef DynamicResultValue ULongStat;
+
 
 #define ANY_US_SOCKET -1
 #define US_SOCK_NONE -1
 #define US_SOCK_CONNECTING -2
 #define DEFAULT_URI_VARIENT 1
 #define DEFAULT_MSG_ID 1
-// TODO or CONTINUE don't let requests be sent on the socket unless it is connected.
-// perhaps the best thing to do would be to make a pending upstream request queue
-// then when an upstream socket is connected it can get the first request from the
-// queue and make the request, that changes what ConnInfo has to store
 
 enum CacheMessageType { START = 1 };
 
@@ -76,6 +76,9 @@ protected:
 	ActiveTCPSocketPool * upstreamSocketPool;
 	int resend_request_threshold;
 
+	WebContentExtensionFilter contentFilter;
+	bool shouldFilter;
+
 //	cQueue pendingUpstreamRequests;
 //	int socket_cap;
 //	int cur_socket;
@@ -84,7 +87,7 @@ protected:
 //	int target_load_for_us_socket;
 
 	// stats
-	uint64 requestsReceived;
+	/*uint64 requestsReceived;
 	uint64 responsesSent;
 	uint64 responsesFromServer;
 
@@ -99,13 +102,49 @@ protected:
 	uint64 misses;
 
 	WebContentExtensionFilter contentFilter;
-	bool shouldFilter;
+	bool shouldFilter;*/
+	/** @name Signals */
+	//@{
+	// signal names defined in the ned file
+#define SIGNAME_REQEV   "reqevent"
+#define SIGNAME_SOCKEV  "sockevent"
+#define SIGNAME_TXDELAY "txdelay"
+
+	simsignal_t reqev_signal;		//< request event signal
+	simsignal_t servsockev_signal;	//< server socket event signal
+	simsignal_t txdelay_signal;		//< transmission delay signal
+	//@}
+
+	// statistical wrappers
+		// request events
+	ULongStat downstreamRequestsReceived;
+//	uint64 requestsReceived;
+
+	ULongStat hits;
+	ULongStat misses;
+	//	uint64 hits;
+	//	uint64 misses;
+
+		// server socket events
+	ULongStat serverSocketsBroken;
+	ULongStat serverSocketsOpened;
+//	uint64 serverSocketsBroken;
+//	uint64 serverSocketsOpened;
+
+//	ULongStat clientSocketsBroken;
+//	ULongStat clientSocketsOpened;
+//	uint64 clientSocketsBroken;
+//	uint64 clientSocketsOpened;
+//	uint64 currentSocketsOpenToServer;
+
+		// transmission delay events
+	DynamicResultValue upstreamRequestTxdelay;
 
 	map<int, ConnInfo *> socketConnInfoMap;
 
 	URIVarientSimTimeMap upstream_txstart_map;
-	cOutVector * upstream_txdelay_vector;
-	cDoubleHistogram * upstream_txdelay_histogram;
+//	cOutVector * upstream_txdelay_vector;
+//	cDoubleHistogram * upstream_txdelay_histogram;
 
 	// Overridden from cSimpleModule
 	virtual void initialize();
