@@ -40,8 +40,8 @@ WebCacheNewAPI::WebCacheNewAPI()
 	responsesSent=0;
 	responsesFromServer=0;
 
-	serverSocketsBroken=0;
-	serverSocketsOpened=0;
+	//serverSocketsBroken=0;
+	//serverSocketsOpened=0;
 
 //	clientSocketsBroken = 0;
 //	clientSocketsOpened = 0;

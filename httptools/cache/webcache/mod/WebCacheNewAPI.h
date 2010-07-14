@@ -87,18 +87,18 @@ protected:
 //	int target_load_for_us_socket;
 
 	// stats
-	/*uint64 requestsReceived;
+	uint64 requestsReceived;
 	uint64 responsesSent;
 	uint64 responsesFromServer;
 
-	uint64 serverSocketsBroken;
-	uint64 serverSocketsOpened;
+//	uint64 serverSocketsBroken;
+//	uint64 serverSocketsOpened;
 
 	uint64 clientSocketsBroken;
 	uint64 clientSocketsOpened;
 	uint64 currentSocketsOpenToServer;
 
-	uint64 hits;
+/*	uint64 hits;
 	uint64 misses;
 
 	WebContentExtensionFilter contentFilter;
