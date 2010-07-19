@@ -16,6 +16,9 @@
 
 #include "VideoServer.h"
 
+#define TRACK_HTTPT_MESSAGES false
+#define TRACK_HTTP_MESSAGES true
+
 Define_Module(VideoServer);
 
 void VideoServer::initialize()
@@ -39,6 +42,18 @@ void VideoServer::initialize()
 //		opp_error("videoServer::initialize(): no tcp socket api specified!");
 //	}
 //	tcp_api = check_and_cast<TCPSocketAPI *>(getParentModule()->getSubmodule(api_obj_name.c_str()));
+
+	if (TRACK_HTTPT_MESSAGES)
+	{
+		httptmsgev_signal = registerSignal("httptmsgevent");
+		subscribe(httptmsgev_signal, httptDuplicateMessageEventListener::getInstance());
+	}
+
+	if (TRACK_HTTP_MESSAGES)
+	{
+		httpmsgev_signal = registerSignal("httpmsgevent");
+		subscribe(httpmsgev_signal, httpDuplicateMessageEventListener::getInstance());
+	}
 
     cMessage * start = new cMessage("START",START);
     scheduleAt(simTime(),start);
@@ -118,9 +133,39 @@ void VideoServer::recvCallback(int socket_id, int ret_status,
 	// handleReceivedMessage will return an error reply if there is a problem with the
 	// message, otherwise control will get passed to handleGetRequest which will return
 	// NULL
+
+	// message should be an httptRequestMessage
+	if (TRACK_HTTPT_MESSAGES)
+	{
+		req_rcvd_datagram.setMessage(msg);
+		req_rcvd_datagram.setInterfaceID(socket_id);
+		emit(httptmsgev_signal, &req_rcvd_datagram);
+	}
+	if (TRACK_HTTP_MESSAGES)
+	{
+		http_msg_ev_datagram.setMessage(msg);
+		http_msg_ev_datagram.setInterfaceID(socket_id);
+		emit(httpmsgev_signal, &http_msg_ev_datagram);
+	}
+
 	httptReplyMessage * response = handleRequestMessage(msg);
-	delete msg;
+
+	// log before losing ownership of the response
+	if (TRACK_HTTPT_MESSAGES)
+	{
+		rep_sent_datagram.setReplyMessage(response);
+		rep_sent_datagram.setInterfaceID(socket_id);
+		emit(httptmsgev_signal, &rep_sent_datagram);
+	}
+	if (TRACK_HTTP_MESSAGES)
+	{
+		http_msg_ev_datagram.setMessage(response);
+		http_msg_ev_datagram.setInterfaceID(socket_id);
+		emit(httpmsgev_signal, &http_msg_ev_datagram);
+	}
+
 	tcp_api->send(socket_id, response);
+	delete msg;
 	tcp_api->recv(socket_id);
 
 	requestsReceived++;

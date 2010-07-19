@@ -94,6 +94,28 @@ void VideoTitleWorkloadGenerator::handleMessage(cMessage *msg)
 }
 
 
+void VideoTitleWorkloadGenerator::finish()
+{
+	EV << "Total titles: "<<_popularity_array_size<<endl;
+	EV << "rank title popularity requests"<<endl;
+	VideoTitlePopularity vtp_entry;
+	for (int i = 1; i < _popularity_array_size; i++)
+	{
+		vtp_entry = _popularity_array[i];
+		if (vtp_entry.times_requested > 0)
+		{
+			std::string video_title = getVideoTitleAsString(vtp_entry.video_title_id);
+			EV << i << "\t" << video_title << "\t";
+			if (video_title.size() < 8)
+			{
+				EV << "\t";
+			}
+			EV << vtp_entry.popularity << "\t" << vtp_entry.times_requested << endl;
+		}
+	}
+}
+
+
 int VideoTitleWorkloadGenerator::getNextVideoTitle()
 {
 	// get a probability [0,1]
@@ -377,6 +399,14 @@ void VideoTitleWorkloadGenerator::generateConfiguration()
 	}
 }
 
+#define NUM_URI_FIELDS_DEFAULT 4
+#define NUM_URI_FIELDS_WITH_BP 6
+#define TYPE_INDEX 0
+#define TITLE_INDEX 1
+#define QUALITY_LEVEL_INDEX 2
+#define SEGMENT_NUM_INDEX 3
+#define FIRST_BYTE_POS_INDEX 4
+#define LAST_BYTE_POS_INDEX 5
 
 /*
  * Returns the video segment data as contained in the uri.
@@ -384,19 +414,30 @@ void VideoTitleWorkloadGenerator::generateConfiguration()
  */
 struct VideoSegmentMetaData VideoTitleWorkloadGenerator::parseVideoSegmentUri(const std::string & uri)
 {
-	cStringTokenizer tokenizer = cStringTokenizer(uri.c_str(),"/");
+	cStringTokenizer tokenizer = cStringTokenizer(uri.c_str(),"/#,");
 	vector<string> res = tokenizer.asVector();
-	if (res.size() != 4)
+	if (res.size() != NUM_URI_FIELDS_DEFAULT && res.size() != NUM_URI_FIELDS_WITH_BP)
 	{
 		error("invalid uri provided");
 	}
 
-	// TODO check that res[2] and res[3] are numbers?
+	// TODO check that res[QAULITY_LEVEL_INDEX] and res[SEGMENT_NUM_INDEX] are numbers?
 	VideoSegmentMetaData vsmd;
-	vsmd.video_title = res[0];
-	vsmd.video_type = res[1];
-	vsmd.quality_level = atoi(res[2].c_str());
-	vsmd.segment_number = atoi(res[3].c_str());
+	vsmd.video_type = res[TYPE_INDEX];
+	vsmd.video_title = res[TITLE_INDEX];
+	vsmd.quality_level = atoi(res[QUALITY_LEVEL_INDEX].c_str());
+	vsmd.segment_number = atoi(res[SEGMENT_NUM_INDEX].c_str());
+
+	if (res.size() == NUM_URI_FIELDS_WITH_BP)
+	{
+		vsmd.first_byte_position = atoi(res[FIRST_BYTE_POS_INDEX].c_str());
+		vsmd.last_byte_position = atoi(res[LAST_BYTE_POS_INDEX].c_str());
+	}
+	else
+	{
+		vsmd.first_byte_position = -1;
+		vsmd.last_byte_position = -1;
+	}
 
 	return vsmd;
 }
@@ -405,12 +446,51 @@ struct VideoSegmentMetaData VideoTitleWorkloadGenerator::parseVideoSegmentUri(co
  * Simple creates a video segment uri according to the provided parameters.
  * Does not check if the parameters are valid.
  */
-std::string VideoTitleWorkloadGenerator::createVideoSegmentUri(const std::string & title,
-		const std::string & type, int quality_level, int segment_number)
+std::string VideoTitleWorkloadGenerator::createVideoSegmentUri(const std::string & type,
+		const std::string & title, int quality_level, int segment_number, int fbp, int lbp)
 {
+	if (0 <= lbp)
+	{
+		ASSERT( 0 <= fbp );
+	}
+
 	stringstream uri_template;
-	uri_template << "/" << type << "/" << title << "/" << quality_level << "/" <<
-		segment_number << ".vid";
+	int i = 0;
+	while (i < NUM_URI_FIELDS_WITH_BP)
+	{
+		//uri_template << "/";
+		switch(i)
+		{
+		case TYPE_INDEX: uri_template <<"/"<< type; break;
+		case TITLE_INDEX: uri_template <<"/"<< title; break;
+		case QUALITY_LEVEL_INDEX: uri_template <<"/"<< quality_level; break;
+		case SEGMENT_NUM_INDEX: uri_template <<"/"<< segment_number<<".vid"; break;
+		case FIRST_BYTE_POS_INDEX:
+			if (0 <= fbp)
+			{
+				uri_template << "#" << fbp;
+			}
+			break;
+		case LAST_BYTE_POS_INDEX:
+			if (0 <= fbp)
+			{
+				if (0 <= lbp)
+				{
+					uri_template << ","<<lbp;
+				}
+				else
+				{
+					uri_template << ","<<-1;
+				}
+			}
+			break;
+		default:
+			throw cRuntimeError("Check the #define constants used to generate URIs.");
+		}
+		i++;
+	}
+	//uri_template << ".vid";
+
 	return uri_template.str();
 
 //	Other Format possibility; requires #include <iomanip>
@@ -446,6 +526,8 @@ bool VideoTitleWorkloadGenerator::isVideoSegmentDataValid(const struct VideoSegm
 	{
 		return false;
 	}
+
+	//TODO check the byte ranges if they are kept long term
 
 	return true;
 }

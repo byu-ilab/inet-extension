@@ -26,8 +26,11 @@
 #include "ICMPv6Message_m.h"
 
 Define_Module(TCP);
-// EnableDebugging(true); // TODO
+
 #define DEBUG_CLASS false
+#define TRACK_MSG_EVENTS false
+#include "httpDuplicateMessageEventListener.h"
+#define SIGNAME_HTTPMSGEV "httpmsgevent"
 
 bool TCP::testing;
 bool TCP::logverbose;
@@ -69,6 +72,12 @@ void TCP::initialize()
     cModule *netw = simulation.getSystemModule();
     testing = netw->hasPar("testing") && netw->par("testing").boolValue();
     logverbose = !testing && netw->hasPar("logverbose") && netw->par("logverbose").boolValue();
+
+    if (TRACK_MSG_EVENTS)
+    {
+    	simsignal_t s = registerSignal(SIGNAME_HTTPMSGEV);
+    	subscribe(s, httpDuplicateMessageEventListener::getInstance());
+    }
 }
 
 TCP::~TCP()
@@ -125,6 +134,17 @@ void TCP::handleMessage(cMessage *msg)
 
             // process segment
             TCPConnection *conn = findConnForSegment(tcpseg, srcAddr, destAddr);
+
+            //emit a signal
+			if (TRACK_MSG_EVENTS)
+			{
+				simsignal_t s = registerSignal(SIGNAME_HTTPMSGEV);
+				cMessageEventDatagram d;
+				d.setMessage(tcpseg);
+				d.setInterfaceID(conn->connId);
+				emit(s, &d);
+			}
+
             if (conn)
             {
                 bool ret = conn->processTCPSegment(tcpseg, srcAddr, destAddr);

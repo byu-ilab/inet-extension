@@ -31,6 +31,7 @@
 #include "ActiveTCPSocketPool.h"
 #include "URIVarientSimTimeMap.h"
 #include <dynamicresultrecorder.h>
+#include <cMessageEventListener.h>
 
 typedef DynamicResultValue ULongStat;
 
@@ -96,7 +97,10 @@ protected:
 	simsignal_t reqev_signal;		//< request event signal
 	simsignal_t servsockev_signal;	//< server socket event signal
 	simsignal_t txdelay_signal;		//< transmission delay signal
+
+	simsignal_t http_msg_ev_signal;
 	//@}
+	cMessageEventDatagram http_msg_ev_datagram;
 
 	// statistical wrappers
 		// request events

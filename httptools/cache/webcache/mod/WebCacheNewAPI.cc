@@ -15,10 +15,14 @@
 
 #include "WebCacheNewAPI.h"
 #include "TCPSocketAPIAppUtils.h"
+#include "httpDuplicateMessageEventListener.h"
+#include <sstream>
 
 Define_Module(WebCacheNewAPI);
 
 #define DEBUG_CLASS false
+
+#define TRACK_HTTP_MESSAGES true
 
 WebCacheNewAPI::WebCacheNewAPI()
 	: /*pendingUpstreamRequests(),*/ pendingDownstreamRequests(), contentFilter(),
@@ -144,6 +148,12 @@ void WebCacheNewAPI::initialize() {
 	reqev_signal = registerSignal(SIGNAME_REQEV);
 	servsockev_signal = registerSignal(SIGNAME_SOCKEV);
 	txdelay_signal = registerSignal(SIGNAME_TXDELAY);
+
+	if (TRACK_HTTP_MESSAGES)
+	{
+		http_msg_ev_signal = registerSignal("httpmmsgevent");
+		subscribe(http_msg_ev_signal, httpDuplicateMessageEventListener::getInstance());
+	}
 
 //	tcp_api = findTCPSocketAPI(this);
     cMessage * start = new cMessage("START",START);
@@ -392,12 +402,26 @@ void WebCacheNewAPI::makeUpstreamRequest(httptRequestMessage * ds_request_templa
 	if (ds_request_template)
 	{
 		httptRequestMessage * us_request = ds_request_template->dup();
+		stringstream stringbuilder;
+		string uri = extractURLFromRequest(ds_request_template);
+		stringbuilder << "GET "<<uri<<" HTTP/1.1";
+		us_request->setName(stringbuilder.str().c_str());
+		us_request->setHeading(stringbuilder.str().c_str());
+		us_request->setUri(uri.c_str());
 		us_request->setTargetUrl(upstream_server.c_str());
 		us_request->setOriginatorUrl(wwwName.c_str());
 		us_request->setFirstBytePos(BRS_UNSPECIFIED);
 		us_request->setLastBytePos(BRS_UNSPECIFIED);// just to be safe
 
 		//pendingUpstreamRequests.insert(us_request);
+
+		if (TRACK_HTTP_MESSAGES)
+		{
+			http_msg_ev_datagram.setMessage(us_request);
+			http_msg_ev_datagram.setInterfaceID(-1);
+			emit(http_msg_ev_signal, &http_msg_ev_datagram);
+		}
+
 		upstream_txstart_map[URIVarientKey(us_request->uri(), DEFAULT_URI_VARIENT)] = MsgIdTimestamp(DEFAULT_MSG_ID, simTime());
 		upstreamSocketPool->submitRequest(us_request);
 	}
@@ -468,6 +492,13 @@ void WebCacheNewAPI::processUpstreamResponse(int socket_id, cPacket * msg, /* TO
 
 	httptReplyMessage * reply = check_and_cast<httptReplyMessage *>(msg); // used to be only a dynamic_cast
 
+	if (TRACK_HTTP_MESSAGES)
+	{
+		http_msg_ev_datagram.setMessage(msg);
+		http_msg_ev_datagram.setInterfaceID(socket_id);
+		emit(http_msg_ev_signal, &http_msg_ev_datagram);
+	}
+
 //	if (!reply) {
 //		LOG_DEBUG("Message is not an httptReply!");
 //		closeSocket(socket_id);
@@ -525,15 +556,25 @@ void WebCacheNewAPI::processUpstreamResponse(int socket_id, cPacket * msg, /* TO
 	delete reply;
 	//DO NOT delete data;
 }
+
 // TODO make pointers const?
 void WebCacheNewAPI::respondToClientRequest(int socket_id, httptRequestMessage * request, Resource * resource)
 {
-	ASSERT(request && resource);
+	ASSERT(request != NULL);
+	ASSERT(resource != NULL);
 
-	// checks if it is indeed a byte range request
+	// generateByteRangeReply handles regular requests as well byte range requests
 	httptReplyMessage * reply = generateByteRangeReply(request, resource->getID(), resource->getSize(), resource->getType());
 	reply->setPayload(resource->getContent().c_str());
 	LOG_DEBUG("sent to client: "<<reply->heading()<<" for resource: "<<reply->relatedUri());
+
+	if (TRACK_HTTP_MESSAGES)
+	{
+		http_msg_ev_datagram.setMessage(reply);
+		http_msg_ev_datagram.setInterfaceID(socket_id);
+		emit(http_msg_ev_signal, &http_msg_ev_datagram);
+	}
+
 	tcp_api->send(socket_id, reply);
 }
 
@@ -554,8 +595,17 @@ httptReplyMessage * WebCacheNewAPI::handleGetRequest(httptRequestMessage * msg, 
 void WebCacheNewAPI::processDownstreamRequest(int socket_id, cPacket * msg, ConnInfo * data) {
 
 	httptRequestMessage * request = check_and_cast<httptRequestMessage *>(msg);
+
 	downstreamRequestsReceived.increment();
 	emit(reqev_signal, &downstreamRequestsReceived);
+
+	if (TRACK_HTTP_MESSAGES)
+	{
+		http_msg_ev_datagram.setMessage(msg);
+		http_msg_ev_datagram.setInterfaceID(socket_id);
+		emit(http_msg_ev_signal, &http_msg_ev_datagram);
+	}
+
 	LOG_DEBUG("received request for: "<<request->heading());
 
 	string url = extractURLFromRequest(request);
@@ -622,6 +672,23 @@ string WebCacheNewAPI::extractURLFromRequest(httptRequestMessage * request) {
 	string r_msg = request->uri();
 	if (!r_msg.empty())
 	{
+		int erase_start_index = r_msg.find("#", 0);
+		if (erase_start_index != (int) string::npos)
+		{
+			try
+			{
+				r_msg = r_msg.erase(erase_start_index);
+			}
+			catch(exception & e)
+			{
+				cout << "Problem in extractURLFromRequest: "<<e.what()<<endl;
+				throw e;
+			}
+		}
+		if (r_msg == "/")
+		{
+			r_msg = "root";
+		}
 		return r_msg;
 	}
 
@@ -639,6 +706,23 @@ string WebCacheNewAPI::extractURLFromResponse(httptReplyMessage * response) {
 	string r_msg = response->relatedUri();
 	if (!r_msg.empty())
 	{
+		int erase_start_index = r_msg.find("#", 0);
+		if (erase_start_index != (int) string::npos)
+		{
+			try
+			{
+				r_msg = r_msg.erase(erase_start_index);
+			}
+			catch(exception & e)
+			{
+				cout << "Problem in extractURLFromResponse: "<<e.what()<<endl;
+				throw e;
+			}
+		}
+		if (r_msg == "/")
+		{
+			r_msg = "root";
+		}
 		return r_msg;
 	}
 

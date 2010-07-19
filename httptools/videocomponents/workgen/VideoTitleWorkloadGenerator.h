@@ -79,7 +79,7 @@ public:
 	 * Does not check if the parameters are valid.
 	 */
 	virtual std::string createVideoSegmentUri(const std::string & type, const std::string & title,
-			int quality_level, int segment_number);
+			int quality_level, int segment_number, int fbp = -1, int lbp = -1);
 
 	/*
 	 * Determines whether the provided video segment data is valid according to
@@ -99,6 +99,8 @@ protected:
     /// during the simulation if that was desired.  Or perhaps could handle
     /// requests to log information or results of some kind.
     virtual void handleMessage(cMessage *msg);
+
+    virtual void finish();
     //@}
 
     /** @name Protected VideoTitleWorkloadGenerator functions */

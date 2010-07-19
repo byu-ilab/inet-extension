@@ -26,6 +26,8 @@ struct VideoSegmentMetaData
 	std::string video_type;
 	int quality_level;
 	int segment_number;
+	int first_byte_position;
+	int last_byte_position;
 };
 
 #endif /* VIDEOTITLEMETADATA_H_ */

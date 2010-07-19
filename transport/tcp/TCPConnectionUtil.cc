@@ -30,6 +30,10 @@
 #include "TCPReceiveQueue.h"
 #include "TCPAlgorithm.h"
 
+#define TRACK_MSG_EVENTS true
+#define SIGNAME_HTTPMSGEV "httpmsgevents"
+#include "httpDuplicateMessageEventListener.h"
+
 //
 // helper functions
 //
@@ -204,6 +208,16 @@ void TCPConnection::sendToIP(TCPSegment *tcpseg)
 
     // TBD reuse next function for sending
 
+    //emit a signal
+	if (TRACK_MSG_EVENTS)
+	{
+		simsignal_t s = tcpMain->registerSignal(SIGNAME_HTTPMSGEV);
+		cMessageEventDatagram d;
+		d.setMessage(tcpseg);
+		d.setInterfaceID(connId);
+		tcpMain->emit(s, &d);
+	}
+
     if (!remoteAddr.isIPv6())
     {
         // send over IPv4
@@ -232,6 +246,16 @@ void TCPConnection::sendToIP(TCPSegment *tcpseg, IPvXAddress src, IPvXAddress de
 {
     tcpEV << "Sending: ";
     printSegmentBrief(tcpseg);
+
+    //emit a signal
+	if (TRACK_MSG_EVENTS)
+	{
+		simsignal_t s = check_and_cast<TCP *>(simulation.getContextModule())->registerSignal(SIGNAME_HTTPMSGEV);
+		cMessageEventDatagram d;
+		d.setMessage(tcpseg);
+		d.setInterfaceID(-1);
+		check_and_cast<TCP *>(simulation.getContextModule())->emit(s, &d);
+	}
 
     if (!dest.isIPv6())
     {

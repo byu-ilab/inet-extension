@@ -20,6 +20,11 @@
 #include <iostream>
 #include <sstream>
 
+#include "httpDuplicateMessageEventListener.h"
+
+#define TRACK_MSG_EVENTS true
+#define SIGNAME_HTTPMSGEV "httpmsgevent"
+
 Define_Module(TCPSocketAPI);
 
 TCPSocketAPI::TCPSocketAPI() : _socket_map(), /* _rejected_sockets_map(), */
@@ -78,6 +83,12 @@ void TCPSocketAPI::initialize()
 	EV_DEBUG << "initializing TCP socket API" << endl;
 
 	// other variables, scalars/vectors WATCH calls
+
+	if (TRACK_MSG_EVENTS)
+	{
+		_msg_ev_signal = registerSignal(SIGNAME_HTTPMSGEV);
+		subscribe(_msg_ev_signal, httpDuplicateMessageEventListener::getInstance());
+	}
 }
 
 void TCPSocketAPI::handleMessage(cMessage *msg)
@@ -474,13 +485,14 @@ void TCPSocketAPI::send (int socket_id, cMessage * msg) {
 		signalFunctionError(__fname, "the socket is not connected or connecting");
 	}
 
-	if (!msg)
+	if (msg == NULL)
 	{
 		signalFunctionError(__fname, "cannot send a NULL message");
 	}
 
 	// take ownership of the message
 	take(msg);
+
 	// remove any control info with the message
 	cObject * ctrl_info = msg->removeControlInfo();
 	if (ctrl_info) {
@@ -493,6 +505,14 @@ void TCPSocketAPI::send (int socket_id, cMessage * msg) {
 			cbdata->state != CB_S_CONNECT)
 	{
 		signalCBStateInconsistentError(__fname, cbdata->state);
+	}
+
+	//emit on the message event signal
+	if (TRACK_MSG_EVENTS)
+	{
+		_msg_ev_datagram.setMessage(msg);
+		_msg_ev_datagram.setInterfaceID(socket_id);
+		emit(_msg_ev_signal, &_msg_ev_datagram);
 	}
 
 	socket->send(msg);
@@ -511,7 +531,7 @@ void TCPSocketAPI::recv (int socket_id, void * yourPtr) {
 	}
 
 	CallbackData * cbdata = _registered_callbacks[socket_id];
-	if (cbdata->state != CB_S_WAIT && cbdata->state != CB_S_RECV)
+	if (cbdata->state != CB_S_WAIT)// && cbdata->state != CB_S_RECV)
 	{
 		signalCBStateInconsistentError(__fname, cbdata->state);
 	}
@@ -699,6 +719,14 @@ void TCPSocketAPI::socketDataArrived(int connId, void *yourPtr, cPacket *msg, bo
 	CallbackData * cbdata = static_cast<CallbackData *>(yourPtr);
 	void * userPtr = cbdata->userptr;
 	cbdata->userptr = NULL;
+
+	// emit a message event signal
+	if (TRACK_MSG_EVENTS)
+	{
+		_msg_ev_datagram.setMessage(msg);
+		_msg_ev_datagram.setInterfaceID(connId);
+		emit(_msg_ev_signal, &_msg_ev_datagram);
+	}
 
 	switch (cbdata->state)
 	{

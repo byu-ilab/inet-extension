@@ -29,6 +29,8 @@
 #include "SocketTimeoutMsg_m.h"
 #include "TCPCommand_m.h"
 
+#include <cMessageEventListener.h>
+
 #include <string.h>
 #include <map>
 #include <set>
@@ -357,6 +359,9 @@ public:
 	//@}
 
 protected:
+
+	simsignal_t _msg_ev_signal;
+	cMessageEventDatagram _msg_ev_datagram;
 
 	/** @name Instance Members */
 	//@{
