@@ -185,10 +185,6 @@ TCPConnection *TCPConnection::cloneListeningConnection()
 
 void TCPConnection::sendToIP(TCPSegment *tcpseg)
 {
-	if ( connId == 10 && simTime()  > 1.0) {
-		int * q  = NULL;
-	//	*q = 5;
-	}
     // record seq (only if we do send data) and ackno
     if (sndNxtVector && tcpseg->getPayloadLength()!=0)
         sndNxtVector->record(tcpseg->getSequenceNo());
