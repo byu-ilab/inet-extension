@@ -27,14 +27,16 @@
 
 Define_Module(TCPSocketAPI);
 
-TCPSocketAPI::TCPSocketAPI() : _socket_map(), /* _rejected_sockets_map(), */
+TCPSocketAPI::TCPSocketAPI()
+	: _socket_map(), /* _rejected_sockets_map(), */
 	_timeout_timers(), _resolver(), _bound_ports(),
 	_passive_callbacks(), _registered_callbacks(),
-	_pending_sockets_map(), _pending_connections(), _reception_buffers() {
-
+	_pending_sockets_map(), _pending_connections(), _reception_buffers()
+{
 }
 
-TCPSocketAPI::~TCPSocketAPI() {
+TCPSocketAPI::~TCPSocketAPI()
+{
 	_socket_map.deleteSockets();
 	_pending_sockets_map.deleteSockets();
 
@@ -48,8 +50,10 @@ TCPSocketAPI::~TCPSocketAPI() {
 
 	// delete the timers
 	std::map<int, SocketTimeoutMsg *>::iterator tmr_itr = _timeout_timers.begin();
-	while (tmr_itr != _timeout_timers.end()) {
-		if (tmr_itr->second) {
+	while (tmr_itr != _timeout_timers.end())
+	{
+		if (tmr_itr->second)
+		{
 			cancelAndDelete(tmr_itr->second);
 		}
 		tmr_itr++;
@@ -97,14 +101,16 @@ void TCPSocketAPI::handleMessage(cMessage *msg)
 
 	if (msg->isSelfMessage()) {
 		SocketTimeoutMsg * timer = static_cast<SocketTimeoutMsg *>(msg);
-		if (!timer) {
+		if (!timer)
+		{
 			signalFunctionError(__fname, "unknown self message received");
 		}
 
 		int socket_id = timer->getSocketId();
 		CallbackData * cbdata = _registered_callbacks[socket_id];
 
-		if (!cbdata) {
+		if (!cbdata)
+		{
 			signalFunctionError(__fname, "invalid socket id in timeout message");
 		}
 		EV_DEBUG << "Handle timeout on socket "<< socket_id << endl;
@@ -163,7 +169,8 @@ void TCPSocketAPI::handleMessage(cMessage *msg)
 	// update display?
 }
 
-void TCPSocketAPI::finish() {
+void TCPSocketAPI::finish()
+{
 	// record scalars
 }
 
@@ -288,12 +295,14 @@ std::string TCPSocketAPI::socketToString(int socket_id)
 	return socket->toString();
 }
 
-int TCPSocketAPI::socket (CallbackInterface * cbobj) {
+int TCPSocketAPI::socket (CallbackInterface * cbobj)
+{
 	Enter_Method_Silent();
 
 	std::string __fname = "socket";
 
-	if (!cbobj) {
+	if (!cbobj)
+	{
 		signalFunctionError(__fname, "no callback object specified");
 	}
 
@@ -312,7 +321,8 @@ int TCPSocketAPI::socket (CallbackInterface * cbobj) {
 
 
 void TCPSocketAPI::bind (int socket_id, std::string local_address,
-		int local_port) {
+		int local_port)
+{
 
 	Enter_Method_Silent();
 
@@ -353,7 +363,8 @@ void TCPSocketAPI::bind (int socket_id, std::string local_address,
 }
 
 void TCPSocketAPI::connect (int socket_id, std::string remote_address,
-		int remote_port, void * yourPtr) {
+		int remote_port, void * yourPtr)
+{
 
 	Enter_Method_Silent();
 
@@ -403,7 +414,8 @@ void TCPSocketAPI::listen (int socket_id, CallbackInterface * cbobj_for_accepted
 
 	CallbackData * cbdata = _registered_callbacks[socket_id];
 	cbdata->state = CB_S_WAIT;
-	if (cbobj_for_accepted) {
+	if (cbobj_for_accepted)
+	{
 		cbdata->cbobj_for_accepted = cbobj_for_accepted;
 	}
 
@@ -413,7 +425,8 @@ void TCPSocketAPI::listen (int socket_id, CallbackInterface * cbobj_for_accepted
 }
 
 int TCPSocketAPI::makeActiveSocket (CallbackInterface * cbobj, std::string local_address,
-			int local_port, std::string remote_address, int remote_port, void * yourPtr) {
+			int local_port, std::string remote_address, int remote_port, void * yourPtr)
+{
 	Enter_Method_Silent();
 	int id = socket(cbobj);
 	// check if bind should be skipped
@@ -426,7 +439,8 @@ int TCPSocketAPI::makeActiveSocket (CallbackInterface * cbobj, std::string local
 }
 
 int TCPSocketAPI::makePassiveSocket (CallbackInterface * cbobj, std::string local_address,
-			int local_port, CallbackInterface * cbobj_for_accepted) {
+			int local_port, CallbackInterface * cbobj_for_accepted)
+{
 	Enter_Method_Silent();
 	int id = socket(cbobj);
 	bind(id, local_address, local_port);
@@ -434,7 +448,8 @@ int TCPSocketAPI::makePassiveSocket (CallbackInterface * cbobj, std::string loca
 	return id;
 }
 
-void TCPSocketAPI::accept (int socket_id, void * yourPtr) {
+void TCPSocketAPI::accept (int socket_id, void * yourPtr)
+{
 
 	Enter_Method_Silent();
 	std::string __fname = "accept";
@@ -469,7 +484,8 @@ void TCPSocketAPI::accept (int socket_id, void * yourPtr) {
 
 // currently designed to allow sending even while the socket is
 // still connecting or the other end of the connection closed
-void TCPSocketAPI::send (int socket_id, cMessage * msg) {
+void TCPSocketAPI::send (int socket_id, cMessage * msg)
+{
 
 	Enter_Method_Silent();
 
@@ -519,7 +535,8 @@ void TCPSocketAPI::send (int socket_id, cMessage * msg) {
 	printFunctionNotice(__fname, socket->toString() + " sent message "+msg->getName());
 }
 
-void TCPSocketAPI::recv (int socket_id, void * yourPtr) {
+void TCPSocketAPI::recv (int socket_id, void * yourPtr)
+{
 
 	Enter_Method_Silent();
 
@@ -559,7 +576,8 @@ void TCPSocketAPI::recv (int socket_id, void * yourPtr) {
 	printFunctionNotice(__fname, socket->toString());
 }
 
-void TCPSocketAPI::setTimeout(int socket_id, simtime_t timeout_interval) {
+void TCPSocketAPI::setTimeout(int socket_id, simtime_t timeout_interval)
+{
 	Enter_Method_Silent();
 	std::string __fname = "setTimeout";
 
@@ -590,7 +608,8 @@ void TCPSocketAPI::setTimeout(int socket_id, simtime_t timeout_interval) {
 	}
 }
 
-bool TCPSocketAPI::removeTimeout(int socket_id) {
+bool TCPSocketAPI::removeTimeout(int socket_id)
+{
 	Enter_Method_Silent();
 	SocketTimeoutMsg * timer = _timeout_timers[socket_id];
 	if (!timer) {
@@ -602,7 +621,8 @@ bool TCPSocketAPI::removeTimeout(int socket_id) {
 	return true;
 }
 
-void * TCPSocketAPI::close (int socket_id) {
+void * TCPSocketAPI::close (int socket_id)
+{
 
 	Enter_Method_Silent();
 
@@ -642,7 +662,8 @@ void * TCPSocketAPI::close (int socket_id) {
 	return userPtr;
 }
 
-void * TCPSocketAPI::getMyPtr(int socket_id) {
+void * TCPSocketAPI::getMyPtr(int socket_id)
+{
 	std::map<int, CallbackData *>::iterator rcb_itr = _registered_callbacks.find(socket_id);
 	if (rcb_itr != _registered_callbacks.end()) {
 		return rcb_itr->second->userptr;
@@ -658,7 +679,8 @@ void TCPSocketAPI::socketEstablished(int connId, void *yourPtr)
 	// update scalar variables
 	std::string  __fname = "socketEstablished";
 
-	if ( yourPtr == NULL ) {
+	if ( yourPtr == NULL )
+	{
 		signalCBNullError(__fname);
 	}
 
@@ -670,7 +692,8 @@ void TCPSocketAPI::socketEstablished(int connId, void *yourPtr)
 	TCPSocket * socket = NULL;
 
 	// invoke the "connect" or "accept" callback
-	switch (cbdata->state){
+	switch (cbdata->state)
+	{
 	case CB_S_CONNECT:
 		socket = _socket_map.getSocket(connId);
 		_bound_ports[socket->getLocalPort()].insert(connId); // inserting into a SET
@@ -845,7 +868,8 @@ void TCPSocketAPI::socketFailure(int connId, void *yourPtr, int code)
 //==============================================================================
 // UTILITY FUNCTIONS
 
-void TCPSocketAPI::socketTimeout(int connId, void * yourPtr) {
+void TCPSocketAPI::socketTimeout(int connId, void * yourPtr)
+{
 
 	std::string __fname = "socketTimeout";
 
@@ -880,7 +904,8 @@ void TCPSocketAPI::socketTimeout(int connId, void * yourPtr) {
 	}
 }
 
-void TCPSocketAPI::cleanupSocket(int socket_id) {
+void TCPSocketAPI::cleanupSocket(int socket_id)
+{
 	freePort(socket_id);
 	removeTimeout(socket_id);
 	// delete the socket
@@ -900,8 +925,10 @@ void TCPSocketAPI::cleanupSocket(int socket_id) {
 
 	// delete callback data
 	std::map<int, CallbackData *>::iterator rcb_itr = _registered_callbacks.find(socket_id);
-	if (rcb_itr != _registered_callbacks.end()) {
-		if (rcb_itr->second) {
+	if (rcb_itr != _registered_callbacks.end())
+	{
+		if (rcb_itr->second)
+		{
 			delete rcb_itr->second;
 		}
 		_registered_callbacks.erase(rcb_itr);
@@ -934,16 +961,19 @@ void TCPSocketAPI::freePort(int socket_id)
 	}
 }
 
-TCPSocket * TCPSocketAPI::findAndCheckSocket(int socket_id, const std::string & fname) {
+TCPSocket * TCPSocketAPI::findAndCheckSocket(int socket_id, const std::string & fname)
+{
 	TCPSocket * socket = _socket_map.getSocket(socket_id);
-	if (!socket) {
+	if (!socket)
+	{
 		throw cRuntimeError(this, "%s: invalid socket id %d", fname.c_str(), socket_id);
 	}
 	return socket;
 }
 
 TCPSocketAPI::CallbackData * TCPSocketAPI::makeCallbackData(int socket_id,
-		CallbackInterface * cbobj, void * userptr, CALLBACK_STATE state) {
+		CallbackInterface * cbobj, void * userptr, CALLBACK_STATE state)
+{
 
 	CallbackData * cbdata = new CallbackData();
 	cbdata->socket_id = socket_id;
@@ -989,7 +1019,8 @@ TCPSocketAPI::CallbackData * TCPSocketAPI::getPassiveCallback(int port)
 	return pcb_itr->second;
 }
 
-std::string TCPSocketAPI::getStateName(CALLBACK_STATE state) {
+std::string TCPSocketAPI::getStateName(CALLBACK_STATE state)
+{
 	std::string name = "";
 	switch (state)
 	{
@@ -1020,30 +1051,36 @@ std::string TCPSocketAPI::getStateName(CALLBACK_STATE state) {
 	return name;
 }
 
-void TCPSocketAPI::signalFunctionError(const std::string & fname, const std::string & details) {
+void TCPSocketAPI::signalFunctionError(const std::string & fname, const std::string & details)
+{
 	std::string msg = fname + ": "+details;
 	throw cRuntimeError(this, msg.c_str());
 }
 
-void TCPSocketAPI::signalCBStateReceptionError(const std::string & fname, CALLBACK_STATE state) {
+void TCPSocketAPI::signalCBStateReceptionError(const std::string & fname, CALLBACK_STATE state)
+{
 	std::string details = getStateName(state) + " callback received";
 	signalFunctionError(fname, details);
 }
 
-void TCPSocketAPI::signalCBStateInconsistentError(const std::string & fname, CALLBACK_STATE state) {
+void TCPSocketAPI::signalCBStateInconsistentError(const std::string & fname, CALLBACK_STATE state)
+{
 	std::string details = "inconsistent state: "+getStateName(state);
 	signalFunctionError(fname, details);
 }
 
-void TCPSocketAPI::signalCBNullError(const std::string & fname) {
+void TCPSocketAPI::signalCBNullError(const std::string & fname)
+{
 	signalFunctionError(fname, "no callback data with socket");
 }
 
-void TCPSocketAPI::printFunctionNotice(const std::string & fname, const std::string & notice){
+void TCPSocketAPI::printFunctionNotice(const std::string & fname, const std::string & notice)
+{
 	EV_DEBUG << fname << ": " << notice << endl;
 }
 
-void TCPSocketAPI::printCBStateReceptionNotice(const std::string & fname, CALLBACK_STATE state) {
+void TCPSocketAPI::printCBStateReceptionNotice(const std::string & fname, CALLBACK_STATE state)
+{
 	std::string notice = getStateName(state) + " callback received";
 	printFunctionNotice(fname, notice);
 }
