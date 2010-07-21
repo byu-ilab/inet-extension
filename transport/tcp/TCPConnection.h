@@ -350,6 +350,7 @@ class INET_API TCPConnection
     cOutVector *tcpRcvQueueDropsVector;   // number of drops in tcp receive queue
 
   protected:
+    cOutVector * _createVector(const char *);
     /** @name FSM transitions: analysing events and executing state transitions */
     //@{
     /** Maps app command codes (msg kind of app command msgs) to TCP_E_xxx event codes */
@@ -435,6 +436,8 @@ class INET_API TCPConnection
     virtual TCPSegment addSacks(TCPSegment *tcpseg);
 
   public:
+    virtual void updateVectorNames(bool);
+      
     /** Utility: send ACK */
     virtual void sendAck();
 

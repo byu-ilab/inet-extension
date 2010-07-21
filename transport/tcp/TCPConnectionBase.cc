@@ -27,7 +27,7 @@
 #include "TCPReceiveQueue.h"
 #include "TCPAlgorithm.h"
 #include "TCPSACKRexmitQueue.h"
-
+#include <sstream>
 
 TCPStateVariables::TCPStateVariables()
 {
@@ -209,25 +209,79 @@ TCPConnection::TCPConnection(TCP *_mod, int _appGateIndex, int _connId)
     pipeVector = NULL;
     sackedBytesVector = NULL;
 
+	//updateVectorNames(true);
     if (getTcpMain()->recordStatistics)
     {
-        sndWndVector = new cOutVector("send window");
-        rcvWndVector = new cOutVector("receive window");
-        rcvAdvVector = new cOutVector("advertised window");
-        sndNxtVector = new cOutVector("sent seq");
-        sndAckVector = new cOutVector("sent ack");
-        rcvSeqVector = new cOutVector("rcvd seq");
-        rcvAckVector = new cOutVector("rcvd ack");
-        unackedVector = new cOutVector("unacked bytes");
-        dupAcksVector = new cOutVector("rcvd dupAcks");
-        pipeVector = new cOutVector("pipe");
-        sndSacksVector = new cOutVector("sent sacks");
-        rcvSacksVector = new cOutVector("rcvd sacks");
-        rcvOooSegVector = new cOutVector("rcvd oooseg");
-        sackedBytesVector = new cOutVector("rcvd sackedBytes");
-        tcpRcvQueueBytesVector = new cOutVector("tcpRcvQueueBytes");
-        tcpRcvQueueDropsVector = new cOutVector("tcpRcvQueueDrops");
+    	sndWndVector = new cOutVector("send window");
+    	rcvWndVector = new cOutVector("receive window");
+    	rcvAdvVector = new cOutVector("advertised window");
+    	sndNxtVector = new cOutVector("sent seq");
+    	sndAckVector = new cOutVector("sent ack");
+    	rcvSeqVector = new cOutVector("rcvd seq");
+    	rcvAckVector = new cOutVector("rcvd ack");
+    	unackedVector = new cOutVector("unacked bytes");
+    	dupAcksVector = new cOutVector("rcvd dupAcks");
+    	pipeVector = new cOutVector("pipe");
+    	sndSacksVector = new cOutVector("sent sacks");
+    	rcvSacksVector = new cOutVector("rcvd sacks");
+    	rcvOooSegVector = new cOutVector("rcvd oooseg");
+    	sackedBytesVector = new cOutVector("rcvd sackedBytes");
+    	tcpRcvQueueBytesVector = new cOutVector("tcpRcvQueueBytes");
+    	tcpRcvQueueDropsVector = new cOutVector("tcpRcvQueueDrops");
     }
+}
+
+void TCPConnection::updateVectorNames(bool firstTime) {
+    if (getTcpMain()->recordStatistics)
+    {
+        if (!firstTime) { // get rid of existing stuff if not first time.
+            delete sndWndVector;
+            delete rcvWndVector;
+            delete rcvAdvVector;
+            delete sndNxtVector;
+            delete sndAckVector;
+            delete rcvSeqVector;
+            delete rcvAckVector;
+            delete unackedVector;
+            delete dupAcksVector;
+            delete pipeVector;
+            delete sndSacksVector;
+            delete rcvSacksVector;
+            delete rcvOooSegVector;
+            delete sackedBytesVector;
+            delete tcpRcvQueueBytesVector;
+            delete tcpRcvQueueDropsVector;
+        }
+        sndWndVector = _createVector("send window");
+        rcvWndVector = _createVector("receive window");
+        rcvAdvVector = _createVector("advertised window");
+        sndNxtVector = _createVector("sent seq");
+        sndAckVector = _createVector("sent ack");
+        rcvSeqVector = _createVector("rcvd seq");
+        rcvAckVector = _createVector("rcvd ack");
+        unackedVector = _createVector("unacked bytes");
+        dupAcksVector = _createVector("rcvd dupAcks");
+        pipeVector = _createVector("pipe");
+        sndSacksVector = _createVector("sent sacks");
+        rcvSacksVector = _createVector("rcvd sacks");
+        rcvOooSegVector = _createVector("rcvd oooseg");
+        sackedBytesVector = _createVector("rcvd sackedBytes");
+        tcpRcvQueueBytesVector = _createVector("tcpRcvQueueBytes");
+        tcpRcvQueueDropsVector = _createVector("tcpRcvQueueDrops");
+    }
+}
+
+cOutVector * TCPConnection::_createVector(const char * name) {
+	  const char * str = NULL;
+	  std::string s = "";
+	  std::stringstream ss;
+	  ss<<connId<<"_"<<name;
+	  int l = strlen(ss.str().c_str());
+	  char * rstr = new char[l+1];
+	  memset(rstr,0,l + 1);
+	  strcpy(rstr, ss.str().c_str());
+	  str =rstr;
+	  return new cOutVector(str);
 }
 
 TCPConnection::~TCPConnection()
