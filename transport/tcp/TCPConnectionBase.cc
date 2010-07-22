@@ -209,26 +209,26 @@ TCPConnection::TCPConnection(TCP *_mod, int _appGateIndex, int _connId)
     pipeVector = NULL;
     sackedBytesVector = NULL;
 
-	//updateVectorNames(true);
-    if (getTcpMain()->recordStatistics)
-    {
-    	sndWndVector = new cOutVector("send window");
-    	rcvWndVector = new cOutVector("receive window");
-    	rcvAdvVector = new cOutVector("advertised window");
-    	sndNxtVector = new cOutVector("sent seq");
-    	sndAckVector = new cOutVector("sent ack");
-    	rcvSeqVector = new cOutVector("rcvd seq");
-    	rcvAckVector = new cOutVector("rcvd ack");
-    	unackedVector = new cOutVector("unacked bytes");
-    	dupAcksVector = new cOutVector("rcvd dupAcks");
-    	pipeVector = new cOutVector("pipe");
-    	sndSacksVector = new cOutVector("sent sacks");
-    	rcvSacksVector = new cOutVector("rcvd sacks");
-    	rcvOooSegVector = new cOutVector("rcvd oooseg");
-    	sackedBytesVector = new cOutVector("rcvd sackedBytes");
-    	tcpRcvQueueBytesVector = new cOutVector("tcpRcvQueueBytes");
-    	tcpRcvQueueDropsVector = new cOutVector("tcpRcvQueueDrops");
-    }
+	updateVectorNames(true);
+//    if (getTcpMain()->recordStatistics)
+//    {
+//    	sndWndVector = new cOutVector("send window");
+//    	rcvWndVector = new cOutVector("receive window");
+//    	rcvAdvVector = new cOutVector("advertised window");
+//    	sndNxtVector = new cOutVector("sent seq");
+//    	sndAckVector = new cOutVector("sent ack");
+//    	rcvSeqVector = new cOutVector("rcvd seq");
+//    	rcvAckVector = new cOutVector("rcvd ack");
+//    	unackedVector = new cOutVector("unacked bytes");
+//    	dupAcksVector = new cOutVector("rcvd dupAcks");
+//    	pipeVector = new cOutVector("pipe");
+//    	sndSacksVector = new cOutVector("sent sacks");
+//    	rcvSacksVector = new cOutVector("rcvd sacks");
+//    	rcvOooSegVector = new cOutVector("rcvd oooseg");
+//    	sackedBytesVector = new cOutVector("rcvd sackedBytes");
+//    	tcpRcvQueueBytesVector = new cOutVector("tcpRcvQueueBytes");
+//    	tcpRcvQueueDropsVector = new cOutVector("tcpRcvQueueDrops");
+//    }
 }
 
 void TCPConnection::updateVectorNames(bool firstTime) {

@@ -17,7 +17,7 @@
 
 //---
 
-void httptMessageEventListener::handleSignal(cComponent *source, simsignal_t signalID, cMessageEventDatagram * obj)
+void httptMessageEventObserver::handleSignal(cComponent *source, simsignal_t signalID, cMessageEventDatagram * obj)
 {
 	if (dynamic_cast<httptMessageEventDatagram *>(obj) == NULL)
 	{
@@ -49,116 +49,91 @@ void httptMessageEventListener::handleSignal(cComponent *source, simsignal_t sig
 
 //---
 
-Enforce_Single_Class_Instance_Definitions(httptDuplicateMessageEventListener)
+Enforce_Single_Class_Instance_Definitions(DuplicateHttptMessageEventObserver)
 
-httptDuplicateMessageEventListener::httptDuplicateMessageEventListener()
+DuplicateHttptMessageEventObserver::DuplicateHttptMessageEventObserver()
 {
-	_logfilename = "";
 	_duplicates = 0;
 }
 
-httptDuplicateMessageEventListener::~httptDuplicateMessageEventListener()
+DuplicateHttptMessageEventObserver::~DuplicateHttptMessageEventObserver()
 {
 }
 
-void httptDuplicateMessageEventListener::handleRequestMessageEvent(cComponent * source, httptRequestEventDatagram * datagram)
+void DuplicateHttptMessageEventObserver::handleRequestMessageEvent(cComponent * source, httptRequestEventDatagram * datagram)
 {
 	const httptRequestMessage * req_ptr = datagram->getRequestMessage();
-//	URIVarientKey key(req_ptr->uri(), datagram->getInterfaceID());
 	DuplicateRecordKey key(source->getFullPath(), req_ptr->uri(), datagram->getInterfaceID());
-	updateValue(_request_message_records, key);//, source->getFullPath());
+	updateValue(_request_message_records, key);
 }
 
-void httptDuplicateMessageEventListener::handleReplyMessageEvent(cComponent * source, httptReplyEventDatagram * datagram)
+void DuplicateHttptMessageEventObserver::handleReplyMessageEvent(cComponent * source, httptReplyEventDatagram * datagram)
 {
 	const httptReplyMessage * rep_ptr = datagram->getReplyMessage();
-	//URIVarientKey key(rep_ptr->relatedUri(), datagram->getInterfaceID());
 	DuplicateRecordKey key(source->getFullPath(), rep_ptr->relatedUri(), datagram->getInterfaceID());
-	updateValue(_reply_message_records, key);//, source->getFullPath());
+	updateValue(_reply_message_records, key);
 }
 
-/*
-#define WRITE_DUPLICATES_IN_MSG_RECORDS(WHERE,RECORDS,TYPE) \
-	for (URIVarientSimTimeMap::iterator r_itr = RECORDS.begin(); r_itr != RECORDS.end(); r_itr++) \
-	{ \
-		if (r_itr->second.message_id != 0) \
-		{ \
-			WHERE << TYPE <<": interface: "<<r_itr->first.getVarient()<< \
-					" uri: "<<r_itr->first.getURI()<< \
-					" duplicates: "<<r_itr->second.message_id<< \
-					" last time: "<<r_itr->second.time<<std::endl; \
-		} \
-	}
-*/
-#define WRITE_DUPLICATES_IN_MSG_RECORDS(WHERE,RECORDS,TYPE) \
-	for (DuplicateRecordMap::iterator r_itr = RECORDS.begin(); r_itr != RECORDS.end(); r_itr++) \
-	{ \
-		if (r_itr->second.size() > 1) \
-		{ \
-			WHERE << TYPE <<": source: "<<r_itr->first.getSource()<<" interface: "<<r_itr->first.getInterface()<< \
-					" uri: "<<r_itr->first.getName()<< \
-					" duplicates: "<<(r_itr->second.size() - 1)<< \
-					"\n\ttimes: "; \
-			std::list<SimTime>::iterator et_end_itr = r_itr->second.end(); \
-			for (std::list<SimTime>::iterator et_itr = r_itr->second.begin(); \
-				et_itr != et_end_itr; et_itr++) { WHERE << (*et_itr) << " "; } \
-			WHERE << std::endl; \
-		} \
-	}
-
-#define WRITE_LOG(WHERE) \
-	WHERE << "Detected duplicates: "<<_duplicates<<endl; \
-	WRITE_DUPLICATES_IN_MSG_RECORDS(WHERE,_request_message_records,"REQ") \
-	WRITE_DUPLICATES_IN_MSG_RECORDS(WHERE,_reply_message_records,"REP")
-
-void httptDuplicateMessageEventListener::finish(cComponent *component, simsignal_t signalID)
-{
-	if (!_logfilename.empty())
-	{
-		std::ofstream logfile(_logfilename.c_str());
-		if (!logfile.fail() && !logfile.bad())
-		{
-			WRITE_LOG(logfile);
-			return;
-		}
-	}
-	// Print out to the environment
-	WRITE_LOG(EV);
-}
-
-#undef WRITE_LOG
-#undef WRITE_DUPLICATES_IN_MSG_RECORDS
-
-void httptDuplicateMessageEventListener::updateValue(DuplicateRecordMap & records,
-		/*URIVarientSimTimeMap & records,*/ DuplicateRecordKey & key)
+void DuplicateHttptMessageEventObserver::updateValue(DuplicateRecordMap & records, DuplicateRecordKey & key)
 {
 	DuplicateRecordMap::iterator r_itr = records.find(key);
 	if (r_itr != records.end())
 	{
-//		r_itr->second.event_times.push_back(simTime());
 		r_itr->second.push_back(simTime());
 		_duplicates++;
 	}
 	else
 	{
-		DuplicateMessageEvents entry;//(source_name);
-		//entry.event_times.push_back(simTime());
+		DuplicateMessageEvents entry;
 		entry.push_back(simTime());
 		records[key] = entry;
 	}
-	/*
-	URIVarientSimTimeMap::iterator r_itr = records.find(key);
-	if (r_itr != records.end())
+}
+
+void DuplicateHttptMessageEventObserver::finish(cComponent *component, simsignal_t signalID)
+{
+	if (!getLogFilename().empty())
 	{
-		(r_itr->second.message_id)++;
-		r_itr->second.time = simTime();
-		_duplicates++;
+		std::ofstream logfile(getLogFilename().c_str());
+		if (!logfile.fail() && !logfile.bad())
+		{
+			printReport(logfile);
+			return;
+		}
 	}
-	else
+
+	// Print out to the environment
+	printReport(ev.getOStream());
+}
+
+void DuplicateHttptMessageEventObserver::printReport(std::ostream & out_stream)
+{
+	out_stream << "Detected duplicates: "<<_duplicates<<endl;
+	printDuplicateRecords(out_stream, _request_message_records, "REQ");
+	printDuplicateRecords(out_stream, _reply_message_records, "REP");
+}
+
+void DuplicateHttptMessageEventObserver::printDuplicateRecords(
+		std::ostream & out_stream, DuplicateRecordMap & records, const std::string & prefix)
+{
+	for (DuplicateRecordMap::const_iterator r_itr = records.begin(); r_itr != records.end(); r_itr++)
 	{
-		records[key] = MsgIdTimestamp(0, simTime());
+		if (1 < r_itr->second.size())
+		{
+			out_stream << prefix <<": source: "<<r_itr->first.getSource()<<
+					" interface: "<<r_itr->first.getInterface()<<
+					" uri: "<<r_itr->first.getName()<<
+					" duplicates: "<<(r_itr->second.size() - 1)<<
+					"\n\ttimes: ";
+			std::list<SimTime>::const_iterator et_end_itr = r_itr->second.end();
+			for (std::list<SimTime>::const_iterator et_itr = r_itr->second.begin();
+				et_itr != et_end_itr; et_itr++)
+			{
+				out_stream << (*et_itr) << " ";
+			}
+			out_stream << std::endl;
+		}
 	}
-	*/
 }
 
 //---

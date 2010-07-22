@@ -33,6 +33,9 @@ simple WebCacheNewAPI like TCPSocketAPIAppInterface, httptServerBaseInterface
         @signal[sockevent](type="unsigned long encapsulated in DynamicResultValue");
         @statistic[sockevents](title="socket events"; pattern="cache*.socket*.**"; source="sockevent"; record=dcount);
         
+        @signal[msgevent](type="cMessageEventDatagram objects");
+        bool shouldTrackDuplicateMessageNames = default(false);
+        
         // From TCPSocketAPIAppInterface
         	// the socketAPI name
         string socketapi;								// the socketAPI name.

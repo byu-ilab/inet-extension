@@ -40,7 +40,7 @@
 
 // From omnetpp extension
 #include <DeleteSafeDefs.h>
-#include <cMessageEventListener.h>
+#include <cmessageeventobserver.h>
 
 // From standard C++ libraries
 #include <string.h>
@@ -250,7 +250,7 @@ NOTES TO CONTRIBUTOR:
 
   	@see TCPSocket, TCPSocketMap, IPAddressResolver, SocketTimeoutMsg, TCPCommand
  */
-class INET_API TCPSocketAPI : public cSimpleModule, public noncopyable, private TCPSocket::CallbackInterface
+class INET_API TCPSocketAPI : public cSimpleModule, private TCPSocket::CallbackInterface // already noncopyable
 {
 public:
 
@@ -397,11 +397,11 @@ protected:
 	/** @name Instance members */
 	//@{
 
-	/** Signal for tracking message events when messages are sent or received. */
-	simsignal_t _msg_ev_signal;
+	/** Indicates whether signals to map tcp connections should be emitted. */
+	bool _should_map_tcp_connections;
 
-	/** Datagram to describe message events which is emitted on the _msg_ev_signal. */
-	cMessageEventDatagram _msg_ev_datagram;
+	/** Indicates whether signals to track duplicate message name events should be emitted. */
+	bool _should_track_dup_msg_names;
 
 	/** Tracks the current TCPSocket objects. */
 	TCPSocketMap _socket_map;
@@ -936,6 +936,12 @@ protected:
 
 	/** Prints a notice on the simulation environment output. */
 	virtual void printCBStateReceptionNotice(const std::string & fname, CALLBACK_STATE state);
+
+	/** Emits tcp connection information from the given socket. */
+	virtual void emitTCPConnInfo(TCPSocket * socket);
+
+	/** Emits message event information given the socket descriptor and message. */
+	virtual void emitMessageEvent(const cMessage * msg, int interface_id);
 
 	//@}
 };

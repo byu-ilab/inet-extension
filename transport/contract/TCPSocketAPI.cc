@@ -20,10 +20,8 @@
 #include <iostream>
 #include <sstream>
 
-#include "httpDuplicateMessageEventListener.h"
-
-#define TRACK_MSG_EVENTS true
-#define SIGNAME_HTTPMSGEV "httpmsgevent"
+#include "DuplicateHttpMessageNameObserver.h"
+#include "TCPConnInfoMappingObserver.h"
 
 Define_Module(TCPSocketAPI);
 
@@ -88,10 +86,20 @@ void TCPSocketAPI::initialize()
 
 	// other variables, scalars/vectors WATCH calls
 
-	if (TRACK_MSG_EVENTS)
+	_should_map_tcp_connections = par("shouldMapTCPConnections");
+	EV_DEBUG << "should map tcp connections: "<<(_should_map_tcp_connections ? "true":"false")<<endl;
+
+	if (_should_map_tcp_connections)
 	{
-		_msg_ev_signal = registerSignal(SIGNAME_HTTPMSGEV);
-		subscribe(_msg_ev_signal, httpDuplicateMessageEventListener::getInstance());
+		TCPConnInfoMappingObserver::getInstance()->subscribeOnDefaultSignal(this);
+	}
+
+	_should_track_dup_msg_names = par("shouldTrackDuplicateMessageNames");
+	EV_DEBUG<<"should track duplicate message names: "<<(_should_track_dup_msg_names ? "true":"false")<<endl;
+
+	if (_should_track_dup_msg_names)
+	{
+		DuplicateHttpMessageNameObserver::getInstance()->subscribeOnDefaultSignal(this);
 	}
 }
 
@@ -422,6 +430,8 @@ void TCPSocketAPI::listen (int socket_id, CallbackInterface * cbobj_for_accepted
 	_passive_callbacks[socket->getLocalPort()] = cbdata;
 
 	printFunctionNotice(__fname, socket->toString());
+
+	emitTCPConnInfo(socket);
 }
 
 int TCPSocketAPI::makeActiveSocket (CallbackInterface * cbobj, std::string local_address,
@@ -524,12 +534,7 @@ void TCPSocketAPI::send (int socket_id, cMessage * msg)
 	}
 
 	//emit on the message event signal
-	if (TRACK_MSG_EVENTS)
-	{
-		_msg_ev_datagram.setMessage(msg);
-		_msg_ev_datagram.setInterfaceID(socket_id);
-		emit(_msg_ev_signal, &_msg_ev_datagram);
-	}
+	emitMessageEvent(msg, socket_id);
 
 	socket->send(msg);
 	printFunctionNotice(__fname, socket->toString() + " sent message "+msg->getName());
@@ -698,6 +703,7 @@ void TCPSocketAPI::socketEstablished(int connId, void *yourPtr)
 		socket = _socket_map.getSocket(connId);
 		_bound_ports[socket->getLocalPort()].insert(connId); // inserting into a SET
 		EV_DEBUG << "connected socket " << connId << endl;
+		emitTCPConnInfo(socket);
 		cbdata->state = CB_S_WAIT;
 		cbdata->cbobj->connectCallback(connId, 0, userPtr);
 		break;
@@ -711,6 +717,7 @@ void TCPSocketAPI::socketEstablished(int connId, void *yourPtr)
 		_bound_ports[socket->getLocalPort()].insert(connId);
 
 		EV_DEBUG << "accepted socket with id=" << connId << endl;
+		emitTCPConnInfo(socket);
 
 		cbdata->state = CB_S_WAIT;
 
@@ -744,12 +751,7 @@ void TCPSocketAPI::socketDataArrived(int connId, void *yourPtr, cPacket *msg, bo
 	cbdata->userptr = NULL;
 
 	// emit a message event signal
-	if (TRACK_MSG_EVENTS)
-	{
-		_msg_ev_datagram.setMessage(msg);
-		_msg_ev_datagram.setInterfaceID(connId);
-		emit(_msg_ev_signal, &_msg_ev_datagram);
-	}
+	emitMessageEvent(msg, connId);
 
 	switch (cbdata->state)
 	{
@@ -1083,4 +1085,25 @@ void TCPSocketAPI::printCBStateReceptionNotice(const std::string & fname, CALLBA
 {
 	std::string notice = getStateName(state) + " callback received";
 	printFunctionNotice(fname, notice);
+}
+
+void TCPSocketAPI::emitTCPConnInfo(TCPSocket * socket)
+{
+	if (_should_map_tcp_connections)
+	{
+		simsignal_t s = TCPConnInfoMappingObserver::getInstance()->getDefaultSignalID();
+		TCPConnInfoDatagram d(socket->getConnectionId(), socket->getLocalPort(),
+				socket->getRemotePort(), socket->getLocalAddress().str(), socket->getRemoteAddress().str());
+		emit(s, &d);
+	}
+}
+
+void TCPSocketAPI::emitMessageEvent(const cMessage * msg, int interface_id)
+{
+	if (_should_track_dup_msg_names)
+	{
+		simsignal_t s = DuplicateHttpMessageNameObserver::getInstance()->getDefaultSignalID();
+		cMessageEventDatagram d(msg, interface_id);
+		emit(s, &d);
+	}
 }

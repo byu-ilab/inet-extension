@@ -13,25 +13,26 @@
 // along with this program.  If not, see http://www.gnu.org/licenses/.
 // 
 
-#include "httpDuplicateMessageEventListener.h"
+#include "DuplicateHttpMessageNameObserver.h"
 #include <stdstringutils.h>
 #include <fstream>
 
 #define DEBUG_CLASS false
 
-Enforce_Single_Class_Instance_Definitions(httpDuplicateMessageEventListener)
+Enforce_Single_Class_Instance_Definitions(DuplicateHttpMessageNameObserver)
 
-httpDuplicateMessageEventListener::httpDuplicateMessageEventListener()
+DuplicateHttpMessageNameObserver::DuplicateHttpMessageNameObserver()
+	: cMessageEventObserver()
 {
-	_logfilename = "";
 	_duplicates = 0;
+	setLogFilename("duplicate_http_message_names_report.txt");
 }
 
-httpDuplicateMessageEventListener::~httpDuplicateMessageEventListener()
+DuplicateHttpMessageNameObserver::~DuplicateHttpMessageNameObserver()
 {
 }
 
-void httpDuplicateMessageEventListener::handleSignal(cComponent * source, simsignal_t signalID, cMessageEventDatagram * datagram)
+void DuplicateHttpMessageNameObserver::handleSignal(cComponent * source, simsignal_t signalID, cMessageEventDatagram * datagram)
 {
 	std::string msg_name = datagram->getMessage()->getName();
 	LOG_DEBUG("datagram message name: \'"<<datagram->getMessage()->getName()<<"\'");
@@ -46,46 +47,48 @@ void httpDuplicateMessageEventListener::handleSignal(cComponent * source, simsig
 	}
 }
 
-#define WRITE_DUPLICATES_IN_MSG_RECORDS(WHERE,RECORDS) \
-	for (DuplicateRecordMap::iterator r_itr = RECORDS.begin(); r_itr != RECORDS.end(); r_itr++) \
-	{ \
-		if (r_itr->second.size() > 1) \
-		{ \
-			WHERE << ": source: "<<r_itr->first.getSource()<<" interface: "<<r_itr->first.getInterface()<< \
-					" name: "<<r_itr->first.getName()<< \
-					" duplicates: "<<(r_itr->second.size() - 1)<< \
-					"\n\ttimes: "; \
-			DuplicateMessageEvents::iterator et_end_itr = r_itr->second.end(); \
-			for (DuplicateMessageEvents::iterator et_itr = r_itr->second.begin(); \
-				et_itr != et_end_itr; et_itr++) { WHERE << (*et_itr) << " "; } \
-			WHERE << std::endl; \
-		} \
-	}
-
-#define WRITE_LOG(WHERE) \
-	WHERE << "Detected duplicates: "<<_duplicates<<endl; \
-	WHERE << "# message name, interface id pairs: "<<_message_records.size()<<endl; \
-	WRITE_DUPLICATES_IN_MSG_RECORDS(WHERE,_message_records) \
-
-void httpDuplicateMessageEventListener::finish(cComponent *component, simsignal_t signalID)
+void DuplicateHttpMessageNameObserver::finish(cComponent *component, simsignal_t signalID)
 {
-	if (!_logfilename.empty())
+	if (!getLogFilename().empty())
 	{
-		std::ofstream logfile(_logfilename.c_str());
+		std::ofstream logfile(getLogFilename().c_str());
 		if (!logfile.fail() && !logfile.bad())
 		{
-			WRITE_LOG(logfile);
+			printDuplicateReport(logfile);
 			return;
 		}
 	}
+
 	// Print out to the environment
-	WRITE_LOG(EV);
+	printDuplicateReport(ev.getOStream());
 }
 
-#undef WRITE_LOG
-#undef WRITE_DUPLICATES_IN_MSG_RECORDS
+void DuplicateHttpMessageNameObserver::printDuplicateReport(std::ostream & out_stream) const
+{
+	out_stream << "Detected duplicates: "<<_duplicates<<endl; \
+	out_stream << "# message name, interface id pairs: "<<_message_records.size()<<endl; \
+	for (DuplicateRecordMap::const_iterator r_itr = _message_records.begin();
+			r_itr != _message_records.end(); r_itr++)
+	{
+		if (1 < r_itr->second.size())
+		{
+			out_stream << ": source: "<<r_itr->first.getSource()<<
+					" interface: "<<r_itr->first.getInterface()<<
+					" name: "<<r_itr->first.getName()<<
+					" duplicates: "<<(r_itr->second.size() - 1)<<
+					"\n\ttimes: ";
+			DuplicateMessageEvents::const_iterator et_end_itr = r_itr->second.end();
+			for (DuplicateMessageEvents::const_iterator et_itr = r_itr->second.begin();
+					et_itr != et_end_itr; et_itr++)
+			{
+				out_stream << (*et_itr) << " ";
+			}
+			out_stream << std::endl;
+		}
+	}
+}
 
-void httpDuplicateMessageEventListener::updateRecord(DuplicateRecordKey & key, simtime_t time)
+void DuplicateHttpMessageNameObserver::updateRecord(DuplicateRecordKey & key, simtime_t_cref time)
 {
 	DuplicateRecordMap::iterator r_itr = _message_records.find(key);
 	if (r_itr != _message_records.end())

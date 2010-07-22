@@ -15,12 +15,20 @@
 
 #ifndef WEBCACHENEWAPI_H_
 #define WEBCACHENEWAPI_H_
+
+// From omnetpp extension
 #include <omnetppextension.h>
+#include <dynamicresultrecorder.h>
+#include <cmessageeventobserver.h>
+
+// From standard C++ libraries
 #include <stdlib.h>
 #include <map>
 #include <set>
 #include <vector>
 #include <list>
+
+// From inet
 #include "TCPSocketAPI.h"
 #include "httptServerBase.h"
 #include "LRUCache.h"
@@ -30,8 +38,6 @@
 #include "WebContentExtensionFilter.h"
 #include "ActiveTCPSocketPool.h"
 #include "URIVarientSimTimeMap.h"
-#include <dynamicresultrecorder.h>
-#include <cMessageEventListener.h>
 
 typedef DynamicResultValue ULongStat;
 
@@ -98,9 +104,10 @@ protected:
 	simsignal_t servsockev_signal;	//< server socket event signal
 	simsignal_t txdelay_signal;		//< transmission delay signal
 
-	simsignal_t http_msg_ev_signal;
+	bool should_track_dup_http_msg_names;
+	//simsignal_t http_msg_ev_signal;
 	//@}
-	cMessageEventDatagram http_msg_ev_datagram;
+	//cMessageEventDatagram http_msg_ev_datagram;
 
 	// statistical wrappers
 		// request events
@@ -162,6 +169,7 @@ protected:
 	string extractURLFromRequest(httptRequestMessage * request);
 	string extractURLFromResponse(httptReplyMessage * response);
 
+	virtual void emitMessageEvent(const cMessage * msg, const int & id);
 };
 
 #endif /* WEBCACHENEWAPI_H_ */

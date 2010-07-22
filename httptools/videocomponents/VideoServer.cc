@@ -16,8 +16,8 @@
 
 #include "VideoServer.h"
 
-#define TRACK_HTTPT_MESSAGES false
-#define TRACK_HTTP_MESSAGES true
+//#define TRACK_HTTPT_MESSAGES false
+//#define TRACK_HTTP_MESSAGES true
 
 Define_Module(VideoServer);
 
@@ -43,16 +43,22 @@ void VideoServer::initialize()
 //	}
 //	tcp_api = check_and_cast<TCPSocketAPI *>(getParentModule()->getSubmodule(api_obj_name.c_str()));
 
-	if (TRACK_HTTPT_MESSAGES)
-	{
-		httptmsgev_signal = registerSignal("httptmsgevent");
-		subscribe(httptmsgev_signal, httptDuplicateMessageEventListener::getInstance());
-	}
+//	if (TRACK_HTTPT_MESSAGES)
+//	{
+//		httptmsgev_signal = registerSignal("httptmsgevent");
+//		subscribe(httptmsgev_signal, httptDuplicateMessageEventListener::getInstance());
+//	}
 
-	if (TRACK_HTTP_MESSAGES)
+//	if (TRACK_HTTP_MESSAGES)
+//	{
+//		httpmsgev_signal = registerSignal("httpmsgevent");
+//		subscribe(httpmsgev_signal, DuplicateHttpMessageNameObserver::getInstance());
+//	}
+
+	shouldTrackDupHttpMsgNames = par("shouldTrackDuplicateMessageNames");
+	if (shouldTrackDupHttpMsgNames)
 	{
-		httpmsgev_signal = registerSignal("httpmsgevent");
-		subscribe(httpmsgev_signal, httpDuplicateMessageEventListener::getInstance());
+		DuplicateHttpMessageNameObserver::getInstance()->subscribeOnDefaultSignal(this);
 	}
 
     cMessage * start = new cMessage("START",START);
@@ -135,34 +141,37 @@ void VideoServer::recvCallback(int socket_id, int ret_status,
 	// NULL
 
 	// message should be an httptRequestMessage
-	if (TRACK_HTTPT_MESSAGES)
-	{
-		req_rcvd_datagram.setMessage(msg);
-		req_rcvd_datagram.setInterfaceID(socket_id);
-		emit(httptmsgev_signal, &req_rcvd_datagram);
-	}
-	if (TRACK_HTTP_MESSAGES)
-	{
-		http_msg_ev_datagram.setMessage(msg);
-		http_msg_ev_datagram.setInterfaceID(socket_id);
-		emit(httpmsgev_signal, &http_msg_ev_datagram);
-	}
+//	if (TRACK_HTTPT_MESSAGES)
+//	{
+//		req_rcvd_datagram.setMessage(msg);
+//		req_rcvd_datagram.setInterfaceID(socket_id);
+//		emit(httptmsgev_signal, &req_rcvd_datagram);
+//	}
+//	if (TRACK_HTTP_MESSAGES)
+//	{
+//		http_msg_ev_datagram.setMessage(msg);
+//		http_msg_ev_datagram.setInterfaceID(socket_id);
+//		emit(httpmsgev_signal, &http_msg_ev_datagram);
+//	}
+
+	emitMessageEvent(msg, socket_id);
 
 	httptReplyMessage * response = handleRequestMessage(msg);
 
 	// log before losing ownership of the response
-	if (TRACK_HTTPT_MESSAGES)
-	{
-		rep_sent_datagram.setReplyMessage(response);
-		rep_sent_datagram.setInterfaceID(socket_id);
-		emit(httptmsgev_signal, &rep_sent_datagram);
-	}
-	if (TRACK_HTTP_MESSAGES)
-	{
-		http_msg_ev_datagram.setMessage(response);
-		http_msg_ev_datagram.setInterfaceID(socket_id);
-		emit(httpmsgev_signal, &http_msg_ev_datagram);
-	}
+//	if (TRACK_HTTPT_MESSAGES)
+//	{
+//		rep_sent_datagram.setReplyMessage(response);
+//		rep_sent_datagram.setInterfaceID(socket_id);
+//		emit(httptmsgev_signal, &rep_sent_datagram);
+//	}
+//	if (TRACK_HTTP_MESSAGES)
+//	{
+//		http_msg_ev_datagram.setMessage(response);
+//		http_msg_ev_datagram.setInterfaceID(socket_id);
+//		emit(httpmsgev_signal, &http_msg_ev_datagram);
+//	}
+	emitMessageEvent(response, socket_id);
 
 	tcp_api->send(socket_id, response);
 	delete msg;
@@ -221,6 +230,15 @@ void VideoServer::updateDisplay() {
 		char buf[1024];
 		sprintf( buf, "Req: %ld", requestsReceived );
 		getParentModule()->getDisplayString().setTagArg("t",0,buf);
+	}
+}
+
+void VideoServer::emitMessageEvent(const cMessage * msg, const int & id)
+{
+	if (shouldTrackDupHttpMsgNames)
+	{
+		cMessageEventDatagram d(msg, id);
+		emit(DuplicateHttpMessageNameObserver::getInstance()->getDefaultSignalID(), &d);
 	}
 }
 

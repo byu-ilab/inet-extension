@@ -22,6 +22,16 @@ simple TCPSocketAPI
 {
     parameters:
         @display("i=block/layer");
+        
+        // if shouldMapTCPConnections is true
+        @signal[tcpconninfo](type="TCPConnInfoDatagram objects");
+        
+        // if shouldTrackDuplicateMessageNames is true
+        @signal[msgevent](type="cMessageEventDatagram objects");
+        
+        bool shouldMapTCPConnections = default(false);
+        bool shouldTrackDuplicateMessageNames = default(false);
+        
     gates:
         input tcpIn;
         output tcpOut;

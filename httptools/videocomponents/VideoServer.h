@@ -18,12 +18,14 @@
 #ifndef __VIDEOSERVER_H
 #define __VIDEOSERVER_H
 
+#include <omnetppextension.h>
+
 #include "httptServerBase.h"
 #include "TCPSocketAPI.h"
 #include "VideoTitleWorkloadGenerator.h"
 #include "TCPSocketAPIAppUtils.h"
 #include "httptMessageEventListener.h"
-#include "httpDuplicateMessageEventListener.h"
+#include "DuplicateHttpMessageNameObserver.h"
 
 /**
  *
@@ -33,8 +35,9 @@
  */
 
 enum VSMessageType { START = 1 };
-class INET_API VideoServer :
-	public httptServerBase, TCPSocketAPI::CallbackInterface {
+
+class INET_API VideoServer : public httptServerBase, public TCPSocketAPI::CallbackInterface
+{
 
 	protected:
 		// internals
@@ -48,14 +51,16 @@ class INET_API VideoServer :
 		unsigned long requestsReceived;
 
 		// signals
-		simsignal_t httptmsgev_signal;
-		simsignal_t httpmsgev_signal;
+		//simsignal_t httptmsgev_signal;
+		//simsignal_t httpmsgev_signal;
 
 		// httpt message event datagrams
-		httptRequestEventDatagram req_rcvd_datagram;
-		httptReplyEventDatagram   rep_sent_datagram;
+		//httptRequestEventDatagram req_rcvd_datagram;
+		//httptReplyEventDatagram   rep_sent_datagram;
 
-		cMessageEventDatagram http_msg_ev_datagram;
+		//cMessageEventDatagram http_msg_ev_datagram;
+
+		bool shouldTrackDupHttpMsgNames;
 
 	/** @name cSimpleModule redefinitions */
 	//@{
@@ -84,6 +89,8 @@ class INET_API VideoServer :
 		//@ }
 
 		virtual void closeSocket(int socket_id);
+
+		virtual void emitMessageEvent(const cMessage * msg, const int & id);
 };
 
 #endif /* __VIDEOSERVER_H */

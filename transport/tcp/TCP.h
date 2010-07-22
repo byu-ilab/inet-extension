@@ -96,6 +96,8 @@ class TCPSegment;
 class INET_API TCP : public cSimpleModule
 {
   public:
+	bool shouldTrackDupMessageNames;
+
     struct AppConnKey  // XXX this class is redundant since connId is already globally unique
     {
         int appGateIndex;

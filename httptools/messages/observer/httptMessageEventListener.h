@@ -16,7 +16,7 @@
 #ifndef HTTPTMESSAGEEVENTLISTENER_H_
 #define HTTPTMESSAGEEVENTLISTENER_H_
 
-#include <cMessageEventListener.h>
+#include <cmessageeventobserver.h>
 #include "URIVarientSimTimeMap.h"
 #include "httptMessages_m.h"
 #include <fstream>
@@ -26,11 +26,13 @@ class httptMessageEventDatagram;
 class httptRequestEventDatagram;
 class httptReplyEventDatagram;
 
-class httptMessageEventListener : public cMessageEventListener
+class httptMessageEventObserver : public cMessageEventObserver
 {
+private:
+	std::string __default_signal_name;
 
 protected:
-	/** @name Implemented from cMessageEventListenter */
+	/** @name Implemented from cMessageEventObserver */
 	//@{
 
 	/**
@@ -41,75 +43,73 @@ protected:
 	 * httptMessageEventDatagram.
 	 */
 	virtual void handleSignal(cComponent * source, simsignal_t signalID, cMessageEventDatagram * datagram);
+
 	//@}
+
+
+	/** @name Overridden from cMessageEventObserver */
+	//@{
+
+	/**
+	 * Returns the default signal name for all httptMessageEventObservers.
+	 */
+	virtual const std::string & getDefaultSignalName() const { return __default_signal_name; }
+
+	//@}
+
+
+	/** @name To be implemented by subclasses */
+	//@{
 
 	virtual void handleRequestMessageEvent(cComponent * component, httptRequestEventDatagram * datagram) =0;
 	virtual void handleReplyMessageEvent(cComponent * component, httptReplyEventDatagram * datagram) =0;
 
-public:
-	/** @name Overridden from cMessageEventListener */
-	//@{
-
-	/**
-	 * Checks that the object pointer is of type httptMessageEventDatagram and forwards
-	 * it to the appropriate handler (e.g. Request or Reply).
-	 *
-	 * @throw throws a cRuntimeError if the object pointer is not of type httptMessageEventDatagram.
-	 */
-	//virtual void receiveSignal(cComponent *source, simsignal_t signalID, cObject *obj);
-
 	//@}
 };
 
-
-class httptDuplicateMessageEventListener : public httptMessageEventListener, public noncopyable
+class DuplicateHttptMessageEventObserver : public httptMessageEventObserver, public noncopyable
 {
-	Enforce_Single_Class_Instance_Declarations(httptDuplicateMessageEventListener);
+	Enforce_Single_Class_Instance_Declarations(DuplicateHttptMessageEventObserver);
 
 private:
 
 	DuplicateRecordMap _request_message_records;
 	DuplicateRecordMap _reply_message_records;
-	//URIVarientSimTimeMap _request_message_records;
-	//URIVarientSimTimeMap _reply_message_records;
-	std::string _logfilename;
 	uint64 _duplicates;
 
 public:
 	/** @name Overridden from cIListener */
 	//@{
+
 	virtual void finish(cComponent *component, simsignal_t signalID);
+
 	//@}
 
 protected:
-	/** @name Implemented from httptMessageEventListener */
+	/** @name Implemented from httptMessageEventObserver */
 	//@{
+
 	virtual void handleRequestMessageEvent(cComponent * source, httptRequestEventDatagram * datagram);
 	virtual void handleReplyMessageEvent(cComponent * source, httptReplyEventDatagram * datagram);
+
 	//@}
 
 	/** @name httptDuplicateMessageEventListener functions */
 	//@{
-	virtual void updateValue(DuplicateRecordMap & records, DuplicateRecordKey & key); ///*URIVarientSimTimeMap & records,*/ URIVarientKey & key, const std::string & source_name);
 
-	//URIVarientSimTimeMap & _getRequestRecords() { return _request_message_records; }
-	//URIVarientSimTimeMap & _getReplyRecords()   { return _reply_message_records; }
-	std::string & _getLogFilename() { return _logfilename; }
-	uint64 & _getDuplicateCount() { return _duplicates; }
+	virtual void updateValue(DuplicateRecordMap & records, DuplicateRecordKey & key);
 
-public:
+	virtual void printReport(std::ostream & out_stream) const;
 
-	virtual void setLogFilename(const std::string & filename) { _logfilename = filename; }
-	std::string getLogFilename() const { return _logfilename; }
+	virtual void printDuplicateRecords(std::ostream & out_stream, DuplicateRecordMap & records,
+			const std::string & prefix) const;
+
 	//@}
 };
 
 
 class httptMessageEventDatagram : public cMessageEventDatagram
 {
-//private:
-//	int _interface_id;
-
 protected:
 	httptMessageEventDatagram() : cMessageEventDatagram()/*, _interface_id(-1)*/ {}
 	virtual ~httptMessageEventDatagram() {}
@@ -126,9 +126,6 @@ public:
 	virtual void setMessage(const cMessage * msg) =0;
 
 	//@}
-
-//	virtual void setInterfaceID(int id) { _interface_id = id; }
-//	int getInterfaceID() const { return _interface_id; }
 };
 
 

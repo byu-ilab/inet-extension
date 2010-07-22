@@ -245,6 +245,9 @@ simple TCP like ITCP
         string receiveQueueClass = default("TCPVirtualDataRcvQueue"); // TCPVirtualDataRcvQueue/TCPMsgBasedRcvQueue
         bool recordStats = default(true); // recording of seqNum etc. into output vectors enabled/disabled
         @display("i=block/wheelbarrow");
+        
+        @signal[msgevent](type="cMessageEventDatagram objects");
+        bool shouldTrackDuplicateMessageNames = default(false);
     gates:
         input appIn[] @labels(TCPCommand/down);
         input ipIn @labels(TCPSegment,IPControlInfo/up);

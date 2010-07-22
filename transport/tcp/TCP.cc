@@ -28,9 +28,8 @@
 Define_Module(TCP);
 
 #define DEBUG_CLASS false
-#define TRACK_MSG_EVENTS false
-#include "httpDuplicateMessageEventListener.h"
-#define SIGNAME_HTTPMSGEV "httpmsgevent"
+
+#include "DuplicateHttpMessageNameObserver.h"
 
 bool TCP::testing;
 bool TCP::logverbose;
@@ -73,10 +72,10 @@ void TCP::initialize()
     testing = netw->hasPar("testing") && netw->par("testing").boolValue();
     logverbose = !testing && netw->hasPar("logverbose") && netw->par("logverbose").boolValue();
 
-    if (TRACK_MSG_EVENTS)
+    shouldTrackDupMessageNames = par("shouldTrackDuplicateMessageNames");
+    if (shouldTrackDupMessageNames)
     {
-    	simsignal_t s = registerSignal(SIGNAME_HTTPMSGEV);
-    	subscribe(s, httpDuplicateMessageEventListener::getInstance());
+    	DuplicateHttpMessageNameObserver::getInstance()->subscribeOnDefaultSignal(this);
     }
 }
 
@@ -136,13 +135,10 @@ void TCP::handleMessage(cMessage *msg)
             TCPConnection *conn = findConnForSegment(tcpseg, srcAddr, destAddr);
 
             //emit a signal
-			if (TRACK_MSG_EVENTS)
+			if (shouldTrackDupMessageNames)
 			{
-				simsignal_t s = registerSignal(SIGNAME_HTTPMSGEV);
-				cMessageEventDatagram d;
-				d.setMessage(tcpseg);
-				d.setInterfaceID(conn->connId);
-				emit(s, &d);
+				cMessageEventDatagram d(tcpseg, conn->connId);
+				emit(DuplicateHttpMessageNameObserver::getInstance()->getDefaultSignalID(), &d);
 			}
 
             if (conn)

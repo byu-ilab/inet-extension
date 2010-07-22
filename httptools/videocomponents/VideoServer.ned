@@ -33,6 +33,9 @@ package inet.httptools.videocomponents;
 simple VideoServer like TCPSocketAPIAppInterface, httptServerBaseInterface
 {
     parameters:
+        @signal[msgevent](type="cMessageEventDatagram objects");
+        bool shouldTrackDuplicateMessageNames = default(false);
+        
  		// specific to VideoServer
         //string siteDefinition = default("");			// The site script file. Blank to disable.
         //xml config;										// The XML configuration file for random sites
