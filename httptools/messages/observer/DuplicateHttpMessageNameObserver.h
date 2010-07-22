@@ -36,7 +36,7 @@
  *
  * @todo Add contains filters to widen scope on duplicate message name filtering.
  * @todo Rename to DuplicateMessageNameObserver and move to omnetppextension.
- * @todo Have an associated default signal name (i.e. msgevent).
+ * @todo could differentiate between request and reply messages because of their names.
  */
 class DuplicateHttpMessageNameObserver : public cMessageEventObserver, public noncopyable
 {

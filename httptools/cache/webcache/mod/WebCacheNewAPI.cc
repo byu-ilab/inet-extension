@@ -22,8 +22,6 @@ Define_Module(WebCacheNewAPI);
 
 #define DEBUG_CLASS false
 
-//#define TRACK_HTTP_MESSAGES true
-
 WebCacheNewAPI::WebCacheNewAPI()
 	: /*pendingUpstreamRequests(),*/ pendingDownstreamRequests(), contentFilter(),
 	  downstreamRequestsReceived("cache.requests.downstream.received", (unsigned long) 0),
@@ -150,12 +148,6 @@ void WebCacheNewAPI::initialize() {
 	reqev_signal = registerSignal(SIGNAME_REQEV);
 	servsockev_signal = registerSignal(SIGNAME_SOCKEV);
 	txdelay_signal = registerSignal(SIGNAME_TXDELAY);
-
-//	if (TRACK_HTTP_MESSAGES)
-//	{
-//		http_msg_ev_signal = registerSignal("httpmmsgevent");
-//		subscribe(http_msg_ev_signal, DuplicateHttpMessageNameObserver::getInstance());
-//	}
 
 	should_track_dup_http_msg_names = par("shouldTrackDuplicateMessageNames");
 	if (should_track_dup_http_msg_names)
@@ -424,13 +416,6 @@ void WebCacheNewAPI::makeUpstreamRequest(httptRequestMessage * ds_request_templa
 		//pendingUpstreamRequests.insert(us_request);
 
 		emitMessageEvent(us_request, -1);
-//
-//		if (TRACK_HTTP_MESSAGES)
-//		{
-//			http_msg_ev_datagram.setMessage(us_request);
-//			http_msg_ev_datagram.setInterfaceID(-1);
-//			emit(http_msg_ev_signal, &http_msg_ev_datagram);
-//		}
 
 		upstream_txstart_map[URIVarientKey(us_request->uri(), DEFAULT_URI_VARIENT)] = MsgIdTimestamp(DEFAULT_MSG_ID, simTime());
 		upstreamSocketPool->submitRequest(us_request);
@@ -504,13 +489,6 @@ void WebCacheNewAPI::processUpstreamResponse(int socket_id, cPacket * msg, /* TO
 
 	emitMessageEvent(msg, socket_id);
 
-//	if (TRACK_HTTP_MESSAGES)
-//	{
-//		http_msg_ev_datagram.setMessage(msg);
-//		http_msg_ev_datagram.setInterfaceID(socket_id);
-//		emit(http_msg_ev_signal, &http_msg_ev_datagram);
-//	}
-
 //	if (!reply) {
 //		LOG_DEBUG("Message is not an httptReply!");
 //		closeSocket(socket_id);
@@ -582,13 +560,6 @@ void WebCacheNewAPI::respondToClientRequest(int socket_id, httptRequestMessage *
 
 	emitMessageEvent(reply, socket_id);
 
-//	if (TRACK_HTTP_MESSAGES)
-//	{
-//		http_msg_ev_datagram.setMessage(reply);
-//		http_msg_ev_datagram.setInterfaceID(socket_id);
-//		emit(http_msg_ev_signal, &http_msg_ev_datagram);
-//	}
-
 	tcp_api->send(socket_id, reply);
 }
 
@@ -614,12 +585,6 @@ void WebCacheNewAPI::processDownstreamRequest(int socket_id, cPacket * msg, Conn
 	emit(reqev_signal, &downstreamRequestsReceived);
 
 	emitMessageEvent(msg, socket_id);
-//	if (TRACK_HTTP_MESSAGES)
-//	{
-//		http_msg_ev_datagram.setMessage(msg);
-//		http_msg_ev_datagram.setInterfaceID(socket_id);
-//		emit(http_msg_ev_signal, &http_msg_ev_datagram);
-//	}
 
 	LOG_DEBUG("received request for: "<<request->heading());
 

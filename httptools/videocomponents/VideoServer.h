@@ -24,7 +24,6 @@
 #include "TCPSocketAPI.h"
 #include "VideoTitleWorkloadGenerator.h"
 #include "TCPSocketAPIAppUtils.h"
-#include "httptMessageEventListener.h"
 #include "DuplicateHttpMessageNameObserver.h"
 
 /**
@@ -49,16 +48,6 @@ class INET_API VideoServer : public httptServerBase, public TCPSocketAPI::Callba
 		unsigned long socketsBroken;
 		unsigned long socketsOpened;
 		unsigned long requestsReceived;
-
-		// signals
-		//simsignal_t httptmsgev_signal;
-		//simsignal_t httpmsgev_signal;
-
-		// httpt message event datagrams
-		//httptRequestEventDatagram req_rcvd_datagram;
-		//httptReplyEventDatagram   rep_sent_datagram;
-
-		//cMessageEventDatagram http_msg_ev_datagram;
 
 		bool shouldTrackDupHttpMsgNames;
 

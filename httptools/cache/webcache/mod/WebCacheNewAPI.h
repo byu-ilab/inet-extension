@@ -105,9 +105,7 @@ protected:
 	simsignal_t txdelay_signal;		//< transmission delay signal
 
 	bool should_track_dup_http_msg_names;
-	//simsignal_t http_msg_ev_signal;
 	//@}
-	//cMessageEventDatagram http_msg_ev_datagram;
 
 	// statistical wrappers
 		// request events
