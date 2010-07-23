@@ -54,19 +54,37 @@ std::string TCPMsgBasedRcvQueue::info() const
 
 uint32 TCPMsgBasedRcvQueue::insertBytesFromSegment(TCPSegment *tcpseg)
 {
-    TCPVirtualDataRcvQueue::insertBytesFromSegment(tcpseg);
+	/* KPB +++> */
+//	uint32 segmentEnd = tcpseg->getSequenceNo()+tcpseg->getPayloadLength();
+//	if (seqLess(segmentEnd, rcv_nxt))
+//	{
+//		// The bytes from the segment have already been received.
+//		return rcv_nxt;
+//	}
+	/* <+++ */
+
+    //TCPVirtualDataRcvQueue::insertBytesFromSegment(tcpseg);
 
     cPacket *msg;
     uint32 endSeqNo;
     while ((msg=tcpseg->removeFirstPayloadMessage(endSeqNo))!=NULL)
     {
-        // insert, avoiding duplicates
-        PayloadList::iterator i = payloadList.find(endSeqNo);
-        if (i!=payloadList.end()) {delete msg; continue;}
-        payloadList[endSeqNo] = msg;
+    	/* KPB +++> */
+    	if (seqGreater(endSeqNo, rcv_nxt))
+    	{
+    		/* <+++ */
+			// insert, avoiding duplicates
+			PayloadList::iterator i = payloadList.find(endSeqNo);
+			if (i!=payloadList.end()) {delete msg; continue;} // KPB assumes that the send queue duplicates messages when they are packed
+			payloadList[endSeqNo] = msg;
+			/* +++> */
+    	}
+    	// otherwise the message and the bytes have already been received
+    	/* <+++ */
     }
 
-    return rcv_nxt;
+    return TCPVirtualDataRcvQueue::insertBytesFromSegment(tcpseg);
+    //return rcv_nxt;
 }
 
 cPacket *TCPMsgBasedRcvQueue::extractBytesUpTo(uint32 seq)

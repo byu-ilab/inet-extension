@@ -53,7 +53,21 @@ std::string TCPVirtualDataRcvQueue::info() const
 
 uint32 TCPVirtualDataRcvQueue::insertBytesFromSegment(TCPSegment *tcpseg)
 {
-    merge(tcpseg->getSequenceNo(), tcpseg->getSequenceNo()+tcpseg->getPayloadLength());
+	/* KPB +++> */
+	uint32 segmentEnd = tcpseg->getSequenceNo()+tcpseg->getPayloadLength();
+	if (seqLE(segmentEnd, rcv_nxt))
+	{
+		// The bytes from the segment have already been received.
+		return rcv_nxt;
+	}
+
+	// Note that the above check is done before merge such that if the regionList
+	// is empty the following if statement will not use uninitialized Region data.
+	merge(tcpseg->getSequenceNo(), segmentEnd);
+
+	// original statement:
+	//merge(tcpseg->getSequenceNo(), tcpseg->getSequenceNo()+tcpseg->getPayloadLength());
+	/* <+++ */
     if (seqGE(rcv_nxt, regionList.begin()->begin))
         rcv_nxt = regionList.begin()->end;
     return rcv_nxt;

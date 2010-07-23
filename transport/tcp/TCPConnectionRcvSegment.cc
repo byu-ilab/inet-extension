@@ -134,7 +134,7 @@ TCPEventCode TCPConnection::processSegment1stThru8th(TCPSegment *tcpseg)
         {
             if (tcpseg->getSynBit())
             {
-                tcpEV << "SYN with unacceptable seqNum in " <<  stateName(fsm.getState()) << " state received (SYN duplicat?)\n";
+                tcpEV << "SYN with unacceptable seqNum in " <<  stateName(fsm.getState()) << " state received (SYN duplicate?)\n";
             }
             else if (state->sack_enabled && seqLess((tcpseg->getSequenceNo()+tcpseg->getPayloadLength()), state->rcv_nxt))
             {
