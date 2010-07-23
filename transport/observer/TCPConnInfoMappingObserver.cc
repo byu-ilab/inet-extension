@@ -85,17 +85,36 @@ bool TCPConnInfoMappingObserver::arePair(const TCPConnInfoEntry & first, const T
 void TCPConnInfoMappingObserver::finish(cComponent *component, simsignal_t signalID)
 {
 	LOG_DEBUG_FUN_BEGIN("");
-	if (!getLogFilename().empty())
+
+	if (_getNewDataSinceFinishCalled())
 	{
-		std::ofstream logfile(getLogFilename().c_str());
-		if (!logfile.fail() && !logfile.bad())
+		bool print_to_ev = getLogFilename().empty();
+
+		if (!print_to_ev)
 		{
-			printMapping(logfile);
-			return;
+			// try opening output file
+			LOG_DEBUG_LN("printing out to: "<<getLogFilename());
+			std::ofstream logfile(getLogFilename().c_str());
+			if (!logfile.fail() && !logfile.bad())
+			{
+				printMapping(logfile);
+			}
+			else
+			{
+				print_to_ev = true;
+			}
+		}
+
+		if (print_to_ev)
+		{
+			LOG_DEBUG_LN("printing out to the simulation environment");
+			// Print out to the environment
+			printMapping(ev.getOStream());
 		}
 	}
 
-	printMapping(ev.getOStream());
+	cLoggableObserver::finish(component, signalID); // sets state to indicate finish has been called
+
 	LOG_DEBUG_FUN_END("");
 }
 

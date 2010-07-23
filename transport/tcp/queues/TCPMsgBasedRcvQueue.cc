@@ -27,6 +27,15 @@ TCPMsgBasedRcvQueue::TCPMsgBasedRcvQueue() : TCPVirtualDataRcvQueue()
 
 TCPMsgBasedRcvQueue::~TCPMsgBasedRcvQueue()
 {
+	/* KPB +++> */
+	for (PayloadList::iterator pl_itr = payloadList.begin();
+			pl_itr != payloadList.end(); pl_itr++)
+	{
+		ASSERT(pl_itr->second != NULL);
+
+		delete pl_itr->second;
+	}
+	/* <+++ */
 }
 
 void TCPMsgBasedRcvQueue::init(uint32 startSeq)
@@ -54,16 +63,13 @@ std::string TCPMsgBasedRcvQueue::info() const
 
 uint32 TCPMsgBasedRcvQueue::insertBytesFromSegment(TCPSegment *tcpseg)
 {
-
 	/* KPB +++> */
-//	uint32 segmentEnd = tcpseg->getSequenceNo()+tcpseg->getPayloadLength();
-//	if (seqLess(segmentEnd, rcv_nxt))
-//	{
-//		// The bytes from the segment have already been received.
-//		return rcv_nxt;
-//	}
+	// This must now be executed at the end of the function so as not to add
+	// the end sequence number of the segment until after the payload is
+	// extracted.  This makes the seqGreater logic valid such that a repeat
+	// message is not added to the queue and handed up to the application
+	// a second time.
 	/* <+++ */
-
     //TCPVirtualDataRcvQueue::insertBytesFromSegment(tcpseg);
 
     cPacket *msg;
@@ -74,18 +80,24 @@ uint32 TCPMsgBasedRcvQueue::insertBytesFromSegment(TCPSegment *tcpseg)
     	if (seqGreater(endSeqNo, rcv_nxt))
     	{
     		/* <+++ */
-			// insert, avoiding duplicates
+
+    		// insert, avoiding duplicates
 			PayloadList::iterator i = payloadList.find(endSeqNo);
 			if (i!=payloadList.end()) {delete msg; continue;} // KPB assumes that the send queue duplicates messages when they are packed
 			payloadList[endSeqNo] = msg;
+
 			/* +++> */
     	}
-    	// otherwise the message and the bytes have already been received
+    	else
+    	{
+    		// otherwise the message and the bytes have already been received
+    		delete msg;
+    	}
     	/* <+++ */
     }
 
     return TCPVirtualDataRcvQueue::insertBytesFromSegment(tcpseg);
-    //return rcv_nxt;
+//    return rcv_nxt;
 }
 
 cPacket *TCPMsgBasedRcvQueue::extractBytesUpTo(uint32 seq)

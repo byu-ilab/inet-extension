@@ -23,6 +23,8 @@
 #include "DuplicateHttpMessageNameObserver.h"
 #include "TCPConnInfoMappingObserver.h"
 
+#define DEBUG_CLASS false
+
 Define_Module(TCPSocketAPI);
 
 TCPSocketAPI::TCPSocketAPI()
@@ -82,12 +84,12 @@ void TCPSocketAPI::initialize()
 	cSimpleModule::initialize();
 
 	std::string __fname = "initialize()";
-	EV_DEBUG << "initializing TCP socket API" << endl;
+	LOG_DEBUG_LN("initializing TCP socket API");
 
 	// other variables, scalars/vectors WATCH calls
 
 	_should_map_tcp_connections = par("shouldMapTCPConnections");
-	EV_DEBUG << "should map tcp connections: "<<(_should_map_tcp_connections ? "true":"false")<<endl;
+	LOG_DEBUG_LN("should map tcp connections: "<<(_should_map_tcp_connections ? "true":"false"));
 
 	if (_should_map_tcp_connections)
 	{
@@ -95,7 +97,7 @@ void TCPSocketAPI::initialize()
 	}
 
 	_should_track_dup_msg_names = par("shouldTrackDuplicateMessageNames");
-	EV_DEBUG<<"should track duplicate message names: "<<(_should_track_dup_msg_names ? "true":"false")<<endl;
+	LOG_DEBUG_LN("should track duplicate message names: "<<(_should_track_dup_msg_names ? "true":"false"));
 
 	if (_should_track_dup_msg_names)
 	{
@@ -121,18 +123,18 @@ void TCPSocketAPI::handleMessage(cMessage *msg)
 		{
 			signalFunctionError(__fname, "invalid socket id in timeout message");
 		}
-		EV_DEBUG << "Handle timeout on socket "<< socket_id << endl;
+		LOG_DEBUG_LN("Handle timeout on socket "<< socket_id);
 		socketTimeout(socket_id, cbdata);
 		return;
 	}
 
-	EV_DEBUG << "Handle inbound message " << msg->getName() << " of kind " << msg->getKind() << endl;
+	LOG_DEBUG_LN("Handle inbound message " << msg->getName() << " of kind " << msg->getKind());
 
 	TCPSocket *socket = _socket_map.findSocketFor(msg);
 
 	if (!socket)
 	{
-		EV_DEBUG << "No socket found for the message. Create a new one" << endl;
+		LOG_DEBUG_LN("No socket found for the message. Create a new one");
 		// this is to "accept" new connections
 		// new connection -- create new socket object and server process
 		socket = new TCPSocket(msg);
@@ -170,8 +172,8 @@ void TCPSocketAPI::handleMessage(cMessage *msg)
 		socket->setCallbackObject(this, cbdata);
 		_pending_sockets_map.addSocket(socket);
 	}
-	EV_DEBUG << "on the socket: "<<socket->toString()<<endl;
-	EV_DEBUG << "Process the message " << msg->getName() << endl;
+	LOG_DEBUG_LN("on the socket: "<<socket->toString());
+	LOG_DEBUG_LN("Process the message " << msg->getName());
 	socket->processMessage(msg);
 
 	// update display?
@@ -702,7 +704,7 @@ void TCPSocketAPI::socketEstablished(int connId, void *yourPtr)
 	case CB_S_CONNECT:
 		socket = _socket_map.getSocket(connId);
 		_bound_ports[socket->getLocalPort()].insert(connId); // inserting into a SET
-		EV_DEBUG << "connected socket " << connId << endl;
+		LOG_DEBUG_LN("connected socket " << connId);
 		emitTCPConnInfo(socket);
 		cbdata->state = CB_S_WAIT;
 		cbdata->cbobj->connectCallback(connId, 0, userPtr);
@@ -716,7 +718,7 @@ void TCPSocketAPI::socketEstablished(int connId, void *yourPtr)
 		_socket_map.addSocket(socket);
 		_bound_ports[socket->getLocalPort()].insert(connId);
 
-		EV_DEBUG << "accepted socket with id=" << connId << endl;
+		LOG_DEBUG_LN("accepted socket with id=" << connId);
 		emitTCPConnInfo(socket);
 
 		cbdata->state = CB_S_WAIT;
@@ -1078,7 +1080,7 @@ void TCPSocketAPI::signalCBNullError(const std::string & fname)
 
 void TCPSocketAPI::printFunctionNotice(const std::string & fname, const std::string & notice)
 {
-	EV_DEBUG << fname << ": " << notice << endl;
+	LOG_DEBUG_LN(fname << ": " << notice);
 }
 
 void TCPSocketAPI::printCBStateReceptionNotice(const std::string & fname, CALLBACK_STATE state)

@@ -565,7 +565,8 @@ void WebCacheNewAPI::respondToClientRequest(int socket_id, httptRequestMessage *
 	ASSERT(resource != NULL);
 
 	// generateByteRangeReply handles regular requests as well byte range requests
-	httptReplyMessage * reply = generateByteRangeReply(request, resource->getID(), resource->getSize(), resource->getType());
+	//httptReplyMessage * reply = generateByteRangeReply(request, resource->getID(), resource->getSize(), resource->getType());
+	httptReplyMessage * reply = generateByteRangeReply(request, request->uri(), resource->getSize(), resource->getType()); // use the original request uri
 	reply->setPayload(resource->getContent().c_str());
 	LOG_DEBUG("sent to client: "<<reply->heading()<<" for resource: "<<reply->relatedUri());
 	emitMessageEvent(reply, socket_id);

@@ -62,12 +62,14 @@ uint32 TCPVirtualDataRcvQueue::insertBytesFromSegment(TCPSegment *tcpseg)
 	}
 
 	// Note that the above check is done before merge such that if the regionList
-	// is empty the following if statement will not use uninitialized Region data.
+	// is empty the following if statement will not use uninitialized Region data,
+	// thus invalidating the rcv_nxt member.
 	merge(tcpseg->getSequenceNo(), segmentEnd);
 
+	/* <+++ */
 	// original statement:
 	//merge(tcpseg->getSequenceNo(), tcpseg->getSequenceNo()+tcpseg->getPayloadLength());
-	/* <+++ */
+
     if (seqGE(rcv_nxt, regionList.begin()->begin))
         rcv_nxt = regionList.begin()->end;
     return rcv_nxt;

@@ -17,7 +17,7 @@
 #include <stdstringutils.h>
 #include <fstream>
 
-#define DEBUG_CLASS false
+#define DEBUG_CLASS true
 
 Enforce_Single_Class_Instance_Definitions(DuplicateHttpMessageNameObserver)
 
@@ -35,11 +35,11 @@ DuplicateHttpMessageNameObserver::~DuplicateHttpMessageNameObserver()
 void DuplicateHttpMessageNameObserver::handleSignal(cComponent * source, simsignal_t signalID, cMessageEventDatagram * datagram)
 {
 	std::string msg_name = datagram->getMessage()->getName();
-	LOG_DEBUG("datagram message name: \'"<<datagram->getMessage()->getName()<<"\'");
-	LOG_DEBUG("datagram message path: \'"<<datagram->getMessage()->getFullName()<<"\'");
-	LOG_DEBUG("datagram message full path: \'"<<datagram->getMessage()->getFullPath()<<"\'");
-	LOG_DEBUG("datagram interface id: "<<datagram->getInterfaceID());
-	LOG_DEBUG("message name: "<<msg_name);
+//	LOG_DEBUG("datagram message name: \'"<<datagram->getMessage()->getName()<<"\'");
+//	LOG_DEBUG("datagram message path: \'"<<datagram->getMessage()->getFullName()<<"\'");
+//	LOG_DEBUG("datagram message full path: \'"<<datagram->getMessage()->getFullPath()<<"\'");
+//	LOG_DEBUG("datagram interface id: "<<datagram->getInterfaceID());
+//	LOG_DEBUG("message name: "<<msg_name);
 	if ( stdstring_contains(msg_name, "http", false) )
 	{
 		DuplicateRecordKey key(source->getFullPath(), msg_name, datagram->getInterfaceID());
@@ -49,18 +49,34 @@ void DuplicateHttpMessageNameObserver::handleSignal(cComponent * source, simsign
 
 void DuplicateHttpMessageNameObserver::finish(cComponent *component, simsignal_t signalID)
 {
-	if (!getLogFilename().empty())
+	if (_getNewDataSinceFinishCalled())
 	{
-		std::ofstream logfile(getLogFilename().c_str());
-		if (!logfile.fail() && !logfile.bad())
+		bool print_to_ev = getLogFilename().empty();
+
+		if (!print_to_ev)
 		{
-			printDuplicateReport(logfile);
-			return;
+			// try opening output file
+			LOG_DEBUG_LN("printing out to: "<<getLogFilename());
+			std::ofstream logfile(getLogFilename().c_str());
+			if (!logfile.fail() && !logfile.bad())
+			{
+				printDuplicateReport(logfile);
+			}
+			else
+			{
+				print_to_ev = true;
+			}
+		}
+
+		if (print_to_ev)
+		{
+			LOG_DEBUG_LN("printing out to the simulation environment");
+			// Print out to the environment
+			printDuplicateReport(ev.getOStream());
 		}
 	}
 
-	// Print out to the environment
-	printDuplicateReport(ev.getOStream());
+	cMessageEventObserver::finish(component, signalID); // sets state to indicate finish has been called
 }
 
 void DuplicateHttpMessageNameObserver::printDuplicateReport(std::ostream & out_stream) const

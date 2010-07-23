@@ -25,8 +25,9 @@
 #ifndef __INET_TCPSOCKETAPI_H
 #define __INET_TCPSOCKETAPI_H
 
-// From omnetpp
-#include <omnetpp.h>
+// From omnetpp extension
+#include <omnetppextension.h>
+#include <cmessageeventobserver.h>
 
 // From inet
 #include "INETDefs.h"
@@ -37,10 +38,6 @@
 #include "IPAddressResolver.h"
 #include "SocketTimeoutMsg_m.h"
 #include "TCPCommand_m.h"
-
-// From omnetpp extension
-#include <DeleteSafeDefs.h>
-#include <cmessageeventobserver.h>
 
 // From standard C++ libraries
 #include <string.h>
