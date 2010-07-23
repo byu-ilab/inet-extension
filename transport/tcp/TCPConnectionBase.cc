@@ -273,18 +273,6 @@ void TCPConnection::updateVectorNames(bool firstTime) {
         tcpRcvQueueDropsVector = _createVector("tcpRcvQueueDrops");
     }
 }
-cOutVector * TCPConnection::_createVector(const char * name) {
-	  const char * str = NULL;
-	  string s = "";
-	  stringstream ss;
-	  ss<<connId<<"_"<<name;
-	  int l = strlen(ss.str().c_str());
-	  char * rstr = new char[l+1];
-	  memset(rstr,0,l + 1);
-	  strcpy(rstr, ss.str().c_str());
-	  str =rstr;
-	  return new cOutVector(str);
-	}
 
 cOutVector * TCPConnection::_createVector(const char * name) {
 	  const char * str = NULL;
