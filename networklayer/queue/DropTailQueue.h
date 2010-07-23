@@ -32,7 +32,7 @@ class INET_API DropTailQueue : public PassiveQueueBase
   protected:
     // configuration
     int frameCapacity;
-
+    int queueLength;
     // state
     cQueue queue;
     cGate *outGate;

@@ -437,7 +437,6 @@ class INET_API TCPConnection
 
   public:
     virtual void updateVectorNames(bool);
-      
     /** Utility: send ACK */
     virtual void sendAck();
 

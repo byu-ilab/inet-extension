@@ -54,6 +54,7 @@ std::string TCPMsgBasedRcvQueue::info() const
 
 uint32 TCPMsgBasedRcvQueue::insertBytesFromSegment(TCPSegment *tcpseg)
 {
+
 	/* KPB +++> */
 //	uint32 segmentEnd = tcpseg->getSequenceNo()+tcpseg->getPayloadLength();
 //	if (seqLess(segmentEnd, rcv_nxt))

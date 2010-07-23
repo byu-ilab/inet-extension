@@ -30,6 +30,7 @@ void VideoServer::initialize()
 	socketsBroken=0;
 	socketsOpened=0;
 	requestsReceived = 0;
+	responsesSent=0;
 	updateDisplay();
 
 	// get socket api
@@ -166,8 +167,10 @@ httptReplyMessage* VideoServer::handleGetRequest( httptRequestMessage *request, 
 //	reply->setType(vrequest->getType());
 //	reply->setSegmentNumber(vrequest->getSegmentNumber());
 //	reply->setQualityLevel(vrequest->getQualityLevel());
-
-	return generateByteRangeReply(request, resource_uri, res_size, rt_vidseg);
+	responsesSent++;
+	httptReplyMessage * rep = generateByteRangeReply(request, resource_uri, res_size, rt_vidseg);
+	//cout<<"BR Rep Size: "<<rep->getByteLength()<<endl;
+	return rep;
 
 //	if (vrequest->firstBytePos() != BRS_UNSPECIFIED) {
 //		fillinByteRangeReply(reply, vrequest, resource, res_size, res_type);
@@ -183,7 +186,7 @@ void VideoServer::updateDisplay() {
 	if ( ev.isGUI() )
 	{
 		char buf[1024];
-		sprintf( buf, "Req: %ld", requestsReceived );
+		sprintf( buf, "R/S: %ld/%ld",requestsReceived,responsesSent );
 		getParentModule()->getDisplayString().setTagArg("t",0,buf);
 	}
 }

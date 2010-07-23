@@ -43,14 +43,15 @@ public:
 
 class CacheRequestMgr {
 private:
-	list<RequestRecord> requests;
+	//list<RequestRecord> requests;
+	map<string,list<RequestRecord> * > requests;
 
 public:
 	CacheRequestMgr();
 	virtual ~CacheRequestMgr();
-	list<int> clientsAskingForResource(string);
+	list<int> clientsAskingForResource(string);  // map <string, list<RequestRecord>>
 	int numberOfClientsAskingForResource(string);
-	list<RequestRecord> getRequestsForResource(string);
+	list<RequestRecord> * getRequestsForResource(string);
 	void removeRequestsForResource(string);
 	void removeAndDeleteRequestsForResource(string);
 	bool addRequest(int,string, httptRequestMessage *);

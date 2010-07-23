@@ -20,9 +20,10 @@
 #define __INET_TCPSEGMENT_H
 
 #include <list>
+#include <iostream>
 #include "INETDefs.h"
 #include "TCPSegment_m.h"
-
+using namespace std;
 /**
  * Represents a TCP segment. More info in the TCPSegment.msg file
  * (and the documentation generated from it).
@@ -31,9 +32,9 @@ class INET_API TCPSegment : public TCPSegment_Base
 {
   protected:
     std::list<TCPPayloadMessage> payloadList;
-
+    //simtime_t creation;
   public:
-    TCPSegment(const char *name=NULL, int kind=0) : TCPSegment_Base(name,kind) {}
+    TCPSegment(const char *name=NULL, int kind=0) : TCPSegment_Base(name,kind) {/*creation = simTime();*/}
     TCPSegment(const TCPSegment& other) : TCPSegment_Base(other.getName()) {operator=(other);}
     virtual ~TCPSegment();
     TCPSegment& operator=(const TCPSegment& other);

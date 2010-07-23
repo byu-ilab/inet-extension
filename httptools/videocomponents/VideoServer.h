@@ -48,8 +48,10 @@ class INET_API VideoServer : public httptServerBase, public TCPSocketAPI::Callba
 		unsigned long socketsBroken;
 		unsigned long socketsOpened;
 		unsigned long requestsReceived;
+		unsigned long responsesSent;
 
 		bool shouldTrackDupHttpMsgNames;
+
 
 	/** @name cSimpleModule redefinitions */
 	//@{
