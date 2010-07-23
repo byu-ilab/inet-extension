@@ -517,13 +517,14 @@ void WebCacheNewAPI::processUpstreamResponse(int socket_id, cPacket * msg, /* TO
 		// else just forward it to waiting clients
 
 		// send a response to each waiting client.
-		list<RequestRecord> requests_to_service = pendingDownstreamRequests.getRequestsForResource(wr->getID());
-		list<RequestRecord>::iterator it;
-		for (it = requests_to_service.begin(); it != requests_to_service.end(); it++)
-		{
-			respondToClientRequest((*it).interface_id, (*it).request_msg_ptr, wr);
+		list<RequestRecord> * requests_to_service = pendingDownstreamRequests.getRequestsForResource(wr->getID());
+		if (requests_to_service) {
+			list<RequestRecord>::iterator it;
+			for (it = requests_to_service->begin(); it != requests_to_service->end(); it++)
+			{
+				respondToClientRequest((*it).interface_id, (*it).request_msg_ptr, wr);
+			}
 		}
-
 		pendingDownstreamRequests.removeAndDeleteRequestsForResource(wr->getID());
 		deleteSafeIf(wr, !added);
 	}
@@ -585,7 +586,9 @@ void WebCacheNewAPI::processDownstreamRequest(int socket_id, cPacket * msg, Conn
 		emit(reqev_signal, &misses);
 		// request resource, only if it is the first request of its type
 		bool isNew = pendingDownstreamRequests.addRequest(socket_id, url, request);
-		if (isNew || resend_request_threshold < pendingDownstreamRequests.numberOfClientsAskingForResource(url)) {
+		if (isNew ||
+				( !isNew && // make a single request whenever threshold is reached.
+				( pendingDownstreamRequests.numberOfClientsAskingForResource(url) % resend_request_threshold) == resend_request_threshold - 1)) {
 			makeUpstreamRequest(request);//ANY_US_SOCKET, request);
 			/*
 			ConnInfo * us_cinfo = new ConnInfo;
