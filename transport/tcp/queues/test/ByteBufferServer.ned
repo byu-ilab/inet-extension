@@ -23,7 +23,11 @@ simple ByteBufferServer like TCPSocketAPIAppInterface
         @statistic[messagecounts](title="server message counts"; pattern="server.re*.**"; source="msgevent"; record=dvector);
         
         string mode = default("whole"); // "whole" or "fragments"
-        int msgSizeStep = default(2000);
+        int msgSizeStep = default(1000); // use a negative value for the messages to decrease in size
+        								 // (wraps around to the starting msg size if size would be non positive).
+        int startingMsgSize = default(1000);
+        int msgsInStepInterval = default(1);
+        
         
         string socketapi = default("tcpsocketapi");
         // the domain name for this server

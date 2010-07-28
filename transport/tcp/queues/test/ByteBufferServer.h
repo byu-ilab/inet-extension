@@ -61,13 +61,17 @@ class ByteBufferServer : public httptServerBase, public TCPSocketAPI::CallbackIn
 private:
 	ByteBufferNodeMode mode;
 	TCPSocketAPI * socketapi;
-	uint32 msg_size_step;
+	int msg_size_step;
+	int starting_msg_size;
+	int max_msgs_in_step_interval;
+	int current_msgs_sent_in_step_interval;
+	int current_interval;
 
 	DynamicResultValue reps_sent;
 	DynamicResultValue req_fragments_rcvd;
 	simsignal_t msg_ev_signal;
 
-	typedef std::map<int, ByteBufferServerSocketWrapper> SocketMap;
+	typedef std::map<int, ByteBufferServerSocketWrapper *> SocketMap;
 	SocketMap sockets;
 
 protected:
@@ -83,7 +87,7 @@ protected:
 
 public:
 	ByteBufferServer();
-	virtual ~ByteBufferServer() {}
+	virtual ~ByteBufferServer();
 };
 
 #endif

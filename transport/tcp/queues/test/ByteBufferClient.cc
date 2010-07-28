@@ -42,7 +42,6 @@ ByteBufferClient::ByteBufferClient()
 
 void ByteBufferClient::initialize()
 {
-	LOG_DEBUG_LN("");
 	LOG_DEBUG_FUN_BEGIN("");
 	// configuration from ned file
 	reqs_to_send = par("numRequestsToSend");
@@ -52,7 +51,7 @@ void ByteBufferClient::initialize()
 		ASSERT(!serverwww.empty());
 
 	setMode(mode, par("mode"));
-	LOG_DEBUG_LN("mode: "<<(mode == BBN_MODE_WHOLE ? BBN_MODE_NAME_WHOLE : BBN_MODE_NAME_FRAGMENTS));
+	LOG_DEBUG_APPEND_LN("mode: "<<(mode == BBN_MODE_WHOLE ? BBN_MODE_NAME_WHOLE : BBN_MODE_NAME_FRAGMENTS));
 
 	// configuration from network
 	socketapi = findTCPSocketAPI(this);
@@ -82,11 +81,12 @@ void ByteBufferClient::initialize()
 
 void ByteBufferClient::handleMessage(cMessage * msg)
 {
+	LOG_DEBUG_FUN_BEGIN("");
 	if (msg->getKind() == BBC_START)
 	{
 		//means start
 		// connect to the server
-		LOG_DEBUG_LN("active socket parameters: "<<"\'\':-1 <=> "<<remote_address<<":"<<remote_port);
+		LOG_DEBUG_APPEND_LN("active socket parameters: "<<"\'\':-1 <=> "<<remote_address<<":"<<remote_port);
 		current_socket_id = socketapi->makeActiveSocket(this, "", -1, remote_address, remote_port);
 	}
 	else if (msg->getKind() == BBC_RESUME)
@@ -114,21 +114,24 @@ void ByteBufferClient::handleMessage(cMessage * msg)
 		error("Unknown message kind.");
 	}
 	delete msg;
+	LOG_DEBUG_FUN_END("");
 }
 
 void ByteBufferClient::connectCallback(int socket_id, int ret_status, void * myPtr)
 {
 	Enter_Method_Silent();
 
+	LOG_DEBUG_FUN_BEGIN("");
+
 	ASSERT(myPtr == NULL);
 	ASSERT(!TCPSocketAPI::isCallbackError(ret_status));
 	ASSERT(current_socket_id == socket_id);
 
-	LOG_DEBUG_LN("connected socket "<<socket_id<<" at t="<<simTime());
+	LOG_DEBUG_APPEND_LN("connected socket "<<socket_id<<" at t="<<simTime());
 
 	sendRequest(socket_id);
 
-	LOG_DEBUG_LN("waiting for recv on socket "<<socket_id);
+	LOG_DEBUG_FUN_END("waiting for recv on socket "<<socket_id);
 	socketapi->recv(socket_id);
 }
 
@@ -137,7 +140,7 @@ void ByteBufferClient::recvCallback(int socket_id, int ret_status, cPacket * msg
 	Enter_Method_Silent();
 
 	ASSERT(current_socket_id == socket_id);
-	LOG_DEBUG_LN("");
+
 	LOG_DEBUG_FUN_BEGIN("received "<<ret_status<<" bytes on socket "<<socket_id<<" at t="<<simTime());
 
 	if (ret_status == TCPSocketAPI::CB_E_CLOSED)
@@ -156,7 +159,7 @@ void ByteBufferClient::recvCallback(int socket_id, int ret_status, cPacket * msg
 		ASSERT(reply != NULL);
 		ASSERT(reply->getByteLength() == ret_status);
 
-		LOG_DEBUG_LN("received "<<reply->getName());
+		LOG_DEBUG_APPEND_LN("received "<<reply->getName());
 
 		reps_rcvd.increment();
 		emit(msg_ev_signal, &reps_rcvd);
@@ -179,9 +182,9 @@ void ByteBufferClient::recvCallback(int socket_id, int ret_status, cPacket * msg
 
 		do
 		{
-			LOG_DEBUG_LN("remaining rcvd bytes: "<<remainder);
-			LOG_DEBUG_LN("bytes to rcv: "<<bytes_to_rcv);
-			LOG_DEBUG_LN("byte buffer payload array size: "<<buffer->getPayloadArraySize());
+			LOG_DEBUG_APPEND_LN("remaining rcvd bytes: "<<remainder);
+			LOG_DEBUG_APPEND_LN("bytes to rcv: "<<bytes_to_rcv);
+			LOG_DEBUG_APPEND_LN("byte buffer payload array size: "<<buffer->getPayloadArraySize());
 			// If there is not a reply that is currently being received
 			if (bytes_to_rcv == 0)
 			{
@@ -190,7 +193,7 @@ void ByteBufferClient::recvCallback(int socket_id, int ret_status, cPacket * msg
 				cPacket * plmsg = buffer->removeFirstPayloadMessage();
 				ASSERT(plmsg != NULL);
 
-				LOG_DEBUG_LN("beginning to receive "<<plmsg->getName());
+				LOG_DEBUG_APPEND_LN("beginning to receive "<<plmsg->getName());
 
 				ASSERT(bytes_rcvd == 0);
 				bytes_to_rcv = plmsg->getByteLength();
@@ -201,8 +204,8 @@ void ByteBufferClient::recvCallback(int socket_id, int ret_status, cPacket * msg
 			// Update the byte counters
 			bytes_rcvd += remainder;
 			bytes_to_rcv -= remainder;
-			LOG_DEBUG_LN("bytes rcvd: "<<bytes_rcvd);
-			LOG_DEBUG_LN("bytes to rcv: "<<bytes_to_rcv);
+			LOG_DEBUG_APPEND_LN("bytes rcvd: "<<bytes_rcvd);
+			LOG_DEBUG_APPEND_LN("bytes to rcv: "<<bytes_to_rcv);
 
 			// If the whole reply has been received
 			if (bytes_to_rcv <= 0)
@@ -210,7 +213,7 @@ void ByteBufferClient::recvCallback(int socket_id, int ret_status, cPacket * msg
 				// Then handle the message
 					// remember bytes_to_rcv is zero or negative
 				remainder = -bytes_to_rcv;
-				LOG_DEBUG_LN("remaining bytes: "<<remainder);
+				LOG_DEBUG_APPEND_LN("remaining bytes: "<<remainder);
 				if (0 < remainder)
 				{
 					ASSERT(0 < buffer->getPayloadArraySize());
@@ -300,6 +303,8 @@ void ByteBufferClient::recvCallback(int socket_id, int ret_status, cPacket * msg
 
 void ByteBufferClient::sendRequest(int socket_id)
 {
+	LOG_DEBUG_FUN_BEGIN("sending on socket "<<socket_id);
+
 	for (int i = 0; i < req_phase_density; i++)
 	{
 		std::string uri = "/index";
@@ -317,7 +322,7 @@ void ByteBufferClient::sendRequest(int socket_id)
 		reqs_sent.increment();
 		emit(msg_ev_signal, &reqs_sent);
 
-		LOG_DEBUG_LN("sending request #"<<reqs_sent.unsignedLongValue()<<
+		LOG_DEBUG_APPEND_LN("sending request #"<<reqs_sent.unsignedLongValue()<<
 				" for "<<request->getName()<<
 				" on socket "<<socket_id<<
 				" at t="<<simTime());
@@ -326,4 +331,6 @@ void ByteBufferClient::sendRequest(int socket_id)
 //	cMessage * resume = new cMessage("RESUME", BBC_RESUME);
 //	LOG_DEBUG_LN("scheduling resume time 2.0 seconds from "<<simTime());
 //	scheduleAt(simTime()+2.0, resume);
+
+	LOG_DEBUG_FUN_END("");
 }
