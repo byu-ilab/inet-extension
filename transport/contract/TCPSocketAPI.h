@@ -352,7 +352,7 @@ public:
 		 * @return Nothing.
 		 */
 		virtual void recvCallback(int socket_id, int ret_status, cPacket * msg,
-										void * yourPtr) {delete msg;}
+										void * yourPtr) { if (msg != NULL) { delete msg; } }
 
 		//virtual void closeNotice (int socket_id, void * yourPtr) {};
 	};

@@ -70,14 +70,14 @@ uint32 TCPMsgBasedRcvQueue::insertBytesFromSegment(TCPSegment *tcpseg)
 	// message is not added to the queue and handed up to the application
 	// a second time.
 	/* <+++ */
-    //TCPVirtualDataRcvQueue::insertBytesFromSegment(tcpseg);
+    // ---> TCPVirtualDataRcvQueue::insertBytesFromSegment(tcpseg); <---
 
     cPacket *msg;
     uint32 endSeqNo;
     while ((msg=tcpseg->removeFirstPayloadMessage(endSeqNo))!=NULL)
     {
     	/* KPB +++> */
-    	if (seqGreater(endSeqNo, rcv_nxt))
+    	if (seqLE(rcv_nxt, endSeqNo))
     	{
     		/* <+++ */
 
@@ -97,7 +97,7 @@ uint32 TCPMsgBasedRcvQueue::insertBytesFromSegment(TCPSegment *tcpseg)
     }
 
     return TCPVirtualDataRcvQueue::insertBytesFromSegment(tcpseg);
-//    return rcv_nxt;
+    // ---> return rcv_nxt; <---
 }
 
 cPacket *TCPMsgBasedRcvQueue::extractBytesUpTo(uint32 seq)

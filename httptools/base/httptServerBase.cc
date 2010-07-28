@@ -128,7 +128,7 @@ httptReplyMessage * httptServerBase::handleRequestMessage( cMessage *msg )
 	// This should never happen but lets check
 	if ( extractServerName(request->targetUrl()) != wwwName )
 	{
-		// TODO: KVJ left a "DEBUG HERE" notice
+		// TODO: KVJ DEBUG HERE
 		error("Received message intended for '%s'", request->targetUrl());
 	}
 

@@ -40,6 +40,10 @@ class INET_API TCPMsgBasedSendQueue : public TCPSendQueue
     uint32 begin;  // 1st sequence number stored
     uint32 end;    // last sequence number stored +1
 
+    // KPB +++>
+    virtual void flushQueue();
+    // <+++
+
   public:
     /**
      * Ctor

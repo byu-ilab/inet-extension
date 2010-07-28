@@ -39,6 +39,8 @@ protected:
 
 public:
 	virtual ~httptServerBase() {}
+
+protected:
 	/** Overridden from cSimpleModule */
 	//@{
 	virtual void initialize();
@@ -46,7 +48,6 @@ public:
 	virtual void handleMessage(cMessage *msg)=0;
 	//@}
 
-protected:
 	/**
 	 * Update the display string if running in GUI mode
 	 */

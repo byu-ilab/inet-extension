@@ -27,12 +27,30 @@ TCPMsgBasedSendQueue::TCPMsgBasedSendQueue() : TCPSendQueue()
 
 TCPMsgBasedSendQueue::~TCPMsgBasedSendQueue()
 {
+	/* KPB --->
     for (PayloadQueue::iterator it=payloadQueue.begin(); it!=payloadQueue.end(); ++it)
         delete it->msg;
+        <--- */
+	// KPB +++>
+	flushQueue();
+	// <+++
 }
+
+// KPB +++>
+void TCPMsgBasedSendQueue::flushQueue()
+{
+	for (PayloadQueue::iterator it=payloadQueue.begin(); it!=payloadQueue.end(); ++it)
+	{
+		delete it->msg;
+	}
+}
+// <+++
 
 void TCPMsgBasedSendQueue::init(uint32 startSeq)
 {
+	// KPB +++> to conform to documentation on TCPSendQueue::init
+	//flushQueue();
+	// <+++
     begin = startSeq;
     end = startSeq;
 }
