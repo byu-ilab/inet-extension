@@ -14,9 +14,9 @@
 // 
 
 package inet.transport.tcp.queues.test;
-import inet.applications.tcpapp.socketapi.TCPSocketAPIAppInterface;
+import inet.applications.tcpapp.socketapi.ITCPSocketMgrApp;
 
-simple ByteBufferServer like TCPSocketAPIAppInterface
+simple ByteBufferServer like ITCPSocketMgrApp
 {
     parameters:
         @signal[msgevent](type="unsigned long encapsulated in DynamicResultValue");

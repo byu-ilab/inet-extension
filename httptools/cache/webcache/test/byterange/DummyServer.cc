@@ -21,7 +21,7 @@ void DummyServer::initialize()
 {
 	httptServerBase::initialize();
 
-	_socketapi = findTCPSocketAPI(this);
+	_socketapi = findTCPSocketMgr(this);
 
 	int _listening_fd = _socketapi->makePassiveSocket(this, "", port, NULL);
 	_socketapi->accept(_listening_fd, NULL);
@@ -34,7 +34,7 @@ void DummyServer::handleMessage(cMessage *msg)
 
 void DummyServer::acceptCallback(int socket_id, int ret_status, void * myPtr)
 {
-	if (TCPSocketAPI::isCallbackError(ret_status))
+	if (TCPSocketAPI_Inet::isCallbackError(ret_status))
 	{
 		_socketapi->close(socket_id);
 		return;
@@ -45,7 +45,7 @@ void DummyServer::acceptCallback(int socket_id, int ret_status, void * myPtr)
 
 void DummyServer::recvCallback(int socket_id, int ret_status, cPacket * msg, void * myPtr)
 {
-	if (TCPSocketAPI::isCallbackError(ret_status))
+	if (TCPSocketAPI_Inet::isCallbackError(ret_status))
 	{
 		_socketapi->close(socket_id);
 		return;

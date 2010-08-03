@@ -18,7 +18,7 @@ package inet.httptools.cache.webcache.test.extfilter;
 import inet.networklayer.autorouting.FlatNetworkConfigurator;
 import inet.nodes.inet.Router;
 import inet.nodes.inet.StandardHost;
-import inet.nodes.inet.StandardHostWithTCPSocketAPI;
+import inet.nodes.inet.StandardHostWithTCPSocketMgr;
 import ned.DatarateChannel;
 import inet.httptools.base.httptController;
 
@@ -57,7 +57,7 @@ network CacheExtensionFilterTest
             parameters:
                 @display("p=261,202");
         }
-        cache: StandardHostWithTCPSocketAPI {
+        cache: StandardHostWithTCPSocketMgr {
             parameters:
                 @display("p=261,72");
         }

@@ -18,13 +18,15 @@
 
 #include <omnetpp.h>
 #include "httptServerBase.h"
-#include "TCPSocketAPI.h"
-#include "TCPSocketAPIAppUtils.h"
+#include "TCPSocketAPI_Inet.h"
+#include "TCPSocketMgrAppUtils.h"
 
-class DummyServer : public httptServerBase, TCPSocketAPI::CallbackInterface
+class DummyServer
+	: public httptServerBase,
+	  public TCPSocketAPI_Inet::CallbackHandler
 {
 protected:
-	TCPSocketAPI * _socketapi;
+	TCPSocketAPI_Inet * _socketapi;
 	int _listening_fd;
 protected:
     virtual void initialize();

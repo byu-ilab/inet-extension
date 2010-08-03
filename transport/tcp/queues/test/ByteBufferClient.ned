@@ -15,9 +15,9 @@
 
 package inet.transport.tcp.queues.test;
 
-import inet.applications.tcpapp.socketapi.TCPSocketAPIAppInterface;
+import inet.applications.tcpapp.socketapi.ITCPSocketMgrApp;
 
-simple ByteBufferClient like TCPSocketAPIAppInterface
+simple ByteBufferClient like ITCPSocketMgrApp
 {
     parameters:
         @signal[msgevent](type="unsigned int");

@@ -12,12 +12,12 @@
 // You should have received a copy of the GNU Lesser General Public License
 // along with this program.  If not, see http://www.gnu.org/licenses/.
 // 
-import inet.applications.tcpapp.socketapi.TCPSocketAPIAppInterface;
+import inet.applications.tcpapp.socketapi.ITCPSocketMgrApp;
 import inet.httptools.base.httptServerBaseInterface;
 
 package inet.httptools.cache.webcache.mod;
 
-simple WebCacheNewAPI like TCPSocketAPIAppInterface, httptServerBaseInterface
+simple WebCacheNewAPI like ITCPSocketMgrApp, httptServerBaseInterface
 {
     parameters:
         // emits the transmission delay every time a response is received
@@ -36,7 +36,7 @@ simple WebCacheNewAPI like TCPSocketAPIAppInterface, httptServerBaseInterface
         @signal[msgevent](type="cMessageEventDatagram objects");
         bool shouldTrackDuplicateMessageNames = default(false);
         
-        // From TCPSocketAPIAppInterface
+        // From ITCPSocketMgrApp
         	// the socketAPI name
         string socketapi;								// the socketAPI name.
         

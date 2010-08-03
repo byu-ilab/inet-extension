@@ -9,7 +9,7 @@
 
 #define DEBUG_CLASS false
 
-ActiveTCPSocketPool::ActiveTCPSocketPool(TCPSocketAPI * socketapi, TCPSocketAPI::CallbackInterface * pool_owner,
+ActiveTCPSocketPool::ActiveTCPSocketPool(TCPSocketAPI_Inet * socketapi, TCPSocketAPI_Inet::CallbackHandler * pool_owner,
 		int max_num_sockets, const std::string server_address, int server_port, simtime_t timeout,
 		int max_load, void * your_recv_info_ptr)
 {
@@ -65,7 +65,7 @@ void ActiveTCPSocketPool::connectCallback(int socket_id, int ret_status, void * 
 {
 	LOG_DEBUG_FUN_BEGIN("")
 
-	if (TCPSocketAPI::isCallbackError(ret_status))
+	if (TCPSocketAPI_Inet::isCallbackError(ret_status))
 	{
 		closeSocket(socket_id);
 	}
@@ -86,7 +86,7 @@ void ActiveTCPSocketPool::recvCallback(int socket_id, int ret_status, cPacket * 
 {
 	LOG_DEBUG_FUN_BEGIN("")
 
-	if (TCPSocketAPI::isCallbackError(ret_status))
+	if (TCPSocketAPI_Inet::isCallbackError(ret_status))
 	{
 		closeSocket(socket_id);
 		return;

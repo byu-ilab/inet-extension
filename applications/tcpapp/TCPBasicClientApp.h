@@ -16,7 +16,6 @@
 
 #include <omnetpp.h>
 #include "TCPGenericCliAppBase.h"
-#include "TCPSocketAPI.h"
 
 /**
  * An example request-reply based client application.

@@ -18,7 +18,7 @@
 
 #include <omnetppextension.h>
 #include <dynamicresultrecorders.h>
-#include "TCPSocketAPI.h"
+#include "TCPSocketAPI_Inet.h"
 #include "ByteBufferNode.h"
 
 #define SIGNAME_MSGEV "msgevent"
@@ -28,7 +28,9 @@
 
 enum ByteBufferClientMessageKinds { BBC_START, BBC_RESUME };
 
-class ByteBufferClient : public cSimpleModule, public TCPSocketAPI::CallbackInterface
+class ByteBufferClient
+	: public cSimpleModule,
+	  public TCPSocketAPI_Inet::CallbackHandler
 {
 private:
 	static uint32 __serial;
@@ -40,7 +42,7 @@ private:
 	int req_phase_density;
 
 	// Configured from network elements
-	TCPSocketAPI * socketapi;
+	TCPSocketAPI_Inet * socketapi;
 	std::string remote_address;
 	int remote_port;
 

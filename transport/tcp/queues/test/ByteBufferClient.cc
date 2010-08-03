@@ -14,7 +14,7 @@
 // 
 
 #include "ByteBufferClient.h"
-#include "TCPSocketAPIAppUtils.h"
+#include "TCPSocketMgrAppUtils.h"
 #include "httptMessages_m.h"
 #include "httptController.h"
 #include "ModuleAccess.h"
@@ -54,7 +54,7 @@ void ByteBufferClient::initialize()
 	LOG_DEBUG_APPEND_LN("mode: "<<(mode == BBN_MODE_WHOLE ? BBN_MODE_NAME_WHOLE : BBN_MODE_NAME_FRAGMENTS));
 
 	// configuration from network
-	socketapi = findTCPSocketAPI(this);
+	socketapi = findTCPSocketMgr(this);
 
 	httptController * controller = check_and_cast<httptController *>(findModuleSomewhereUp(par("controller"),this));
 
@@ -124,7 +124,7 @@ void ByteBufferClient::connectCallback(int socket_id, int ret_status, void * myP
 	LOG_DEBUG_FUN_BEGIN("");
 
 	ASSERT(myPtr == NULL);
-	ASSERT(!TCPSocketAPI::isCallbackError(ret_status));
+	ASSERT(!TCPSocketAPI_Inet::isCallbackError(ret_status));
 	ASSERT(current_socket_id == socket_id);
 
 	LOG_DEBUG_APPEND_LN("connected socket "<<socket_id<<" at t="<<simTime());
@@ -143,7 +143,7 @@ void ByteBufferClient::recvCallback(int socket_id, int ret_status, cPacket * msg
 
 	LOG_DEBUG_FUN_BEGIN("received "<<ret_status<<" bytes on socket "<<socket_id<<" at t="<<simTime());
 
-	if (ret_status == TCPSocketAPI::CB_E_CLOSED)
+	if (ret_status == TCPSocketAPI_Inet::CB_E_CLOSED)
 	{
 		socketapi->close(socket_id);
 		LOG_DEBUG_FUN_END("socket "<<socket_id<<" closed");
@@ -151,7 +151,7 @@ void ByteBufferClient::recvCallback(int socket_id, int ret_status, cPacket * msg
 	}
 
 	ASSERT(myPtr == NULL);
-	ASSERT(!TCPSocketAPI::isCallbackError(ret_status));
+	ASSERT(!TCPSocketAPI_Inet::isCallbackError(ret_status));
 
 	if (mode == BBN_MODE_WHOLE)
 	{

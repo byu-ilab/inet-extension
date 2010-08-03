@@ -12,7 +12,7 @@
 // Foundation, Inc., 59 Temple Place - Suite 330, Boston, MA  02111-1307, USA.
 //
 // ----------------------------------------------------------------------------
-import inet.applications.tcpapp.socketapi.TCPSocketAPIAppInterface;
+import inet.applications.tcpapp.socketapi.ITCPSocketMgrApp;
 import inet.httptools.base.httptServerBaseInterface;
 
 package inet.httptools.videocomponents;
@@ -30,7 +30,7 @@ package inet.httptools.videocomponents;
 // @version 1.0 
 // @author  Travis Andelin
 //
-simple VideoServer like TCPSocketAPIAppInterface, httptServerBaseInterface
+simple VideoServer like ITCPSocketMgrApp, httptServerBaseInterface
 {
     parameters:
         @signal[msgevent](type="cMessageEventDatagram objects");

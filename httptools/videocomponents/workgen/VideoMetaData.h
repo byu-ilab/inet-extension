@@ -1,17 +1,25 @@
-/*
- * VideoTitleMetaData.h
+/**
+ * \file VideoTitleMetaData.h
  *
- *  Created on: Jun 4, 2010
- *      Author: Kevin Black
+ * Created: June 4, 2010
+ * Author: Kevin Black
+ *
+ * @todo Add GPL notice.
  */
 
-#ifndef VIDEOTITLEMETADATA_H_
-#define VIDEOTITLEMETADATA_H_
+#ifndef __INET__VIDEOMETADATA_H_
+#define __INET__VIDEOMETADATA_H_
 
 #define MIN_QUALITY_LEVEL 1
 #define MIN_SEGMENT_NUMBER 0
+
+// From emulation
+#include "INETDefs.h"
+
+// From standard C++ libraries
 #include <string>
-struct VideoTitleMetaData
+
+struct INET_API VideoTitleMetaData
 {
 	std::string video_title;
 	std::string video_type;
@@ -20,7 +28,7 @@ struct VideoTitleMetaData
 	int quality_interval;
 };
 
-struct VideoSegmentMetaData
+struct INET_API VideoSegmentMetaData
 {
 	std::string video_title;
 	std::string video_type;
@@ -30,4 +38,4 @@ struct VideoSegmentMetaData
 	int last_byte_position;
 };
 
-#endif /* VIDEOTITLEMETADATA_H_ */
+#endif /* __EMULATION__VIDEOMETADATA_H_ */

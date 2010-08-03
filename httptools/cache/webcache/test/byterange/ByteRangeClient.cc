@@ -41,7 +41,7 @@ void ByteRangeClient::initialize()
 	outputFormat = lf_short;
 
 
-	_socketapi = findTCPSocketAPI(this);
+	_socketapi = findTCPSocketMgr(this);
 
 	_controller = check_and_cast<httptController *>(simulation.getSystemModule()->getSubmodule(par("controller")));
 
@@ -90,7 +90,7 @@ void ByteRangeClient::connectCallback(int socket_id, int ret_status, void * myPt
 //
 //	int range_id = *rid_ptr;
 
-	if (TCPSocketAPI::isCallbackError(ret_status))
+	if (TCPSocketAPI_Inet::isCallbackError(ret_status))
 	{
 		LOG_DEBUG_LN("Error connecting on request "<<rri_ptr->request_id<<
 			" to request byte range "<<rri_ptr->range_id);
@@ -136,7 +136,7 @@ void ByteRangeClient::recvCallback(int socket_id, int ret_status, cPacket * msg,
 //
 //	int range_id = *rid_ptr;
 
-	if (TCPSocketAPI::isCallbackError(ret_status))
+	if (TCPSocketAPI_Inet::isCallbackError(ret_status))
 	{
 		LOG_DEBUG_LN("Error receiving on request "<<rri_ptr->request_id<<
 					" to request byte range "<<rri_ptr->range_id);

@@ -19,7 +19,7 @@ import ned.DatarateChannel;
 import inet.networklayer.autorouting.FlatNetworkConfigurator;
 import inet.nodes.inet.Router;
 import inet.nodes.inet.StandardHost;
-import inet.nodes.inet.StandardHostWithTCPSocketAPI;
+import inet.nodes.inet.StandardHostWithTCPSocketMgr;
 import inet.httptools.base.httptController;
 
 network ByteBufferNetwork
@@ -49,12 +49,12 @@ network ByteBufferNetwork
             @display("is=s;p=539,84");
         }
 
-        server: StandardHostWithTCPSocketAPI {
+        server: StandardHostWithTCPSocketMgr {
             parameters:
                 @display("i=device/server_l;p=72,84");
         }
 
-        clients[numClients]: StandardHostWithTCPSocketAPI {
+        clients[numClients]: StandardHostWithTCPSocketMgr {
             parameters:
                 @display("i=device/pc;p=78,220,m,10,50,70");
         }

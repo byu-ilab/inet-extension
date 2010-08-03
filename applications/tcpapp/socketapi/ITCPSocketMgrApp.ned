@@ -15,14 +15,12 @@
 
 package inet.applications.tcpapp.socketapi;
 
-//import inet.applications.tcpapp.TCPApp;
-
-// See TCPSocketAPIAppUtils for a function that will take in a
+// See TCPSocketMgrAppUtils for a function that will take in a
 // cSimpleModule pointer, verify that the parameter "socketapi"
-// is specified, and find the referenced TCPSocketAPI module
+// is specified, and find the referenced TCPSocketMgr module
 // in its parent's module.
 
-moduleinterface TCPSocketAPIAppInterface
+moduleinterface ITCPSocketMgrApp
 {
     parameters:
         string socketapi;

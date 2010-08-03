@@ -18,7 +18,7 @@ package inet.httptools.cache.webcache.test.byterange;
 import inet.networklayer.autorouting.FlatNetworkConfigurator;
 import inet.nodes.inet.Router;
 import inet.nodes.inet.StandardHost;
-import inet.nodes.inet.StandardHostWithTCPSocketAPI;
+import inet.nodes.inet.StandardHostWithTCPSocketMgr;
 import ned.DatarateChannel;
 import inet.httptools.base.*;
 
@@ -44,15 +44,15 @@ network ByteRangeTestNetwork
             parameters:
                 @display("p=61,98");
         }
-        client: StandardHostWithTCPSocketAPI { //s[numClients]: StandardHost {
+        client: StandardHostWithTCPSocketMgr { //s[numClients]: StandardHost {
             parameters:
                 @display("p=612,137,row,100;i=device/pc3");
         }
-        server: StandardHostWithTCPSocketAPI { //s[numServers]: StandardHost {
+        server: StandardHostWithTCPSocketMgr { //s[numServers]: StandardHost {
             parameters:
                 @display("p=135,137,row,100;i=device/pc2");
         }
-        cache: StandardHostWithTCPSocketAPI {
+        cache: StandardHostWithTCPSocketMgr {
             parameters:
                 @display("p=302,137,i,device/pc1");
         }

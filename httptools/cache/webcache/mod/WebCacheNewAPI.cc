@@ -14,7 +14,7 @@
 //
 
 #include "WebCacheNewAPI.h"
-#include "TCPSocketAPIAppUtils.h"
+#include "TCPSocketMgrAppUtils.h"
 #include "DuplicateHttpMessageNameObserver.h"
 #include <sstream>
 
@@ -123,7 +123,7 @@ void WebCacheNewAPI::initialize() {
 
 	controller->getServerInfo(upstream_server.c_str(),szModuleName,connect_port);
 
-	tcp_api = findTCPSocketAPI(this);
+	tcp_api = findTCPSocketMgr(this);
 
 	ConnInfo * us_cinfo = new ConnInfo();
 	us_cinfo->sockType = WCST_CLIENT;
@@ -162,7 +162,7 @@ void WebCacheNewAPI::initialize() {
 		DuplicateHttpMessageNameObserver::getInstance()->subscribeOnDefaultSignal(this);
 	}
 
-//	tcp_api = findTCPSocketAPI(this);
+//	tcp_api = findTCPSocketMgr(this);
     cMessage * start = new cMessage("START",START);
     scheduleAt(simTime()+activationTime,start);
 }
@@ -249,7 +249,7 @@ void WebCacheNewAPI::acceptCallback(int socket_id, int ret_status, void * yourPt
 
 	// The acceptCallback shouldn't receive errors via ret_status, if it does then
 	// the TCP socket API changed
-	ASSERT(!TCPSocketAPI::isCallbackError(ret_status));
+	ASSERT(!TCPSocketMgr::isCallbackError(ret_status));
 
 	// read data from new socket
 	ConnInfo * ci = new ConnInfo();
@@ -283,9 +283,9 @@ void WebCacheNewAPI::acceptCallback(int socket_id, int ret_status, void * yourPt
 //		handleError = true;
 //	}
 //
-//	if (TCPSocketAPI::isCallbackError(ret_status))
+//	if (TCPSocketMgr::isCallbackError(ret_status))
 //	{
-//		LOG_DEBUG("Socket error: "<<TCPSocketAPI::getCallbackErrorName(ret_status));
+//		LOG_DEBUG("Socket error: "<<TCPSocketMgr::getCallbackErrorName(ret_status));
 //		handleError = true;
 //	}
 //
@@ -330,16 +330,16 @@ void WebCacheNewAPI::recvCallback(int socket_id, int ret_status,
 //	}
 
 	// Use a switch statement if different actions should be taken for a given error
-	if (TCPSocketAPI::isCallbackError(ret_status))
+	if (TCPSocketMgr::isCallbackError(ret_status))
 	{
 		// msg is NULL so don't call delete
-		LOG_DEBUG("Callback error is: "<<TCPSocketAPI::getCallbackErrorName(ret_status));
+		LOG_DEBUG("Callback error is: "<<TCPSocketMgr::getCallbackErrorName(ret_status));
 		closeSocket(socket_id);
 
 		// check if it is a broken connection
-		if (ret_status == TCPSocketAPI::CB_E_RESET ||
-				ret_status == TCPSocketAPI::CB_E_REFUSED ||
-				ret_status == TCPSocketAPI::CB_E_UNKNOWN)
+		if (ret_status == TCPSocketMgr::CB_E_RESET ||
+				ret_status == TCPSocketMgr::CB_E_REFUSED ||
+				ret_status == TCPSocketMgr::CB_E_UNKNOWN)
 		{
 			if (data->sockType ==  WCST_SERVER)
 			{

@@ -15,9 +15,9 @@
 
 package inet.httptools.cache.webcache.test.byterange;
 
-import inet.applications.tcpapp.socketapi.TCPSocketAPIAppInterface;
+import inet.applications.tcpapp.socketapi.ITCPSocketMgrApp;
 
-simple ByteRangeClient like TCPSocketAPIAppInterface
+simple ByteRangeClient like ITCPSocketMgrApp
 {
     parameters:
         string socketapi;
