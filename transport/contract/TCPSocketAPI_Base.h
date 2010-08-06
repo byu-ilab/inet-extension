@@ -1,9 +1,11 @@
+//==========================================================================80>
 /**
  * @file TCPSocketAPI_Base.h
  *
- * @brief Contains the TCPSocketAPI_Base class.
+ * TCPSocketAPI_Base interface and TCPSocketAPI_Base::CallbackHandler class
+ * declarations.
  *
- * @todo Add GPL notice?
+ * @todo Add GPL notice.
  */
 
 /* potential documentation template
@@ -62,7 +64,7 @@ public:
 	//@{
 
 	/**
-	 * @brief Values that may be returned in callbacks to make error
+	 * Values that may be returned in callbacks to make error
 	 * identification more convenient.
 	 */
 	enum CallbackError
@@ -91,7 +93,7 @@ public:
 	static std::string getCallbackErrorName(error_id_t error);
 
 	/**
-	 * @brief Defines functions that should be extended to handle connect or
+	 * Defines functions that should be extended to handle connect or
 	 * accept operations.
 	 *
 	 * @details Extensions to this socket API should define a function to
@@ -110,7 +112,7 @@ public:
 		virtual ~CallbackHandler() {}
 
 		/** 
-		 * @brief By default does nothing.
+		 * By default does nothing.
 		 *
 		 * @details Subclasses should handle the connection of the specified
 		 * socket specific to their application.  Subclasses should also
@@ -132,7 +134,7 @@ public:
 
 
 		/**
-		 * @brief By default does nothing.
+		 * By default does nothing.
 		 *
 		 * @details Subclasses should handles the acceptance of a new socket
 		 * specific to their application.  Subclasses should also assume
@@ -166,7 +168,7 @@ public:
 	/** @name Destructor */
 	//@{
 
-	/** @brief Empty. */
+	/** Empty. */
 	virtual ~TCPSocketAPI_Base () {}
 
 	///@}
@@ -177,7 +179,7 @@ public:
 	//@{
 
 	/**
-	 * @brief Accesses the local port of the indicated socket.
+	 * Accesses the local port of the indicated socket.
 	 *
 	 * @param id -- Socket descriptor.
 	 *
@@ -190,7 +192,7 @@ public:
 
 
 	/**
-	 * @brief Accesses the remote port of the indicated socket.
+	 * Accesses the remote port of the indicated socket.
 	 *
 	 * @param id -- Socket descriptor.
 	 *
@@ -203,7 +205,7 @@ public:
 
 
 	/**
-	 * @brief Accesses the local address of the indicated socket.
+	 * Accesses the local address of the indicated socket.
 	 *
 	 * @param id -- Socket descriptor.
 	 *
@@ -216,7 +218,7 @@ public:
 
 
 	/**
-	 * @brief Accesses the remote address of the indicated socket.
+	 * Accesses the remote address of the indicated socket.
 	 *
 	 * @param id -- Socket descriptor.
 	 *
@@ -235,7 +237,7 @@ public:
 	//@{
 
 	/**
-	 * @brief Creates a new socket.
+	 * Creates a new socket.
 	 *
 	 * @param cbobj -- A pointer to the callback handler for the socket.
 	 *
@@ -249,7 +251,7 @@ public:
 
 
 	/**
-	 * @brief Binds the specified socket to the indicated local address and
+	 * Binds the specified socket to the indicated local address and
 	 * local port.
 	 *
 	 * Via this function ports cannot be used concurrently (call close() to
@@ -281,7 +283,7 @@ public:
 			port_t local_port) =0;
 
 	/**
-	 * @breif Begins to connect the specified socket to the indicated remote
+	 * Begins to connect the specified socket to the indicated remote
 	 * address and remote port.
 	 *
 	 * When the connection is established then the connectCallback()
@@ -300,7 +302,7 @@ public:
 
 
 	/**
-	 * @brief Begins to connect the specified socket to the indicated remote
+	 * Begins to connect the specified socket to the indicated remote
 	 * address and remote port.
 	 *
 	 * Same as TCPSocketAPI_Base::connect(socket_id_t, address_cref_t, port_t)
@@ -320,7 +322,7 @@ public:
 
 
 	/**
-	 * @brief Makes the specified socket a passive (listening) socket.
+	 * Makes the specified socket a passive (listening) socket.
 	 *
 	 * The socket must be bound to a valid port (see bind()) before it can be
 	 * made passive.
@@ -340,7 +342,7 @@ public:
 
 
 	/**
-	 * @brief Makes an active socket by invoking socket(), bind(), and
+	 * Makes an active socket by invoking socket(), bind(), and
 	 * connect().
 	 *
 	 * @param cbobj -- A pointer to the callback handler for the socket.
@@ -364,7 +366,7 @@ public:
 
 
 	/**
-	 * @brief Makes an active socket by invoking socket(), bind(), and
+	 * Makes an active socket by invoking socket(), bind(), and
 	 * connect().
 	 *
 	 * Same as TCPSocketAPI_Base::makeActiveSocket(cb_base_handler_ptr_t,
@@ -385,7 +387,7 @@ public:
 
 
 	/**
-	 * @brief Makes a passive socket by invoking socket(), bind(), and
+	 * Makes a passive socket by invoking socket(), bind(), and
 	 * listen().
 	 *
 	 * @param cbobj -- A pointer to the callback handler for the socket.
@@ -408,7 +410,7 @@ public:
 
 
 	/**
-	 * @brief Signals to the (passive) socket that it should accept an incoming
+	 * Signals to the (passive) socket that it should accept an incoming
 	 * connection (or notify the callback handler of a buffered accepted
 	 * connection).
 	 *
@@ -424,7 +426,7 @@ public:
 
 
 	/**
-	 * @brief Signals to the (passive) socket that it should accept an incoming
+	 * Signals to the (passive) socket that it should accept an incoming
 	 * connection (or notify the callback handler of a buffered accepted
 	 * connection).
 	 *
@@ -440,11 +442,11 @@ public:
 	 * the context elements and associates them with the sockets it creates.
 	 * That is the preferred practice.
 	 */
-	virtual void accept (socket_id_t id, user_data_ptr_t yourPtr) =0;
+	virtual void accept (socket_id_t id, user_data_ptr_t context) =0;
 
 
 	/**
-	 * @brief Special receive modes for the recv() operation.
+	 * Special receive modes for the recv() operation.
 	 */
 	enum RecvMode
 	{
@@ -468,7 +470,7 @@ public:
 
 
 	/**
-	 * @brief Signals to the (active) socket that it should receive incoming
+	 * Signals to the (active) socket that it should receive incoming
 	 * data.
 	 *
 	 * When data is actually received the recvCallback() function will be
@@ -501,7 +503,7 @@ public:
 
 
 	/**
-	 * @brief Signals to the (active) socket that it should receive incoming
+	 * Signals to the (active) socket that it should receive incoming
 	 * data.
 	 *
 	 * Same as recv(socket_id_t,bytecount_t) except that it allows the user
@@ -517,11 +519,11 @@ public:
 	 * That is the preferred practice.
 	 */
 	virtual void recv (socket_id_t id, bytecount_t byte_mode,
-			user_data_ptr_t yourPtr) =0;
+			user_data_ptr_t context) =0;
 
 
 	/**
-	 * @brief Removes the timeout on the indicated (active) socket.
+	 * Removes the timeout on the indicated (active) socket.
 	 *
 	 * @param id -- Socket descriptor of the socket to have it timeout removed.
 	 *
@@ -532,7 +534,7 @@ public:
 
 
 	/**
-	 * @brief Closes the specified socket.
+	 * Closes the specified socket.
 	 *
 	 * The socket descriptor is now invalid for all socket operations (including
 	 * getMyPtr).
@@ -554,7 +556,7 @@ public:
 	//@{
 
 	/**
-	 * @brief Returns the pointer to the context element pointer provided in a
+	 * Returns the pointer to the context element pointer provided in a
 	 * connect(), accept(), or recv() invocation on the indicated socket.
 	 * Provided to facilitate tracking the context data you associated with the
 	 * socket.
@@ -586,7 +588,7 @@ typedef TCPSocketAPI_Base::cb_base_handler_ptr_t cb_base_handler_ptr_t;
 /**
  * @class TCPSocketAPI_Base
  *
- * @brief Defines a BSD-like socket API for network communications using TCP
+ * Defines a BSD-like socket API for network communications using TCP
  * sockets.
  *
  * @details
