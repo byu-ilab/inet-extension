@@ -76,7 +76,7 @@ public:
 	 * values from the TCPSocketAPI_Base::CallbackError enumeration
 	 * and false if it does not.
 	 */
-	static bool isCallbackError(error_id_t error);
+	//static bool isCallbackError(error_id_t error);
 
 
 	/**
@@ -84,7 +84,7 @@ public:
 	 * value from the TCPSocketAPI::CallbackError enumeration; the
 	 * default is "UNDEFINED".
 	 */
-	static std::string getCallbackErrorName(error_id_t error);
+	//static std::string getCallbackErrorName(error_id_t error);
 
 	//@}
 
@@ -363,10 +363,11 @@ public:
 	 *
 	 *  @throws Throws a std::exception if an error occurs
 	 */
-	virtual void connect (socket_id_t id,
-				address_cref_t remote_address,
-				port_t remote_port,
-				user_data_ptr_t yourPtr=NULL);
+	virtual void connect (socket_id_t id, address_cref_t remote_address,
+				port_t remote_port);
+
+	virtual void connect (socket_id_t id, address_cref_t remote_address,
+			port_t remote_port,	user_data_ptr_t yourPtr);
 
 
 	/**
@@ -411,11 +412,13 @@ public:
 	 * @throws Throws a std::exception if an error occurs.
 	 */
 	virtual socket_id_t makeActiveSocket (cb_base_handler_ptr_t cbobj,
-			address_cref_t local_address,
-			port_t local_port,
-			address_cref_t remote_address,
-			port_t remote_port,
-			user_data_ptr_t yourPtr=NULL);
+				address_cref_t local_address,  port_t local_port,
+				address_cref_t remote_address, port_t remote_port);
+
+	virtual socket_id_t makeActiveSocket (cb_base_handler_ptr_t cbobj,
+			address_cref_t local_address,  port_t local_port,
+			address_cref_t remote_address, port_t remote_port,
+			user_data_ptr_t yourPtr);
 
 
 	/**
@@ -463,8 +466,9 @@ public:
 	 *
 	 * @throws Throws a std::exception if an error occurs.
 	 */
-	virtual void accept (socket_id_t id,
-			user_data_ptr_t yourPtr=NULL);
+	virtual void accept (socket_id_t id);
+
+	virtual void accept (socket_id_t id, user_data_ptr_t yourPtr);
 
 
 	/**
@@ -491,6 +495,15 @@ public:
 	 *
 	 * @param id -- The descriptor to identify the (active) socket that should
 	 * 		now receive incoming data.
+	 * @param byte_mode -- Indicates how incoming data should be buffered and passed back in
+	 * 		the recvCallback().  A positive value indicates that incoming data should be
+	 * 		buffered and that up to that many bytes	should be passed back in the
+	 * 		recvCallback() when ready.  A value of RECV_MODE_PACKET indicates that incoming
+	 * 		data should be buffered and that the recvCallback() should only be invoked when
+	 * 		all of the bytes for the application message have been received (only applicable
+	 * 		when using TCPMsgByteBufferSend/Recv queues).  A value of RECV_MODE_NO_BUFFER
+	 * 		indicates that incoming data should not be buffered and rather be passed in the
+	 * 		recvCallback() as soon as it is received.  The default is RECV_MODE_PACKET.
 	 * @param yourPtr -- A pointer to whatever data/struct/object you want, default
 	 * 		is NULL.
 	 *
@@ -505,7 +518,8 @@ public:
 	 *
 	 * @throws Throws a std::exception if an error occurs.
 	 */
-	virtual void recv (socket_id_t id, user_data_ptr_t yourPtr=NULL);	
+	virtual void recv (socket_id_t id, bytecount_t byte_mode=RECV_MODE_PACKET);
+	virtual void recv (socket_id_t id, bytecount_t byte_mode, user_data_ptr_t yourPtr);
 
 
 	/**

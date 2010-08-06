@@ -205,15 +205,15 @@ void TCPSocketMgr::finish()
 //==============================================================================
 // TCP Socket API functions
 
-bool TCPSocketMgr::isCallbackError(error_id_t error)
-{
-	return TCPSocketAPI_Inet::isCallbackError(error);
-}
+//bool TCPSocketMgr::isCallbackError(error_id_t error)
+//{
+//	return TCPSocketAPI_Inet::isCallbackError(error);
+//}
 
-std::string TCPSocketMgr::getCallbackErrorName(error_id_t error)
-{
-	return TCPSocketAPI_Inet::getCallbackErrorName(error);
-}
+//std::string TCPSocketMgr::getCallbackErrorName(error_id_t error)
+//{
+//	return TCPSocketAPI_Inet::getCallbackErrorName(error);
+//}
 
 port_t TCPSocketMgr::getLocalPort(socket_id_t id)
 {
@@ -328,6 +328,12 @@ void TCPSocketMgr::bind (socket_id_t id, address_cref_t local_address,
 }
 
 void TCPSocketMgr::connect (socket_id_t id, address_cref_t remote_address,
+		port_t remote_port)
+{
+	connect(id, remote_address,remote_port,NULL);
+}
+
+void TCPSocketMgr::connect (socket_id_t id, address_cref_t remote_address,
 		port_t remote_port, user_data_ptr_t yourPtr)
 {
 
@@ -394,6 +400,13 @@ void TCPSocketMgr::listen (socket_id_t id, cb_inet_handler_ptr_t cbobj_for_accep
 
 socket_id_t TCPSocketMgr::makeActiveSocket (cb_base_handler_ptr_t cbobj,
 	address_cref_t local_address, port_t local_port,
+	address_cref_t remote_address, port_t remote_port)
+{
+	return makeActiveSocket(cbobj, local_address,local_port,remote_address,remote_port,NULL);
+}
+
+socket_id_t TCPSocketMgr::makeActiveSocket (cb_base_handler_ptr_t cbobj,
+	address_cref_t local_address, port_t local_port,
 	address_cref_t remote_address, port_t remote_port, user_data_ptr_t yourPtr)
 {
 	Enter_Method_Silent();
@@ -415,6 +428,11 @@ socket_id_t TCPSocketMgr::makePassiveSocket (cb_base_handler_ptr_t cbobj,
 	bind(id, local_address, local_port);
 	TCPSocketAPI_Inet::listen(id, cbobj_for_accepted);
 	return id;
+}
+
+void TCPSocketMgr::accept (socket_id_t id)
+{
+	accept(id, NULL);
 }
 
 void TCPSocketMgr::accept (socket_id_t id, void * yourPtr)
@@ -499,7 +517,12 @@ void TCPSocketMgr::send (socket_id_t id, cPacket * msg)
 	printFunctionNotice(__fname, socket->toString() + " sent message "+msg->getName());
 }
 
-void TCPSocketMgr::recv (socket_id_t id, user_data_ptr_t yourPtr)
+void TCPSocketMgr::recv (socket_id_t id, bytecount_t byte_mode)
+{
+	recv(id, byte_mode, NULL);
+}
+
+void TCPSocketMgr::recv (socket_id_t id, bytecount_t byte_mode, user_data_ptr_t yourPtr)
 {
 
 	Enter_Method_Silent();

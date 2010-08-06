@@ -26,15 +26,15 @@
 
 //---
 
-bool TCPSocketAPI_Inet::isCallbackError(error_id_t error)
-{
-	return TCPSocketAPI_Base::isCallbackError(error);
-}
+//bool TCPSocketAPI_Inet::isCallbackError(error_id_t error)
+//{
+//	return TCPSocketAPI_Base::isCallbackError(error);
+//}
 
-std::string TCPSocketAPI_Inet::getCallbackErrorName(error_id_t error)
-{
-	return TCPSocketAPI_Base::getCallbackErrorName(error);
-}
+//std::string TCPSocketAPI_Inet::getCallbackErrorName(error_id_t error)
+//{
+//	return TCPSocketAPI_Base::getCallbackErrorName(error);
+//}
 
 //---
 

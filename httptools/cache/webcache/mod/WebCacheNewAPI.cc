@@ -259,7 +259,7 @@ void WebCacheNewAPI::acceptCallback(int socket_id, int ret_status, void * yourPt
 
 	socketConnInfoMap[ret_status] = ci;
 
-	tcp_api->recv(ret_status, ci);
+	tcp_api->recv(ret_status, TCPSocketAPI_Base::RECV_MODE_PACKET, ci);
 
 	serverSocketsOpened.increment();
 	emit(servsockev_signal, &serverSocketsOpened);
@@ -390,7 +390,7 @@ void WebCacheNewAPI::recvCallback(int socket_id, int ret_status,
 	{
 		delete msg;
 		tcp_api->send(socket_id, errorReply);
-		tcp_api->recv(socket_id, myPtr);
+		tcp_api->recv(socket_id, TCPSocketAPI_Base::RECV_MODE_PACKET, myPtr);
 	}
 	else
 	{
@@ -650,7 +650,7 @@ void WebCacheNewAPI::processDownstreamRequest(int socket_id, cPacket * msg, Conn
 	}
 
 	// ask downstream client for anything else it might send:
-	tcp_api->recv(socket_id,data);
+	tcp_api->recv(socket_id, TCPSocketAPI_Base::RECV_MODE_PACKET, data);
 
 	updateDisplay();
 	delete wr_temp;

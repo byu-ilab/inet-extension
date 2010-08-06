@@ -77,8 +77,9 @@ packet httptBaseMessage
     int serial = 0;					// Convenience field which allows resource requests to be serially tagged for ease of analysis.
     string heading = "";			// The message heading - request string for requests, response for replies
     string payload = "";			// The payload field
+    								// These two values should add together to match the total byte length of the packet:
     int headerLength = 0;			// The length of the header block in bytes
-    int contentLength = 0;			// The length of the entity body in bytes and the value of the Content-Length header
+    int contentLength = 0;			// The length of the entity body in bytes and the value of the Content-Length headerp
 }
 
 //

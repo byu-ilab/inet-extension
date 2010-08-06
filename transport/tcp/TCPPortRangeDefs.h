@@ -8,6 +8,7 @@
 #ifndef TCPPORTRANGEDEFS_H_
 #define TCPPORTRANGEDEFS_H_
 
+// old location now in InternetTypeDefsWithStandardTypes.h
 // inclusive
 #define TCP_PORT_RANGE_MIN 0
 #define TCP_PORT_RANGE_MAX 65535
