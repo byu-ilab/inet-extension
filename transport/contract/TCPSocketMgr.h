@@ -47,6 +47,8 @@ typedef std::deque<cPacket *> PacketDeque;
 typedef std::map<socket_id_t, PacketDeque > Id_PacketDequeMap;
 
 
+typedef TCPSocketExtension * socket_ptr_t;
+
 
 // Class documentation at bottom of file
 class INET_API TCPSocketMgr
@@ -321,8 +323,7 @@ public:
 	 * if bind is called with an empty local address and a local port or -1 an error
 	 * will be thrown.
 	 */
-	virtual void bind (socket_id_t id,
-			address_cref_t local_address,
+	virtual void bind (socket_id_t id, address_cref_t local_address,
 			port_t local_port);
 
 

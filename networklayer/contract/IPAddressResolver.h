@@ -56,7 +56,7 @@ class INET_API IPAddressResolver
     virtual IPv6Address getInterfaceIPv6Address(InterfaceEntry *ie);
 
   public:
-    enum {
+    enum /* +++> */ ResolutionMode /* <+++ */ {
         ADDR_PREFER_IPv4,
         ADDR_PREFER_IPv6,
         ADDR_IPv4,

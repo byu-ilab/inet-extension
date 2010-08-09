@@ -71,12 +71,15 @@ const char *TCPSocket::stateName(int state)
         CASE(NOT_BOUND);
         CASE(BOUND);
         CASE(LISTENING);
+        /* +++> */ CASE(ACCEPTING); /* <+++ */
         CASE(CONNECTING);
         CASE(CONNECTED);
+        /* +++> */ CASE(RECEIVING); /* <+++ */
         CASE(PEER_CLOSED);
         CASE(LOCALLY_CLOSED);
         CASE(CLOSED);
         CASE(SOCKERROR);
+        /* +++> */ CASE(TIMED_OUT); /* <+++ */
     }
     return s;
 #undef CASE
@@ -177,7 +180,8 @@ void TCPSocket::send(cMessage *msg)
 
 void TCPSocket::close()
 {
-    if (sockstate!=CONNECTED && sockstate!=PEER_CLOSED && sockstate!=CONNECTING && sockstate!=LISTENING)
+    if (sockstate!=CONNECTED && sockstate!=PEER_CLOSED && sockstate!=CONNECTING && sockstate!=LISTENING
+    		/* +++> */ && sockstate != RECEIVING && sockstate != ACCEPTING /* <+++ */)
         opp_error("TCPSocket::close(): not connected or close() already called");
 
     cMessage *msg = new cMessage("CLOSE", TCP_C_CLOSE);

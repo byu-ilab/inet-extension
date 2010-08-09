@@ -50,7 +50,7 @@
 #define NULL 0
 #endif
 
-// Type defs
+// Type definitions
 // TODO move to namespace or internal to the class?
 typedef int 	cb_status_t;
 typedef int		error_id_t;
@@ -496,7 +496,7 @@ public:
 	 * back.  See RECV_MODE_PACKET for further notes.
 	 *
 	 * If @em byte_mode is RECV_MODE_NO_BUFFER then incoming data is passed
-	 * back as soon as it is received.  See RECV_MODE_NO_BUFFER for futher
+	 * back as soon as it is received.  See RECV_MODE_NO_BUFFER for further
 	 * notes.
 	 *
 	 * @throws Throws a std::exception if an error occurs.
@@ -578,6 +578,8 @@ public:
 	 * if @em socket_id doesn't to a current socket, if no context element
 	 * pointer was provided previously, or if the context element pointer
 	 * was previously returned in a callback.
+	 *
+	 * @todo Refactor to getUserContext
 	 */
 	virtual user_data_ptr_t getMyPtr (socket_id_t id) =0;
 
