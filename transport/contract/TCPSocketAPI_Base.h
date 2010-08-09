@@ -5,6 +5,8 @@
  * TCPSocketAPI_Base interface and TCPSocketAPI_Base::CallbackHandler class
  * declarations.
  *
+ * Created: August 2, 2010
+ *
  * @todo Add GPL notice.
  */
 

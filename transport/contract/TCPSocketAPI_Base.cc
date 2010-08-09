@@ -1,13 +1,17 @@
+//==========================================================================80>
 /**
  * \file TCPSocketAPI_Base.cc
  *
+ * TCPSocketAPI_Base static function definitions.
+ *
  * Created: August 2, 2010
- * Author: Kevin Black
  * 
  * @todo Add GPL notice.
  */
 
 #include "TCPSocketAPI_Base.h"
+
+//---
 
 bool TCPSocketAPI_Base::isCallbackError(error_id_t error)
 {
@@ -48,3 +52,5 @@ std::string TCPSocketAPI_Base::getCallbackErrorName(error_id_t error)
 		return "UNDEFINED";
 	}
 }
+
+//---
