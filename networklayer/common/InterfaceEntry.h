@@ -21,7 +21,7 @@
 #include <vector>
 #include <omnetpp.h>
 #include "INETDefs.h"
-#include "DeleteSafeDefs.h"
+#include <DeleteSafeDefs.h>
 #include "MACAddress.h"
 #include "InterfaceToken.h"
 #include "NotifierConsts.h"
