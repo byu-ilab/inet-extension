@@ -79,7 +79,6 @@ const char *TCPSocket::stateName(int state)
         CASE(LOCALLY_CLOSED);
         CASE(CLOSED);
         CASE(SOCKERROR);
-        /* +++> */ CASE(TIMED_OUT); /* <+++ */
     }
     return s;
 #undef CASE
@@ -168,7 +167,8 @@ void TCPSocket::connect(IPvXAddress remoteAddress, int remotePort)
 
 void TCPSocket::send(cMessage *msg)
 {
-    if (sockstate!=CONNECTED && sockstate!=CONNECTING && sockstate!=PEER_CLOSED)
+    if (sockstate!=CONNECTED && /* +++> */ sockstate != RECEIVING && /* <+++ */
+    		sockstate!=CONNECTING && sockstate!=PEER_CLOSED)
         opp_error("TCPSocket::send(): not connected or connecting");
 
     msg->setKind(TCP_C_SEND);
@@ -180,8 +180,8 @@ void TCPSocket::send(cMessage *msg)
 
 void TCPSocket::close()
 {
-    if (sockstate!=CONNECTED && sockstate!=PEER_CLOSED && sockstate!=CONNECTING && sockstate!=LISTENING
-    		/* +++> */ && sockstate != RECEIVING && sockstate != ACCEPTING /* <+++ */)
+    if (sockstate!=CONNECTED /* +++> */ && sockstate != RECEIVING && sockstate != ACCEPTING /* <+++ */
+    		&& sockstate!=PEER_CLOSED && sockstate!=CONNECTING && sockstate!=LISTENING)
         opp_error("TCPSocket::close(): not connected or close() already called");
 
     cMessage *msg = new cMessage("CLOSE", TCP_C_CLOSE);
@@ -189,7 +189,7 @@ void TCPSocket::close()
     cmd->setConnId(connId);
     msg->setControlInfo(cmd);
     sendToTCP(msg);
-    sockstate = sockstate==CONNECTED ? LOCALLY_CLOSED : CLOSED;
+    sockstate = (sockstate==CONNECTED /* +++> */ || RECEIVING /* <+++ */) ? LOCALLY_CLOSED : CLOSED;
 }
 
 void TCPSocket::abort()

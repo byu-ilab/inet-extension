@@ -28,6 +28,12 @@
 #include "TCPSocketAPI_Base.h"
 #include "INETDefs.h"
 
+// From standard C++ libraries
+#include <deque>
+
+// Forward declarations		// source should				// from
+class MsgByteBuffer;		// #include "MsgByteBuffer.h"	// inet
+
 /**
  * Extends the TCPSocketAPI_Base.  Intended for use with in the INET 
  * framework.  Specifies that the setTimeout() function accepts time values
@@ -44,7 +50,6 @@ public:
 
 	/** @name Callback Handler Extension */
 	//@{
-
 
 	/**
 	 * Extends TCPSocketAPI_Base::CallbackHandler with a callback for recv
@@ -89,6 +94,66 @@ public:
 
 	//@}
 
+
+	/** @name Receive Buffer */
+	//@{
+
+	class LogicalAppMsgRecord
+	{
+	private:
+		cPacket * _message;
+		bytecount_t _expected_bytes;
+		bytecount_t _rcvd_bytes;
+		bytecount_t _extracted_bytes;
+
+	public:
+		LogicalAppMsgRecord(cPacket* msg, bytecount_t rcvd_so_far);
+		virtual ~LogicalAppMsgRecord();
+
+		cPacket * 	getMessage() const { return _message; }
+		bytecount_t getExpectedBytes() const { return _expected_bytes; }
+		bytecount_t getRcvdBytes() const { return _rcvd_bytes; }
+		bytecount_t getOutstandingBytes() const { return _expected_bytes - _rcvd_bytes; }
+		bytecount_t getExtractedBytes() const { return _extracted_bytes; }
+
+		/** @return The number of bytes from @em buffer not needed by this LAMR. */
+		virtual bytecount_t insertBytes(bytecount_t buffer);
+
+		/** Buffer must not be NULL.
+		 *
+		 * If no bytes have been extracted before then the message object will be added
+		 * to the buffer, otherwise just the byte length will be changed.
+		 */
+		virtual bytecount_t extractAvailableBytes(MsgByteBuffer * buffer, bytecount_t max=BYTECOUNT_NULL);
+
+		virtual void setMessage(cPacket * msg);
+		virtual void setRcvdBytes(bytecount_t rcvd_so_far);
+
+		virtual bool isComplete() const;
+		virtual bytecount_t getAvailableBytes() const;
+	};
+
+	class ReceiveBuffer
+	{
+	private:
+		std::deque<LogicalAppMsgRecord *> _buffer;
+
+	public:
+		ReceiveBuffer();
+		virtual ~ReceiveBuffer();
+
+		virtual void insertData(cPacket * msg);
+		virtual cPacket * extractAvailableBytes(bytecount_t recv_mode);
+
+	protected:
+		virtual cPacket * extractWhole();
+		virtual cPacket * extractInstantMaintainBoundaries();
+		virtual cPacket * extractInstantNoBuffer();
+		virtual cPacket * extractUpto(bytecount_t max);
+	};
+
+
+	//@}
 
 
 	/** @name Destructor */

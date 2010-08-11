@@ -113,6 +113,28 @@ public:
 		/** Empty. */
 		virtual ~CallbackHandler() {}
 
+		/**
+		 * By default does nothing.
+		 *
+		 * @details Subclasses should handles the acceptance of a new socket
+		 * specific to their application.  Subclasses should also assume
+		 * responsibility for the user data pointer if it is non-NULL (e.g. reuse
+		 * it or deallocate it).
+		 *
+		 * @param id -- Descriptor of the listening socket
+		 * @param result -- Result of previous accept() invocation.
+		 * @param context -- User data element pointer provided in previous
+		 * 		accept() invocation.
+		 *
+		 * On acceptance success: @em result will be the descriptor of the
+		 * accepted socket.
+		 *
+		 * On acceptance error: @em result will be a value from the
+		 * enumeration TCPSocketAPI_Base::CallbackError.
+		 */
+		virtual void acceptCallback  (socket_id_t id, cb_status_t result,
+				user_data_ptr_t context) {}
+
 		/** 
 		 * By default does nothing.
 		 *
@@ -138,10 +160,9 @@ public:
 		/**
 		 * By default does nothing.
 		 *
-		 * @details Subclasses should handles the acceptance of a new socket
-		 * specific to their application.  Subclasses should also assume
-		 * responsibility for the user data pointer if it is non-NULL (e.g. reuse
-		 * it or deallocate it).
+		 * @details Subclasses should handles the closure of the indicated
+		 * socket. Subclasses should also assume responsibility for the user
+		 * data pointer if it is non-NULL (e.g. reuse it or deallocate it).
 		 *
 		 * @param id -- Descriptor of the listening socket
 		 * @param result -- Result of previous accept() invocation.
@@ -154,7 +175,7 @@ public:
 		 * On acceptance error: @em result will be a value from the
 		 * enumeration TCPSocketAPI_Base::CallbackError.
 		 */
-		virtual void acceptCallback  (socket_id_t id, cb_status_t result,
+		virtual void closeCallback (socket_id_t id, cb_status_t result,
 				user_data_ptr_t context) {}
 	};
 
@@ -229,7 +250,7 @@ public:
 	 * @throw Throws a std::exception if the provided socket descriptor
 	 * doesn't refer to a current socket.
 	 */
-	virtual address_t getRemoteAddres (socket_id_t id) =0;
+	virtual address_t getRemoteAddress (socket_id_t id) =0;
 
 	//@}
 
@@ -453,21 +474,36 @@ public:
 	enum RecvMode
 	{
 		/**
-		 * Indicates that incoming data should be buffered and only returned
-		 * once all of the bytes pertaining to a logical application message
-		 * have been received.  Only useful in a scenario where the TCP core
-		 * passes up byte buffer packets instead of buffering the whole
-		 * message before passing up packets.
+		 * Indicates that incoming data should be buffered and only passed
+		 * back in the recvCallback function once all of the bytes
+		 * pertaining to a logical application message have been received.
+		 * Only useful in a scenario where the TCP core passes up byte
+		 * buffer packets instead of buffering the whole message before
+		 * passing up packets.
 		 */
-		RECV_MODE_PACKET = 0,
+		RECV_MODE_WHOLE = 0,
+
+		/**
+		 * Indicates that incoming data should be returned immediately but
+		 * in byte buffers/segments that maintain logical application message
+		 * boundaries.  Thus, if incoming data contains bytes pertaining
+		 * to more than one logical application message only the bytes
+		 * pertaining to the first application message will be passed back
+		 * immediately and the rest will be buffered for later recv operations.
+		 *
+		 * Acts as RECV_MODE_APPLICATION does if the TCP core buffers packets
+		 * until the whole logical application message has been received.
+		 */
+		RECV_MODE_INSTANT_MAINTAIN_BOUNDARIES = -1,
 
 		/**
 		 * Indicates that incoming data should not be buffered and rather
-		 * immediately passed back in the recvCallback() function.  Acts as
-		 * RECV_MODE_PACKET does if the TCP core buffers packets until the
+		 * immediately passed back in the recvCallback() function.  Does not
+		 * maintain logical application message boundaries.  Acts as
+		 * RECV_MODE_APPLICATION does if the TCP core buffers packets until the
 		 * whole logical application message has been received.
 		 */
-		RECV_MODE_NO_BUFFER = -1
+		RECV_MODE_INSTANT_NO_BUFFER = -2
 	};
 
 
@@ -501,7 +537,7 @@ public:
 	 *
 	 * @throws Throws a std::exception if an error occurs.
 	 */
-	virtual void recv (socket_id_t id, bytecount_t byte_mode=RECV_MODE_PACKET) =0;
+	virtual void recv (socket_id_t id, bytecount_t byte_mode=RECV_MODE_WHOLE) =0;
 
 
 	/**

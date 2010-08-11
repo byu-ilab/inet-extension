@@ -18,6 +18,9 @@
 #include "IPAddressResolver.h"
 #include "SocketTimeoutMsg_m.h"
 
+// From standard C++ libraries
+#include <deque>
+
 /**
  * This class forms a wrapper around a regular TCPSocket object.
  *
@@ -33,9 +36,12 @@
  * @see TCPSocket, TCPSocket::CallbackInterface, TCPSocketAPI_Inet,
  * TCPSocketAPI_Inet::CallbackInterface.
  */
-class TCPSocketExtension : public TCPSocket
+class INET_API TCPSocketExtension : public TCPSocket
 {
 private:
+	/** @name Instance Members */
+	//@{
+
 	cb_inet_handler_ptr_t _cb_handler;
 	cb_inet_handler_ptr_t _cb_handler_for_accepted;
 
@@ -50,6 +56,12 @@ private:
 	typedef std::deque<TCPSocketExtension *> SocketQueue;
 	SocketQueue _sockets_pending_acceptance;
 
+	bytecount_t _recv_mode;
+
+	TCPSocketAPI_Inet::ReceiveBuffer _recv_buffer;
+	//@}
+
+	/** Initializes instance members with default values. */
 	void initialize(cb_inet_handler_ptr_t handler,
 			cSimpleModule * scheduler, IPAddressResolver::ResolutionMode mode);
 
@@ -83,8 +95,8 @@ public:
 	 * The default for @em mode is IPAddressResolver::ADDR_PREFER_IPv4
 	 */
 	TCPSocketExtension(cb_inet_handler_ptr_t handler,
-			cSimpleModule * scheduler,
-			IPAddressResolver::ResolutionMode mode=IPAddressResolver::ADDR_PREFER_IPv4);
+			cSimpleModule * scheduler, IPAddressResolver::ResolutionMode mode=
+					IPAddressResolver::ADDR_PREFER_IPv4);
 
 	/** Empty. */
 	virtual ~TCPSocketExtension();
@@ -296,7 +308,7 @@ public:
 	 * @throws Throws a std::exception if an error occurs.
 	 */
 	virtual void recv (bytecount_t byte_mode=
-			TCPSocketAPI_Base::RECV_MODE_PACKET);
+			TCPSocketAPI_Base::RECV_MODE_WHOLE);
 
 
 	/**
@@ -332,7 +344,8 @@ public:
 	 * setTimeoutScheduler()).
 	 *
 	 * @throws Throws a std::exception if an error occurs.  Throws a cRuntimeError
-	 * if there is not timeoud scheduler set.
+	 * if there is not a timeout scheduler set or if the socket state will not
+	 * allow the timeout to be set.
 	 */
 	virtual void setTimeout(simtime_t timeout_period);
 
@@ -343,9 +356,16 @@ public:
 	 * @return True if there was a timeout set on the socket and it was
 	 * removed; false otherwise.
 	 *
-	 * @exception Throws a cRuntimeError if there is no timeout scheduler set.
+	 * @exception Throws a cRuntimeError if there is no timeout scheduler set or if
+	 * the socket state will not allow the timeout to be removed.
 	 */
 	virtual bool removeTimeout ();
+
+	/**
+	 * @return True if the socket state will allow the timeout period to be modified;
+	 * false if the timeout period cannot be modified in the current state.
+	 */
+	virtual bool canModifyTimeout() const;
 
 
 	/**
@@ -358,7 +378,7 @@ public:
 	//@}
 
 
-	/** @name User data access */
+	/** @name User Context Data Access */
 	//@{
 
 	/**
@@ -382,6 +402,8 @@ public:
 	 * was previously returned in a callback.
 	 */
 	virtual user_data_ptr_t getUserContext ();
+
+	virtual user_data_ptr_t removeUserContext ();
 
 	//@}
 
@@ -424,7 +446,7 @@ public:
 	//@}
 
 
-	/** @name Callback Handling Modification */
+	/** @name Callback Handling Accessors */
 	//@{
 
 	/**
@@ -447,7 +469,7 @@ public:
 	 */
 	virtual void setCallbackHandler(cb_inet_handler_ptr_t handler);
 
-	//@}
+	//@} End Callback Handlign Accessors
 
 
 	/** @name Event Processing */
@@ -464,27 +486,27 @@ public:
 	 */
 	virtual void processMessage (cMessage * msg);
 
-	//@}
-
-
 protected:
-	/** @name TCPSocket::CallbackInterface Implementation */
-	//@{
 
+	/** @todo Document. */
 	virtual void processDataArrived(cPacket *msg, bool urgent);
 
+	/** @todo Document. */
 	virtual void processEstablished();
 
+	/** @todo Document. */
 	virtual void processPeerClosed();
 
+	/** @todo Document. */
 	virtual void processClosed();
 
+	/** @todo Document. */
 	virtual void processFailure(int code);
 
+	/** @todo Document. */
 	virtual void processStatusArrived(TCPStatusInfo *status);
 
-	//@}
-
+	//@} End Event Processing
 };
 
 #endif /* __INET__TCPSOCKETEXTENSION_H_ */

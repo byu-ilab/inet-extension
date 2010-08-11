@@ -12,12 +12,20 @@
 // From inet
 #include "TCPSocketExtension.h"
 
+// From omnetpp extension
+#include <omnetppextension.h>
+
 // From standard C++ libraries
 #include <sstream>
 
 #define OPP_ERROR(DETAILS) opp_error("%s::%s%s.",__FILE__,__FUNCTION__,DETAILS)
 #define OPP_ERROR_INCONSISTENT_STATE opp_error("%s::%s inconsistent state %s",\
 		__FILE__, __FUNCTION__, stateName(sockstate))
+
+#define DEBUG_CLASS true
+
+//==============================================================================
+// Initialization
 
 void TCPSocketExtension::initialize(cb_inet_handler_ptr_t handler,
 		cSimpleModule * scheduler, IPAddressResolver::ResolutionMode mode)
@@ -30,6 +38,9 @@ void TCPSocketExtension::initialize(cb_inet_handler_ptr_t handler,
 	_timeout_msg = NULL;
 	_resolution_mode = mode;
 }
+
+//==============================================================================
+// Constructors and Destructor
 
 TCPSocketExtension::TCPSocketExtension() : TCPSocket()
 {
@@ -53,8 +64,13 @@ TCPSocketExtension::~TCPSocketExtension()
 	// DO NOT delete _cb_handler or _timeout_scheduler
 }
 
+//==============================================================================
+// BDS-like Socket Operations
+
 void TCPSocketExtension::bind(address_cref_t local_address, port_t local_port)
 {
+	ASSERT(_cb_handler != NULL);
+
 	if (local_address.empty())
 	{
 		// Checks socket state and port number
@@ -63,7 +79,7 @@ void TCPSocketExtension::bind(address_cref_t local_address, port_t local_port)
 	else
 	{
 		// Checks socket state and port number, allows for only the
-		// address to be specified if port = PORT_NULL but address must
+		// address to be specified if port = PORT_NULL, but address must
 		// thus be valid.
 		TCPSocket::bind(_resolver.resolve(local_address.c_str(), _resolution_mode), local_port);
 	}
@@ -72,6 +88,8 @@ void TCPSocketExtension::bind(address_cref_t local_address, port_t local_port)
 
 void TCPSocketExtension::listen (cb_inet_handler_ptr_t cb_handler_for_accepted)
 {
+	ASSERT(_cb_handler != NULL);
+
 	// Verify that the port has been specified
 	if (localPrt == PORT_NULL)
 	{
@@ -94,6 +112,8 @@ void TCPSocketExtension::listen (cb_inet_handler_ptr_t cb_handler_for_accepted)
 
 void TCPSocketExtension::listenOnce(cb_inet_handler_ptr_t cb_handler_for_accepted)
 {
+	ASSERT(_cb_handler != NULL);
+
 	// Verify that the port has been specified
 	if (localPrt == PORT_NULL)
 	{
@@ -116,6 +136,8 @@ void TCPSocketExtension::listenOnce(cb_inet_handler_ptr_t cb_handler_for_accepte
 
 void TCPSocketExtension::accept ()
 {
+	ASSERT(_cb_handler != NULL);
+
 	if (sockstate != LISTENING && sockstate != ACCEPTING)
 	{
 		OPP_ERROR("socket is not listening");
@@ -146,11 +168,14 @@ void TCPSocketExtension::accept (user_data_ptr_t context)
 
 void TCPSocketExtension::appendAcceptedSocket(TCPSocketExtension * socket)
 {
+	ASSERT(_cb_handler != NULL);
+
 	if (sockstate != LISTENING && sockstate != ACCEPTING)
 	{
 		OPP_ERROR("socket is not a passive socket");
 	}
 
+	ASSERT(socket->_cb_handler == NULL); // if not, not created correctly via msg constructor
 	socket->setCallbackHandler(_cb_handler_for_accepted);
 
 	_sockets_pending_acceptance.push_back(socket);
@@ -164,6 +189,8 @@ void TCPSocketExtension::appendAcceptedSocket(TCPSocketExtension * socket)
 
 void TCPSocketExtension::connect(address_cref_t remote_address, port_t remote_port)
 {
+	ASSERT(_cb_handler != NULL);
+
 	// Check here because this isn't checked until the TCP core processes the
 	// OPEN_ACTIVE command.
 	if (remote_address.empty())
@@ -187,14 +214,7 @@ void TCPSocketExtension::connect (address_cref_t remote_address,
 
 void TCPSocketExtension::send(cMessage *msg)
 {
-	// check the socket's state before taking the message
-	if (	   sockstate != CONNECTED
-			&& sockstate != CONNECTING
-			&& sockstate != RECEIVING
-			&& sockstate != PEER_CLOSED)
-	{
-		OPP_ERROR("socket cannot send");
-	}
+	ASSERT(_cb_handler != NULL);
 
 	if (msg == NULL)
 	{
@@ -214,6 +234,8 @@ void TCPSocketExtension::send(cMessage *msg)
 
 void TCPSocketExtension::recv (bytecount_t byte_mode)
 {
+	ASSERT(_cb_handler != NULL);
+
 	if (sockstate != CONNECTED && sockstate != RECEIVING)
 	{
 		OPP_ERROR("socket is not connected");
@@ -224,25 +246,19 @@ void TCPSocketExtension::recv (bytecount_t byte_mode)
 		OPP_ERROR("socket is already set to receive");
 	}
 
+	_recv_mode = byte_mode;
+
 	// relative to the byte_mode return something out of the buffer
-//	if (!_reception_buffers[id].empty())
-//	{
-//		cPacket * msg = _reception_buffers[id].front();
-//		_reception_buffers[id].pop_front();
-//		socketDataArrived(id, cbdata, msg, false);
-//	}
-	// or set a timeout to occur if no data is received in time
-//	else
-//	{
-//		// schedule a timeout if set
-//		SocketTimeoutMsg * timer = _timeout_timers[id];
-//		if (timer) {
-//			if (timer->isScheduled()) {
-//				cancelEvent(timer);
-//			}
-//			scheduleAt(simTime()+timer->getTimeoutInterval(), timer);
-//		}
-//	}
+	cPacket * ret_msg = _recv_buffer.extractAvailableBytes(_recv_mode);
+	if (ret_msg != NULL)
+	{
+		// no change in state
+		_cb_handler->recvCallback(connId, ret_msg->getByteLength(), ret_msg, removeUserContext());
+	}
+	else if (_timeout_msg != NULL)
+	{
+		_timeout_scheduler->scheduleAt(simTime()+_timeout_msg->getTimeoutInterval(), _timeout_msg);
+	}
 }
 
 
@@ -255,14 +271,12 @@ void TCPSocketExtension::recv (bytecount_t byte_mode,
 
 void TCPSocketExtension::setTimeout(simtime_t timeout_period)
 {
-	if (timeout_period < 0)
-	{
-		OPP_ERROR("timeout period is negative");
-	}
+	ASSERT(timeout_period >= 0);
+	ASSERT(_timeout_scheduler != NULL);
 
-	if (_timeout_scheduler == NULL)
+	if (!canModifyTimeout())
 	{
-		OPP_ERROR("no timeout scheduler set");
+		OPP_ERROR("socket state won't allow timeout to be set");
 	}
 
 	if (_timeout_msg == NULL)
@@ -270,12 +284,8 @@ void TCPSocketExtension::setTimeout(simtime_t timeout_period)
 		_timeout_msg = new SocketTimeoutMsg("socket timeout");
 		_timeout_msg->setSocketId(connId);
 	}
-	else if (_timeout_msg->isScheduled())
-	{
-		// then the _timeout_scheduler had to be non-NULL to have scheduled
-		// the message
-		_timeout_scheduler->cancelEvent(_timeout_msg);
-	}
+
+	ASSERT(!_timeout_msg->isScheduled());
 
 	// set period on timer
 	_timeout_msg->setTimeoutInterval(timeout_period.dbl());
@@ -289,9 +299,10 @@ bool TCPSocketExtension::removeTimeout ()
 		return false;
 	}
 
-	if (_timeout_scheduler == NULL)
+	ASSERT(_timeout_scheduler != NULL);
+	if (!canModifyTimeout())
 	{
-		OPP_ERROR("no timeout scheduler set");
+		OPP_ERROR("socket state won't allow timeout to be removed");
 	}
 
 	_timeout_scheduler->cancelAndDelete(_timeout_msg);
@@ -299,36 +310,50 @@ bool TCPSocketExtension::removeTimeout ()
 	return true;
 }
 
+bool TCPSocketExtension::canModifyTimeout() const
+{
+	if (	   sockstate == NOT_BOUND
+			|| sockstate == BOUND
+			|| sockstate == CONNECTING
+			|| sockstate == CONNECTED)
+	{
+		return true;
+	}
+	// else
+	return false;
+}
 
 void TCPSocketExtension::close ()
 {
-	switch(sockstate)
+	ASSERT(_cb_handler != NULL);
+
+	if (sockstate == CLOSED || sockstate == LOCALLY_CLOSED)
 	{
-	case NOT_BOUND:
-	case BOUND:
-	case SOCKERROR:
-		// no TCP core clean up needs to occur
-		removeTimeout();
-		break;
-	case CLOSED:
-	case LOCALLY_CLOSED:
 		OPP_ERROR("already called on this socket");
-		break;
-	default:
-		// including PEER_CLOSED, CONNECTING, CONNECTED,
-		// LISTENING, ACCEPTING, RECEIVING, TIMED_OUT
+	}
+	// else
+	removeTimeout();
 
-		// cancel any callbacks
-		removeTimeout();
-
-		// initiate TCP core close messages
+	if (sockstate != NOT_BOUND && sockstate != BOUND && sockstate != SOCKERROR)
+	{
 		TCPSocket::close();
+	}
+	else
+	{
+		processClosed();
 	}
 }
 
 user_data_ptr_t TCPSocketExtension::getUserContext ()
 {
 	return _user_context_data;
+}
+
+user_data_ptr_t TCPSocketExtension::removeUserContext ()
+{
+	user_data_ptr_t context = _user_context_data;
+	_user_context_data = NULL;
+	return context;
 }
 
 bool TCPSocketExtension::setTimeoutScheduler(cSimpleModule * scheduler)
@@ -367,6 +392,7 @@ void TCPSocketExtension::setCallbackHandler(cb_inet_handler_ptr_t handler)
 
 void TCPSocketExtension::processMessage (cMessage * msg)
 {
+	ASSERT(_cb_handler != NULL);
 	ASSERT(msg != NULL);
 
 	if (dynamic_cast<SocketTimeoutMsg *>(msg) != NULL)
@@ -391,21 +417,21 @@ void TCPSocketExtension::processMessage (cMessage * msg)
 		break;
 
 	case TCP_I_ESTABLISHED:
-		 // Note: this code is only for sockets doing active open, and nonforking
-		 // listening sockets. For a forking listening sockets, TCP_I_ESTABLISHED
-		 // carries a new connId which won't match the connId of this TCPSocket,
-		 // so you won't get here. Rather, when you see TCP_I_ESTABLISHED, you'll
-		 // want to create a new TCPSocket object via new TCPSocket(msg).
-		 sockstate = CONNECTED;
-		 connectInfo = dynamic_cast<TCPConnectInfo *>(msg->getControlInfo());
-		 localAddr = connectInfo->getLocalAddr();
-		 remoteAddr = connectInfo->getRemoteAddr();
-		 localPrt = connectInfo->getLocalPort();
-		 remotePrt = connectInfo->getRemotePort();
-		 delete msg;
-
-		 processEstablished();
-		 break;
+		// Note: this code is only for sockets doing active open, and nonforking
+		// listening sockets. For a forking listening sockets, TCP_I_ESTABLISHED
+		// carries a new connId which won't match the connId of this
+		// TCPSocketExtension, so you won't get here. Rather, when you see
+		// TCP_I_ESTABLISHED, you'll want to create a new TCPSocketExtension
+		// object via new TCPSocketExtension(msg).
+		sockstate = CONNECTED;
+		connectInfo = dynamic_cast<TCPConnectInfo *>(msg->getControlInfo());
+		localAddr = connectInfo->getLocalAddr();
+		remoteAddr = connectInfo->getRemoteAddr();
+		localPrt = connectInfo->getLocalPort();
+		remotePrt = connectInfo->getRemotePort();
+		delete msg;
+		processEstablished();
+		break;
 
 	case TCP_I_PEER_CLOSED:
 		delete msg;
@@ -441,7 +467,7 @@ void TCPSocketExtension::processMessage (cMessage * msg)
 	default:
 		std::stringstream details;
 		details << "invalid msg kind "<<msg->getKind()
-			<<"one of the TCP_I_xxx constants expected";
+					<<" one of the TCP_I_xxx constants expected";
 		delete msg;
 		OPP_ERROR(details.str().c_str());
 	}
@@ -449,23 +475,34 @@ void TCPSocketExtension::processMessage (cMessage * msg)
 
 void TCPSocketExtension::processDataArrived(cPacket *msg, bool urgent)
 {
-	user_data_ptr_t ret_context = _user_context_data;
-	_user_context_data = NULL;
-
 	// depends on receiving mode
 	if (sockstate == RECEIVING)
 	{
-		_cb_handler->recvCallback(connId, msg->getByteLength(), msg, ret_context);
 		sockstate = CONNECTED;
+
+		// cancel timeout if any
+		if (_timeout_msg != NULL)
+		{
+			_timeout_scheduler->cancelEvent(_timeout_msg);
+		}
+
+		// add message to receive buffer
+		_recv_buffer.insertData(msg);
+
+		// get bytes to return
+		cPacket * ret_msg = _recv_buffer.extractAvailableBytes(_recv_mode);
+
+		if (ret_msg != NULL)
+		{
+			_cb_handler->recvCallback(connId, ret_msg->getByteLength(), ret_msg, removeUserContext());
+		}
 	}
 	else if (sockstate == CONNECTED)
 	{
-		// add message to receive buffers
+		// add message to receive buffer
+		_recv_buffer.insertData(msg);
+
 		// no change in socket state
-	}
-	else if (sockstate == CLOSED || sockstate == TIMED_OUT)
-	{
-		// print a notice
 	}
 	else
 	{
@@ -475,15 +512,11 @@ void TCPSocketExtension::processDataArrived(cPacket *msg, bool urgent)
 
 void TCPSocketExtension::processEstablished()
 {
-	user_data_ptr_t ret_context = _user_context_data;
-	_user_context_data = NULL;
-
 	// invoke the "connect" or "accept" callback
 	if (sockstate == CONNECTING)
 	{
-		// need to update the bound ports in the socket mgr
 		sockstate = CONNECTED;
-		_cb_handler->connectCallback(connId, 0, ret_context);
+		_cb_handler->connectCallback(connId, 0, removeUserContext());
 	}
 	else if (sockstate == ACCEPTING)
 	{
@@ -491,19 +524,19 @@ void TCPSocketExtension::processEstablished()
 
 		TCPSocketExtension * socket = _sockets_pending_acceptance.front();
 		_sockets_pending_acceptance.pop_front();
-		// DO NOT delete the socket as it is probably stored in a socket map somewhere else
+		// DO NOT delete the socket, it should be being stored by the application
 		sockstate = LISTENING;
 
-		_cb_handler->acceptCallback(connId, socket->getConnectionId(), ret_context);
+		_cb_handler->acceptCallback(connId, socket->getConnectionId(), removeUserContext());
 	}
 	else if (sockstate == LISTENING)
 	{
 		// Socket already added to the pending connections in appendAcceptedSocket()
 	}
-//	else if (sockstate == CLOSED)
-//	{
-//		// remove the socket identified by connId from the pending connections pool?
-//	}
+	//	else if (sockstate == CLOSED)
+	//	{
+	//		// remove the socket identified by connId from the pending connections pool?
+	//	}
 	else
 	{
 		OPP_ERROR_INCONSISTENT_STATE;
@@ -512,58 +545,51 @@ void TCPSocketExtension::processEstablished()
 
 void TCPSocketExtension::processPeerClosed()
 {
-	user_data_ptr_t ret_context = _user_context_data;
-	_user_context_data = NULL;
-
 	if (sockstate == RECEIVING)
 	{
 		sockstate = PEER_CLOSED;
-		_cb_handler->recvCallback(connId,
-				TCPSocketAPI_Base::CB_E_CLOSED, NULL, ret_context);
+		_cb_handler->recvCallback(connId, TCPSocketAPI_Base::CB_E_CLOSED,
+				NULL, removeUserContext());
 	}
 	else if (sockstate == CONNECTED)
 	{
-		sockstate = PEER_CLOSED;
-		this->close();
+		sockstate == PEER_CLOSED;
+		this->close(); // when closed the close callback is invoked
 	}
 	else
 	{
+		// the TCPSocket::processMessage would set the state to CLOSED
 		OPP_ERROR_INCONSISTENT_STATE;
 	}
 }
 
 void TCPSocketExtension::processClosed()
 {
-	// clean up in socket mgr?
+	sockstate = CLOSED; // TODO when should it be LOCALLY_CLOSED?
+	_cb_handler->closeCallback(connId, 0, removeUserContext());
 }
 
 void TCPSocketExtension::processFailure(int code)
 {
-	user_data_ptr_t ret_context = _user_context_data;
-	_user_context_data = NULL;
+	sockstate = SOCKERROR;
 
-	// invoke the recv callback or just handle the close operation?
 	if (sockstate == CONNECTING)
 	{
-		sockstate = SOCKERROR;
-		_cb_handler->connectCallback(connId, code, ret_context);
+		_cb_handler->connectCallback(connId, code, removeUserContext());
 	}
 	else if (sockstate == RECEIVING)
 	{
-		sockstate = SOCKERROR;
-		_cb_handler->recvCallback(connId, code, NULL, ret_context);
+		_cb_handler->recvCallback(connId, code, NULL, removeUserContext());
 	}
 	else
 	{
-		// error or close the socket?
-		OPP_ERROR_INCONSISTENT_STATE;
+		LOG_DEBUG_LN("state: "<<stateName(sockstate));
 	}
 }
 
 void TCPSocketExtension::processStatusArrived(TCPStatusInfo *status)
 {
-	ASSERT(status != NULL);
-
 	// nothing special for now
+	ASSERT(status != NULL);
 	delete status;
 }

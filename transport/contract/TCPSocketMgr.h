@@ -14,7 +14,7 @@
 
 // From inet
 #include "TCPSocketAPI_Inet.h"
-#include "TCPSocket.h"
+#include "TCPSocketExtension.h"
 #include "TCPSocketMap.h"
 #include "IPAddressResolver.h"
 #include "SocketTimeoutMsg_m.h"
@@ -24,60 +24,28 @@
 #include <set>
 #include <deque>
 
-// Type defs
-/** Maps socket id to socket timeout message pointer. */
-typedef std::map<socket_id_t, SocketTimeoutMsg *> 	Id_TimeoutMsgMap;
-
 /** Set of socket ids. */
 typedef std::set<socket_id_t> IdSet;
 
 /** Maps port to socket id set. */
 typedef std::map<port_t, IdSet > Port_IdSetMap;
 
-/** Deque of socket ids. */
-typedef std::deque<socket_id_t> IdDeque;
-
-/** Maps socket id to socket id deque. */
-typedef std::map<socket_id_t, IdDeque > Id_IdDequeMap;
-
-/** cPacket pointer deque. */
-typedef std::deque<cPacket *> PacketDeque;
-
-/** Maps socket id to cPacket pointer deque. */
-typedef std::map<socket_id_t, PacketDeque > Id_PacketDequeMap;
-
-
+/** Socket pointer type. */
 typedef TCPSocketExtension * socket_ptr_t;
+
+/** Maps port to socket pointer. */
+typedef std::map<port_t, socket_ptr_t> Port_SocketMap;
+
+/** Maps socket id to callback handler pointer. */
+typedef std::map<socket_id_t, cb_inet_handler_ptr_t> Id_CBHandlerMap;
 
 
 // Class documentation at bottom of file
 class INET_API TCPSocketMgr
 	: public cSimpleModule /* already noncopyable */,
 	  public TCPSocketAPI_Inet,
-	  private TCPSocket::CallbackInterface
+	  public TCPSocketAPI_Inet::CallbackHandler
 {
-public:
-
-	/** @name Static public functions */
-	//@{
-
-	/**
-	 * @return True if the provided value corresponds to one of the
-	 * values from the TCPSocketAPI_Base::CallbackError enumeration
-	 * and false if it does not.
-	 */
-	//static bool isCallbackError(error_id_t error);
-
-
-	/**
-	 * @return The name of the error corresponding to the indicated
-	 * value from the TCPSocketAPI::CallbackError enumeration; the
-	 * default is "UNDEFINED".
-	 */
-	//static std::string getCallbackErrorName(error_id_t error);
-
-	//@}
-
 protected:
 
 	/** @name Instance members */
@@ -86,151 +54,45 @@ protected:
 	/** Indicates whether signals to map tcp connections should be emitted. */
 	bool _should_map_tcp_connections;
 
-	/** Indicates whether signals to track duplicate message name events should be emitted. */
+	/**
+	 * Indicates whether signals to track duplicate message name events
+	 * should be emitted.
+	 */
 	bool _should_track_dup_msg_names;
 
-	/** Tracks the current TCPSocket objects. */
-	TCPSocketMap _socket_map;
+	/** Tracks the current socket objects. */
+	TCPSocketMap _socket_pool;
 
-	/** Tracks the timeout messages associated with a given socket.
-	 *
-	 * Maps socket id to timeout message.
-	 */
-	Id_TimeoutMsgMap _timeout_timers;
+	/** Tracks the callback handler registered for a given socket. */
+	Id_CBHandlerMap _app_cb_handler_map;
 
-	/** Used to resolve provided string addresses to IPvXAddress objects. */
-	IPAddressResolver _resolver;
-
-	/** Tracks the ports that are being used (bound) and which
-	 * socket(s) is (are) using it.
+	/**
+	 * Tracks the ports that are being used (bound) and which socket(s) is
+	 * (are) using it.
 	 */
 	Port_IdSetMap _bound_ports;
 
-	/** Values to control socket operation sequence, and to indicate
-	 * which callback should be invoked and how to interpret events
-	 * defined by the TCPSocket::CallbackInterface.
-	 */
-	enum CALLBACK_STATE
-	{
-		CB_S_NONE,		/**< No callback requiring operation invoked
-							and/or an invalid state. */
-		CB_S_CONNECT,	/**< The connect operation was invoked and
-							the connectCallback should be called when
-							a connection is established or an error occurs. */
-		CB_S_ACCEPT,	/**< The accept operation was invoked and the
-							acceptCallback should be called when a
-							connection is accepted. */
-		CB_S_RECV,		/**< The recv operation was invoked and the
-							recvCallback should be called when data
-							is received on the connection, the
-							connection closes or times out or an error occurs. */
-		CB_S_CLOSE,		/**< The close operation was invoked so no other
-							socket calls are valid and/or the connection
-							was closed so only the close operation can
-							be invoked. */
-		CB_S_TIMEOUT,	/**< The connection is timed out, no socket
-							operations are valid except close. */
-		CB_S_WAIT		/**< The socket is waiting for an accept or
-							recv operation to be invoked and/or a
-							connection was accepted or data was
-							received but the user didn't reinvoke
-							accept or recv. */
-	};
+	/** Tracks the passive socket on their bound ports. */
+	Port_SocketMap _passive_socket_map;
 
-public:
-	/** Data necessary to execute callbacks associated with a given socket. */
-	struct CallbackData
-	{
-		/** The socket this callback data pertains to and the socket
-		 * id to be returned in the callback.
-		 */
-		socket_id_t socket_id;
+	/** Tracks accepted pending sockets awaiting acceptance. */
+	TCPSocketMap _pending_socket_pool;
 
-		/** The callback state of the socket.  See TCPSocketAPI::CALLBACK_STATE. */
-		CALLBACK_STATE state;
-
-		/** The CallbackInterface assigned to handle events on this socket. */
-		cb_inet_handler_ptr_t cbobj;
-
-		/** The data/struct/object the user provides. */
-		user_data_ptr_t userptr;
-
-		/** The CallbackInterface to be used by accepted connections.
-		 * Useful if the user defines different handlers for active
-		 * and passive sockets.  May be NULL in which case cbobj
-		 * is used.
-		 */
-		cb_inet_handler_ptr_t cbobj_for_accepted;
-	};
-
-	// These type defs should also be included at the end of the file if they
-	// are the return type of a function.
-
-	/** CallbackData pointer type. */
-	typedef TCPSocketMgr::CallbackData * cb_data_ptr_t;
-	/** Maps socket port to callback data pointer. */
-	typedef std::map<port_t, cb_data_ptr_t> Port_CBDataMap;
-	/** Maps socket port to callback data pointer. */
-	typedef std::map<port_t, cb_data_ptr_t> Id_CBDataMap;
-
-protected:
-
-	/** Tracks the callback data for passive sockets.
-	 *
-	 * Note that this separate map is needed because the the _bound_ports
-	 * map doesn't have a feature to distinguish passive sockets
-	 * from the active sockets that have been accepted on the listening
-	 * socket's port.
-	 */
-	Port_CBDataMap _passive_callbacks;
-
-	/** Tracks the callback data associated with a given socket. */
-	Id_CBDataMap _registered_callbacks;
-
-	/** Tracks the pending connections awaiting acceptance by passive sockets. */
-	TCPSocketMap _pending_sockets_map;
-
-	/** Tracks the pending connections awaiting acceptance by passive sockets.
-	 *
-	 * Maps passive socket id to id of pending TCPSocket in _pending_sockets_map.
-	 */
-	Id_IdDequeMap _pending_connections;
-
-	/** Tracks received data not yet requested by the application.
-	 *
-	 * Maps active socket id to a list of cPacket pointers.
-	 */
-	Id_PacketDequeMap _reception_buffers;
-
-	//@} // End Instance members
-
-
-
-	/** @name Static proctected functions */
-	//@{
-
-	/** Returns the name of the indicated value from the CALLBACK_STATE enumeration.
-	 *
-	 * @param state -- The value from the CALLBACK_STATE enumeration
-	 * 		whose name is to be returned.
-	 *
-	 * @return The name of the CALLBACK_STATE value or "unknown" if the state is not
-	 * recognized.
-	 */
-	static std::string getStateName(CALLBACK_STATE state);
-
-	//@}
+	//@} End Instance members
 
 public:
 	/** @name Constructor and Destructor */
 	//@{
 
+	/** Constructs a TCPSocketMgr instance. */
 	TCPSocketMgr ();
+
+	/** Deletes any open sockets. */
 	virtual ~TCPSocketMgr ();
 
 	///@}
 	
-	/** @name TCP Socket port and address accessors */
+	/** @name TCP Socket Port, Address, and String Accessors */
 	//@{
 
 	/** Accesses the local port number of the indicated socket.
@@ -278,7 +140,14 @@ public:
 	 * @throw Throws a std::exception if the provided socket id doesn't refer
 	 * to a current socket.
 	 */
-	virtual address_t getRemoteAddres (socket_id_t id);
+	virtual address_t getRemoteAddress (socket_id_t id);
+
+
+	/** Returns a string representing the indicated socket as a string.  Because
+	 * of the pseudo TIMED_OUT state we don't want the user to worry about this
+	 * string representation -- could intercept it and rewrite it.
+	 */
+	virtual str_t socketToString(socket_id_t id);
 
 	//@}
 
@@ -507,7 +376,7 @@ public:
 	 *
 	 * @throws Throws a std::exception if an error occurs.
 	 */
-	virtual void recv (socket_id_t id, bytecount_t byte_mode=RECV_MODE_PACKET);
+	virtual void recv (socket_id_t id, bytecount_t byte_mode=RECV_MODE_WHOLE);
 	virtual void recv (socket_id_t id, bytecount_t byte_mode, user_data_ptr_t yourPtr);
 
 
@@ -589,100 +458,56 @@ protected:
     virtual void finish();
 	//@}
 
-	 /** @name Overridden functions from TCPSocket::CallbackInterface */
-	//@{
-    virtual void socketDataArrived(int connId, void *yourPtr, cPacket *msg, bool urgent);
-	virtual void socketEstablished(int connId, void *yourPtr);
-	virtual void socketPeerClosed(int connId, void *yourPtr);
-	virtual void socketClosed(int connId, void *yourPtr);
-	virtual void socketFailure(int connId, void *yourPtr, int code);
+    /** @name Overridden functions from TCPSocketAPI_Inet::CallbackHandler */
+    //@{
 
-	// implement if other things should be done other than delete the status info
-	//virtual void socketStatusArrived(int connId, void *yourPtr, TCPStatusInfo *status);
+    virtual void acceptCallback  (socket_id_t id, cb_status_t result,
+        				user_data_ptr_t context);
+
+    virtual void connectCallback (socket_id_t id, cb_status_t result,
+    				user_data_ptr_t context);
+
+	virtual void recvCallback(socket_id_t id, cb_status_t result,
+    				cPacket * msg, user_data_ptr_t context);
+
+	virtual void closeCallback (socket_id_t id, cb_status_t result,
+					user_data_ptr_t context);
 
 	//@}
 
-	/** @name Utility / convenience functions */
-	//@{
 
-	/** Handles a timeout.
-	 *
-	 * NOT part of the TCPSocket::CallbackInteface
-	 */
-	virtual void socketTimeout(int connId, void * yourPtr);
+	/** @name Utility Functions */
+	//@{
 
 	/** Cleans up all data associated with a socket */
 	virtual void cleanupSocket(socket_id_t id);
 
-	/** Removes the indicated socket_id from the set of sockets associated with the socket's local port. */
+	/**
+	 * Removes the indicated socket ID from the set of sockets IDs associated
+	 * with the socket's local port.
+	 */
 	virtual void freePort(socket_id_t id);
 
-	/** Finds the socket associated with the indicated id in the socket map
-	 * and verifies that it is valid, if it is not it signals a function error
-	 * using the indicated function name.
-	 */
-	virtual TCPSocket * findAndCheckSocket(socket_id_t id, str_cref_t fname);
-
-public:
-	/** Returns a string representing the indicated socket as a string.  Because
-	 * of the pseudo TIMED_OUT state we don't want the user to worry about this
-	 * string representation -- could intercept it and rewrite it.
-	 */
-	virtual std::string socketToString(socket_id_t id);
-
-protected:
-	/** Makes a new CallbackData object with the indicated values.  cbobj_for_accepted
-	 * is always NULL.
-	 */
-	virtual cb_data_ptr_t makeCallbackData(socket_id_t id, cb_inet_handler_ptr_t cbobj,
-			user_data_ptr_t userptr, CALLBACK_STATE type);
-
-	/** Looks up the passive callback data associated with the indicated port.
+	/**
+	 * Finds the socket with the indicated socket ID and verifies that it
+	 * is valid (non-NULL).
 	 *
-	 * @return the callback data if it exists and NULL if there is no passive
-	 * socket on the indicated port, or if the passive socket is not in the accept
-	 * state
+	 * @exception Throws a cRuntimeError if the socket is NULL.
 	 */
-	virtual cb_data_ptr_t getAcceptCallback(port_t port);
+	virtual socket_ptr_t findAndCheckSocket(socket_id_t id, str_cref_t fname);
 
-	/** Looks up the passive callback data associated with the indicated port.
-	 *
-	 * @return the callback data if it exists and NULL if there is no passive
-	 * socket on the indicated port.
-	 */
-	virtual cb_data_ptr_t getPassiveCallback(port_t port);
-
-	/** @throw Throws a cRuntimeError--on purpose! */
-	virtual void signalFunctionError(str_cref_t fname, str_cref_t details);
-
-	/** @throw Throws a cRuntimeError--on purpose! */
-	virtual void signalCBNullError(str_cref_t fname);
-
-	/** @throw Throws a cRuntimeError--on purpose! */
-	virtual void signalCBStateReceptionError(str_cref_t fname, CALLBACK_STATE state);
-
-	/** @throw Throws a cRuntimeError--on purpose! */
-	virtual void signalCBStateInconsistentError(str_cref_t fname, CALLBACK_STATE state);
-
-	/** Prints a notice on the simulation environment output. */
-	virtual void printFunctionNotice(str_cref_t fname, str_cref_t notice);
-
-	/** Prints a notice on the simulation environment output. */
-	virtual void printCBStateReceptionNotice(str_cref_t fname, CALLBACK_STATE state);
+	virtual socket_ptr_t getSocket(TCPSocketMap & pool, socket_id_t id);
+	virtual socket_ptr_t removeSocket(TCPSocketMap & pool, socket_id_t id);
+	virtual socket_ptr_t findSocketFor(TCPSocketMap & pool, cMessage * msg);
 
 	/** Emits tcp connection information from the given socket. */
-	virtual void emitTCPConnInfo(TCPSocket * socket);
+	virtual void emitTCPConnInfo(socket_ptr_t socket);
 
 	/** Emits message event information given the socket descriptor and message. */
 	virtual void emitMessageEvent(const cMessage * msg, int interface_id);
 
 	//@}
 };
-
-// After the fact type defs
-typedef TCPSocketMgr::cb_data_ptr_t cb_data_ptr_t;
-//typedef TCPSocketMgr::Port_CBDataMap Port_CBDataMap;
-//typedef TCPSocketMgr::Id_CBDataMap Id_CBDataMap;
 
 /** \class TCPSocketMgr
  * Implements the TCPSocketAPI_Inet interface.  Uses TCPSocket objects to do so.
@@ -777,6 +602,8 @@ typedef TCPSocketMgr::cb_data_ptr_t cb_data_ptr_t;
  *
  *	@see TCPSocketAPI_Base, TCPSocketAPI_Inet, TCPSocket, TCPSocketMap, IPAddressResolver,
  * SocketTimeoutMsg, TCPCommand.
+ *
+ * @todo Check documentation.
  */
 
 #endif /* __INET__TCPSOCKETMGR_H_ */

@@ -44,53 +44,19 @@
 
 Define_Module(TCPSocketMgr);
 
+//==============================================================================
+// Constructor and Destructor
+
 TCPSocketMgr::TCPSocketMgr()
-	: _socket_map(), /* _rejected_sockets_map(), */
-	_timeout_timers(), _resolver(), _bound_ports(),
-	_passive_callbacks(), _registered_callbacks(),
-	_pending_sockets_map(), _pending_connections(), _reception_buffers()
+	: _socket_pool(), _app_cb_handler_map(), _bound_ports(),
+	  _passive_socket_map(), _pending_socket_pool()
 {
 }
 
 TCPSocketMgr::~TCPSocketMgr()
 {
-	_socket_map.deleteSockets();
-	_pending_sockets_map.deleteSockets();
-
-	// delete the registered callbacks
-	Id_CBDataMap::iterator rcb_itr = _registered_callbacks.begin();
-	while (rcb_itr != _registered_callbacks.end())
-	{
-		delete rcb_itr->second;
-		rcb_itr++;
-	}
-
-	// delete the timers
-	Id_TimeoutMsgMap::iterator tmr_itr = _timeout_timers.begin();
-	while (tmr_itr != _timeout_timers.end())
-	{
-		if (tmr_itr->second)
-		{
-			cancelAndDelete(tmr_itr->second);
-		}
-		tmr_itr++;
-	}
-
-	// delete messages sitting in the reception buffers
-	Id_PacketDequeMap::iterator rb_itr = _reception_buffers.begin();
-	PacketDeque::iterator q_itr;
-	PacketDeque::iterator qend_itr;
-	while (rb_itr != _reception_buffers.end())
-	{
-		q_itr = rb_itr->second.begin();
-		qend_itr = rb_itr->second.end();
-		while (q_itr != qend_itr)
-		{
-			deleteSafe((*q_itr));
-			q_itr++;
-		}
-		rb_itr++;
-	}
+	_socket_pool.deleteSockets();
+	_pending_socket_pool.deleteSockets();
 }
 
 //==============================================================================
@@ -100,13 +66,13 @@ void TCPSocketMgr::initialize()
 {
 	cSimpleModule::initialize();
 
-	std::string __fname = "initialize()";
-	LOG_DEBUG_LN("initializing TCP socket API");
+	LOG_DEBUG_FUN_BEGIN("");
 
 	// other variables, scalars/vectors WATCH calls
 
 	_should_map_tcp_connections = par("shouldMapTCPConnections");
-	LOG_DEBUG_LN("should map tcp connections: "<<(_should_map_tcp_connections ? "true":"false"));
+	LOG_DEBUG_APPEND_LN("should map tcp connections: "<<
+			(_should_map_tcp_connections ? "true":"false"));
 
 	if (_should_map_tcp_connections)
 	{
@@ -114,7 +80,8 @@ void TCPSocketMgr::initialize()
 	}
 
 	_should_track_dup_msg_names = par("shouldTrackDuplicateMessageNames");
-	LOG_DEBUG_LN("should track duplicate message names: "<<(_should_track_dup_msg_names ? "true":"false"));
+	LOG_DEBUG_APPEND_LN("should track duplicate message names: "<<
+			(_should_track_dup_msg_names ? "true":"false"));
 
 	if (_should_track_dup_msg_names)
 	{
@@ -128,19 +95,19 @@ void TCPSocketMgr::handleMessage(cMessage *msg)
 
 	LOG_DEBUG_FUN_BEGIN("");
 
-	TCPSocketExtension * socket = NULL;
+	socket_ptr_t socket = NULL;
 
 	if (msg->isSelfMessage())
 	{
 		SocketTimeoutMsg * timer = check_and_cast<SocketTimeoutMsg *>(msg);
-		ASSERT(timer != NULL); // unknown self message received
+		ASSERT(timer != NULL); // if not, unknown self message received
 
 		socket_id_t socket_id = timer->getSocketId();
-		socket = _socket_map.getSocket(socket_id);
+		socket = getSocket(_socket_pool, socket_id);
 
-		ASSERT(socket != NULL); // timer doesn't belong to a current socket
+		ASSERT(socket != NULL); // if not, timer doesn't belong to a current socket
 
-		LOG_DEBUG_LN("On the socket: "<<socket->toString());
+		LOG_DEBUG_LN("On the socket: " << socket->toString());
 		LOG_DEBUG_LN("Process the message " << msg->getName());
 		socket->processMessage(msg);
 	}
@@ -149,7 +116,7 @@ void TCPSocketMgr::handleMessage(cMessage *msg)
 		LOG_DEBUG_LN("Handle inbound message " << msg->getName()
 				<< " of kind " << msg->getKind());
 
-		socket = _socket_map.findSocketFor(msg);
+		socket = findSocketFor(_socket_pool, msg);
 
 		if (socket == NULL)
 		{
@@ -159,25 +126,26 @@ void TCPSocketMgr::handleMessage(cMessage *msg)
 			socket = new TCPSocketExtension(msg);
 			socket->setOutputGate(gate("tcpOut"));
 
-			// look up the passive socket on the same port as the new socket
-			// in order to get its socket id
+			socket_ptr_t passive_socket = _passive_socket_map[socket->getLocalPort()];
 
-			// if there is no passive socket
+			if (passive_socket == NULL)
 			{
 				LOG_DEBUG_LN("received message for connection "
-						<<socket->getConnectionId() << " on non-listening port"
-						<<" OR received a message for a closed socket");
+						<< socket->getConnectionId() << " on non-listening port"
+						<< " OR received a message for a closed socket");
 				delete socket;
 				delete msg;
 				return;
 			}
 			// else
-			ASSERT(msg->getKind() == TCP_I_ESTABLISHED);
-			_pending_sockets_map.addSocket(socket);
-			// passive socket->appendAcceptedSocket(socket);
+			ASSERT(msg->getKind() == TCP_I_ESTABLISHED); // if not, shouldn't be accepting
+			_pending_socket_pool.addSocket(socket);
+			passive_socket->appendAcceptedSocket(socket);
+		}
 	}
 
 	// update display?
+	LOG_DEBUG_FUN_END("");
 }
 
 void TCPSocketMgr::finish()
@@ -186,11 +154,11 @@ void TCPSocketMgr::finish()
 }
 
 //==============================================================================
-// TCP Socket API functions
+// TCP Socket Port, Address, and String Accessors
 
 port_t TCPSocketMgr::getLocalPort(socket_id_t id)
 {
-	Enter_Method_Silent(); // TODO necessary?
+//	Enter_Method_Silent(); // TODO necessary?
 	socket_ptr_t socket = findAndCheckSocket(id, __FUNCTION__);
 
 	return socket->getLocalPort();
@@ -198,7 +166,7 @@ port_t TCPSocketMgr::getLocalPort(socket_id_t id)
 
 port_t TCPSocketMgr::getRemotePort(socket_id_t id)
 {
-	Enter_Method_Silent(); // TODO necessary?
+//	Enter_Method_Silent(); // TODO necessary?
 	socket_ptr_t socket = findAndCheckSocket(id, __FUNCTION__);
 
 	return socket->getRemotePort();
@@ -206,44 +174,48 @@ port_t TCPSocketMgr::getRemotePort(socket_id_t id)
 
 address_t TCPSocketMgr::getLocalAddress(socket_id_t id)
 {
-	Enter_Method_Silent(); // TODO necessary?
+//	Enter_Method_Silent(); // TODO necessary?
 	socket_ptr_t socket = findAndCheckSocket(id, __FUNCTION__);
 
 	return socket->getLocalAddress().str();
 }
 
-address_t TCPSocketMgr::getRemoteAddres(socket_id_t id)
+address_t TCPSocketMgr::getRemoteAddress(socket_id_t id)
 {
-	Enter_Method_Silent(); // TODO necessary?
+//	Enter_Method_Silent(); // TODO necessary?
 	TCPSocket * socket = findAndCheckSocket(id, __FUNCTION__);
 
 	return socket->getRemoteAddress().str();
 }
 
-std::string TCPSocketMgr::socketToString(socket_id_t id)
+str_t TCPSocketMgr::socketToString(socket_id_t id)
 {
-	Enter_Method_Silent(); // TODO necessary?
-	TCPSocket * socket = findAndCheckSocket(id, __FUNCTION__);
+//	Enter_Method_Silent(); // TODO necessary?
+	socket_ptr_t socket = findAndCheckSocket(id, __FUNCTION__);
 
 	return socket->toString();
 }
 
-int TCPSocketMgr::socket (cb_inet_handler_ptr_t cbobj)
+//==============================================================================
+// BDS-like Socket Operations
+
+int TCPSocketMgr::socket (cb_inet_handler_ptr_t cb_handler)
 {
 	Enter_Method_Silent();
 
-	if (cbobj == NULL)
-	{
-		signalFunctionError(__FUNCTION__, "no callback handler specified");
-	}
+	LOG_DEBUG_FUN_BEGIN("");
+
+	ASSERT(cb_handler != NULL);
 
 	socket_ptr_t socket = new TCPSocketExtension(this,this);
 	socket->setOutputGate(gate("tcpOut"));
 
 	int id = socket->getConnectionId();
-	// TODO add the given cbobj to a mapping from socket id to callback handler
-	_socket_map.addSocket(socket);
-	printFunctionNotice(__FUNCTION__, socket->toString());
+	_app_cb_handler_map[id] = cb_handler;
+
+	_socket_pool.addSocket(socket);
+
+	LOG_DEBUG_FUN_END(socket->toString());
 
 	return id;
 }
@@ -254,6 +226,8 @@ void TCPSocketMgr::bind (socket_id_t id, address_cref_t local_address,
 {
 	Enter_Method_Silent();
 
+	LOG_DEBUG_FUN_BEGIN("");
+
 	// verify that socket exists
 	socket_ptr_t socket = findAndCheckSocket(id, __FUNCTION__);
 
@@ -263,7 +237,7 @@ void TCPSocketMgr::bind (socket_id_t id, address_cref_t local_address,
 		Port_IdSetMap::iterator bprt_itr = _bound_ports.find(local_port);
 		if (bprt_itr != _bound_ports.end())
 		{
-			signalFunctionError(__FUNCTION__, "port is being used");
+			throw cRuntimeError(this, "%s: %s", __FUNCTION__, "port is being used");
 		}
 	}
 
@@ -275,7 +249,7 @@ void TCPSocketMgr::bind (socket_id_t id, address_cref_t local_address,
 		_bound_ports[local_port].insert(id);
 	}
 
-	printFunctionNotice(__FUNCTION__, socket->toString());
+	LOG_DEBUG_FUN_END(socket->toString());
 }
 
 void TCPSocketMgr::connect (socket_id_t id, address_cref_t remote_address,
@@ -289,12 +263,14 @@ void TCPSocketMgr::connect (socket_id_t id, address_cref_t remote_address,
 {
 	Enter_Method_Silent();
 
+	LOG_DEBUG_FUN_BEGIN("");
+
 	// verify that socket exists
 	socket_ptr_t socket = findAndCheckSocket(id, __FUNCTION__);
 
 	socket->connect(remote_address, remote_port, context);
 
-	printFunctionNotice(__FUNCTION__, socket->toString());
+	LOG_DEBUG_FUN_END(socket->toString());
 }
 
 
@@ -302,15 +278,18 @@ void TCPSocketMgr::listen (socket_id_t id, cb_inet_handler_ptr_t cbobj_for_accep
 {
 	Enter_Method_Silent();
 
+	LOG_DEBUG_FUN_BEGIN("");
+
 	// verify that the socket exists
 	socket_ptr_t socket = findAndCheckSocket(id, __FUNCTION__);
 
 	// creates a forking socket
 	socket->listen(cbobj_for_accepted);
 
-	// TODO add socket to a collection of passive sockets
+	// add to map of passive sockets
+	_passive_socket_map[socket->getLocalPort()] = socket;
 
-	printFunctionNotice(__FUNCTION__, socket->toString());
+	LOG_DEBUG_FUN_END(socket->toString());
 
 	emitTCPConnInfo(socket);
 }
@@ -319,15 +298,17 @@ socket_id_t TCPSocketMgr::makeActiveSocket (cb_base_handler_ptr_t cbobj,
 	address_cref_t local_address, port_t local_port,
 	address_cref_t remote_address, port_t remote_port)
 {
-	return this->makeActiveSocket(cbobj, local_address,local_port,remote_address,remote_port,NULL);
+	return this->makeActiveSocket(cbobj, local_address,local_port,
+			remote_address,remote_port,NULL);
 }
 
-socket_id_t TCPSocketMgr::makeActiveSocket (cb_base_handler_ptr_t cbobj,
+socket_id_t TCPSocketMgr::makeActiveSocket (cb_base_handler_ptr_t cb_handler,
 	address_cref_t local_address, port_t local_port,
 	address_cref_t remote_address, port_t remote_port, user_data_ptr_t context)
 {
 	Enter_Method_Silent();
-	int id = TCPSocketAPI_Inet::socket(cbobj);
+
+	int id = TCPSocketAPI_Inet::socket(cb_handler);
 	// check if bind should be skipped
 	if (!local_address.empty() || 0 <= local_port)
 	{
@@ -338,15 +319,17 @@ socket_id_t TCPSocketMgr::makeActiveSocket (cb_base_handler_ptr_t cbobj,
 	return id;
 }
 
-socket_id_t TCPSocketMgr::makePassiveSocket (cb_base_handler_ptr_t cbobj,
-	address_cref_t local_address, port_t local_port, cb_base_handler_ptr_t cbobj_for_accepted)
+socket_id_t TCPSocketMgr::makePassiveSocket (cb_base_handler_ptr_t cb_handler,
+	address_cref_t local_address, port_t local_port,
+	cb_base_handler_ptr_t cb_handler_for_accepted)
 {
 	Enter_Method_Silent();
-	int id = TCPSocketAPI_Inet::socket(cbobj);
+
+	int id = TCPSocketAPI_Inet::socket(cb_handler);
 
 	bind(id, local_address, local_port);
 
-	TCPSocketAPI_Inet::listen(id, cbobj_for_accepted);
+	TCPSocketAPI_Inet::listen(id, cb_handler_for_accepted);
 
 	return id;
 }
@@ -360,12 +343,15 @@ void TCPSocketMgr::accept (socket_id_t id, void * context)
 {
 	Enter_Method_Silent();
 
+	LOG_DEBUG_FUN_BEGIN("");
+
 	// verify that the socket exists
 	socket_ptr_t socket = findAndCheckSocket(id, __FUNCTION__);
 
+	// call accept on it
 	socket->accept(context);
 
-	printFunctionNotice(__FUNCTION__, socket->toString());
+	LOG_DEBUG_FUN_END(socket->toString());
 }
 
 // currently designed to allow sending even while the socket is
@@ -373,6 +359,8 @@ void TCPSocketMgr::accept (socket_id_t id, void * context)
 void TCPSocketMgr::send (socket_id_t id, cPacket * msg)
 {
 	Enter_Method_Silent();
+
+	LOG_DEBUG_FUN_BEGIN("");
 
 	// verify that the socket exits
 	socket_ptr_t socket = findAndCheckSocket(id, __FUNCTION__);
@@ -383,9 +371,10 @@ void TCPSocketMgr::send (socket_id_t id, cPacket * msg)
 	// emit on the message event signal
 	emitMessageEvent(msg, id);
 
+	// send the message
 	socket->send(msg);
 
-	printFunctionNotice(__FUNCTION__, socket->toString() + " sent message "+msg->getName());
+	LOG_DEBUG_FUN_END(socket->toString() + " sent message "+msg->getName());
 }
 
 void TCPSocketMgr::recv (socket_id_t id, bytecount_t byte_mode)
@@ -397,11 +386,13 @@ void TCPSocketMgr::recv (socket_id_t id, bytecount_t byte_mode, user_data_ptr_t 
 {
 	Enter_Method_Silent();
 
+	LOG_DEBUG_FUN_BEGIN("");
+
 	socket_ptr_t socket = findAndCheckSocket(id, __FUNCTION__);
 
 	socket->recv(byte_mode, context);
 
-	printFunctionNotice(__FUNCTION__, socket->toString());
+	LOG_DEBUG_FUN_END(socket->toString());
 }
 
 void TCPSocketMgr::setTimeout(socket_id_t id, simtime_t timeout_period)
@@ -424,298 +415,114 @@ bool TCPSocketMgr::removeTimeout(socket_id_t id)
 	return socket->removeTimeout();
 }
 
-void * TCPSocketMgr::close (socket_id_t id)
+user_data_ptr_t TCPSocketMgr::close (socket_id_t id)
 {
 	Enter_Method_Silent();
 
+	LOG_DEBUG_FUN_BEGIN("");
+
 	socket_ptr_t socket = findAndCheckSocket(id, __FUNCTION__);
 
-	removeTimeout(id);
 	freePort(id);
 
-	// throws error if close() has already been called
+	user_data_ptr_t user_context = socket->getUserContext();
+
+	LOG_DEBUG_FUN_END(socket->toString());
+
+	// - removes any timeouts
+	// - throws error if close() has already been called
+	// - may invoke closeCallback immediately which will delete the socket
+	// so all interaction with the socket must be done previously
 	socket->close();
 
-	printFunctionNotice(__FUNCTION__, socket->toString());
-
-	return socket->getUserContext();
+	return user_context;
 }
+
+//==============================================================================
+// User Context Data Access
 
 void * TCPSocketMgr::getMyPtr(socket_id_t id)
 {
-	socket_ptr_t socket = _socket_map.getSocket(id);
+	socket_ptr_t socket = getSocket(_socket_pool, id);
 
 	return (socket!=NULL) ? socket->getUserContext() : NULL;
 }
 
 //==============================================================================
-// TCPSocket::CallbackInterface functions
-// CONTINUE: remove these functions and replace with the Inet::CallbackHandler functions
-// so as to intercept socket events and shuffle around the accepted socket pointers and
-// track the bound ports
+// TCPSocketAPI_Inet::CallbackHandler functions
 
-void TCPSocketMgr::socketEstablished(int connId, void * yourPtr)
+void TCPSocketMgr::acceptCallback  (socket_id_t id, cb_status_t result,
+		user_data_ptr_t context)
 {
-	// update scalar variables
-	std::string  __fname = "socketEstablished";
+	ASSERT(findAndCheckSocket(id, __FUNCTION__) != NULL);
 
-	if ( yourPtr == NULL )
+	if (!isCallbackError(result))
 	{
-		signalCBNullError(__fname);
+		// move accepted socket from pending pool to active/current pool
+		socket_ptr_t accepted_socket = removeSocket(_pending_socket_pool, result);
+		ASSERT(accepted_socket != NULL); // if not, was not in the pending socket pool
+		_socket_pool.addSocket(accepted_socket);
+
+		// add entry to bound ports
+		_bound_ports[accepted_socket->getLocalPort()].insert(result);
 	}
 
-	cb_data_ptr_t cbdata = static_cast<cb_data_ptr_t>(yourPtr);
-	void * userPtr = cbdata->userptr;
-	cbdata->userptr = NULL;
-
-	cb_data_ptr_t new_cbdata = NULL;
-	TCPSocket * socket = NULL;
-
-	// invoke the "connect" or "accept" callback
-	switch (cbdata->state)
-	{
-	case CB_S_CONNECT:
-		socket = _socket_map.getSocket(connId);
-		_bound_ports[socket->getLocalPort()].insert(connId); // inserting into a SET
-		LOG_DEBUG_LN("connected socket " << connId);
-		emitTCPConnInfo(socket);
-		cbdata->state = CB_S_WAIT;
-		cbdata->cbobj->connectCallback(connId, 0, userPtr);
-		break;
-	case CB_S_ACCEPT:
-		// set the spawned socket's callback data to match itself now
-		new_cbdata = makeCallbackData(connId, cbdata->cbobj_for_accepted, NULL, CB_S_WAIT);
-		_registered_callbacks[connId] = new_cbdata;
-		socket = _pending_sockets_map.removeSocket(connId);
-		socket->setCallbackObject(this, new_cbdata);
-		_socket_map.addSocket(socket);
-		_bound_ports[socket->getLocalPort()].insert(connId);
-
-		LOG_DEBUG_LN("accepted socket with id=" << connId);
-		emitTCPConnInfo(socket);
-
-		cbdata->state = CB_S_WAIT;
-
-		// notify the passive socket of an accept
-		cbdata->cbobj->acceptCallback(cbdata->socket_id, connId, userPtr);
-		break;
-	case CB_S_CLOSE:
-		_pending_sockets_map.removeSocket(connId);
-		printCBStateReceptionNotice(__fname, cbdata->state);
-		break;
-	case CB_S_WAIT:
-		_pending_connections[cbdata->socket_id].push_back(connId);
-		break;
-	default:
-		signalCBStateReceptionError(__fname, cbdata->state);
-	}
+	// forward callback
+	_app_cb_handler_map[id]->acceptCallback(id, result, context);
 }
 
-void TCPSocketMgr::socketDataArrived(int connId, void *yourPtr, cPacket *msg, bool urgent)
+void TCPSocketMgr::connectCallback (socket_id_t id, cb_status_t result,
+		user_data_ptr_t context)
 {
-	std::string __fname = "socketDataArrived";
+	ASSERT(findAndCheckSocket(id, __FUNCTION__) != NULL);
 
-	if ( yourPtr==NULL )
+	if (!isCallbackError(result))
 	{
-		signalCBNullError(__fname);
+		// add entry to bound ports
+		socket_ptr_t socket = getSocket(_socket_pool, id);
+		_bound_ports[socket->getLocalPort()].insert(id);
 	}
 
-	// invoke the recv callback
-	cb_data_ptr_t cbdata = static_cast<cb_data_ptr_t>(yourPtr);
-	void * userPtr = cbdata->userptr;
-	cbdata->userptr = NULL;
-
-	// emit a message event signal
-	emitMessageEvent(msg, connId);
-
-	switch (cbdata->state)
-	{
-	case CB_S_RECV:
-		cbdata->state = CB_S_WAIT;
-		cbdata->cbobj->recvCallback(connId, msg->getByteLength(), msg, userPtr);
-		break;
-	case CB_S_WAIT:
-		_reception_buffers[connId].push_back(msg);
-		break;
-	case CB_S_CLOSE:
-	case CB_S_TIMEOUT:
-		delete msg;
-		printCBStateReceptionNotice(__fname, cbdata->state);
-		break;
-	default:
-		signalCBStateReceptionError(__fname, cbdata->state);
-	}
+	// forward callback
+	_app_cb_handler_map[id]->connectCallback(id, result, context);
 }
 
-void TCPSocketMgr::socketPeerClosed(int connId, void *yourPtr)
+void TCPSocketMgr::recvCallback(socket_id_t id, cb_status_t result,
+		cPacket * msg, user_data_ptr_t context)
 {
-	std::string __fname = "socketPeerClosed";
-	if ( yourPtr==NULL )
-	{
-		signalCBNullError(__fname);
-	}
-	cb_data_ptr_t cbdata = static_cast<cb_data_ptr_t>(yourPtr);
-	void * userPtr = cbdata->userptr;
-	cbdata->userptr = NULL;
-	//cbdata->state = CB_S_CLOSE;
-
-	// invoke the recv callback or just handle the close operation?
-	// assume that the application will close the socket
-	switch (cbdata->state)
-	{
-	case CB_S_RECV:
-		cbdata->state = CB_S_CLOSE;
-		cbdata->cbobj->recvCallback(connId, CB_E_CLOSED, NULL, userPtr);
-		break;
-//	default:
-//		cbdata->cbobj->closeNotice(connId, userPtr);
-
-	case CB_S_CLOSE:
-	case CB_S_WAIT:
-		printCBStateReceptionNotice(__fname, cbdata->state);
-		break;
-	default:
-		signalCBStateReceptionError(__fname, cbdata->state);
-	}
+	// forward callback
+	_app_cb_handler_map[id]->recvCallback(id, result, msg, context);
 }
 
-void TCPSocketMgr::socketClosed(int connId, void *yourPtr)
+void TCPSocketMgr::closeCallback (socket_id_t id, cb_status_t result,
+					user_data_ptr_t context)
 {
-	EV_INFO << "connection closed. Connection id " << connId << endl;
+	cleanupSocket(id);
 
-	cleanupSocket(connId);
-}
-
-void TCPSocketMgr::socketFailure(int connId, void *yourPtr, int code)
-{
-	std::string __fname = "socketFailure";
-
-	// todo branch or no?
-	if (code == TCP_I_TIMED_OUT) {
-		socketTimeout(connId, yourPtr);
-		return;
-	}
-
-	EV_WARNING << "connection broken. Connection id " << connId;
-
-	if ( yourPtr==NULL )
-	{
-		signalCBNullError(__fname);
-	}
-
-	CallbackError ecode = CB_E_UNKNOWN;
-
-	if (code==TCP_I_CONNECTION_RESET) {
-		EV_WARNING << "Connection reset!" << endl;
-		ecode = CB_E_RESET;
-	}
-	else if (code==TCP_I_CONNECTION_REFUSED) {
-		EV_WARNING << "Connection refused!" << endl;
-		ecode = CB_E_REFUSED;
-	}
-	else {
-		EV_WARNING << "Unknown TCP socket failure code!"<<endl;
-	}
-
-	cb_data_ptr_t cbdata = static_cast<cb_data_ptr_t>(yourPtr);
-	void * userPtr = cbdata->userptr;
-	cbdata->userptr = NULL;
-
-	// invoke the recv callback or just handle the close operation?
-	switch (cbdata->state)
-	{
-	case CB_S_RECV:
-		cbdata->state = CB_S_CLOSE;
-		cbdata->cbobj->recvCallback(connId, ecode, NULL, userPtr);
-		break;
-	case CB_S_CONNECT:
-		cbdata->state = CB_S_CLOSE;
-		cbdata->cbobj->connectCallback(connId, ecode, userPtr);
-		break;
-	case CB_S_CLOSE:
-	case CB_S_TIMEOUT:
-	case CB_S_WAIT:
-		printCBStateReceptionNotice(__fname, cbdata->state);
-		break;
-	default:
-		signalCBStateReceptionError(__fname, cbdata->state);
-	}
+	// forward callback
+	_app_cb_handler_map[id]->closeCallback(id, result, context);
 }
 
 //==============================================================================
-// UTILITY FUNCTIONS
-
-void TCPSocketMgr::socketTimeout(int connId, void * yourPtr)
-{
-
-	std::string __fname = "socketTimeout";
-
-	if ( yourPtr==NULL )
-	{
-		signalCBNullError(__fname);
-	}
-
-	cb_data_ptr_t cbdata = static_cast<cb_data_ptr_t>(yourPtr);
-	void * userPtr = cbdata->userptr;
-	cbdata->userptr = NULL;
-
-	switch (cbdata->state)
-	{
-	case CB_S_RECV:
-		cbdata->state = CB_S_TIMEOUT;
-		cbdata->cbobj->recvCallback(connId, CB_E_TIMEOUT, NULL, userPtr);
-		break;
-	case CB_S_CONNECT:
-		cbdata->state = CB_S_TIMEOUT;
-		cbdata->cbobj->connectCallback(connId, CB_E_TIMEOUT, userPtr);
-		break;
-	case CB_S_CLOSE:
-	case CB_S_WAIT:
-		printCBStateReceptionNotice(__fname, cbdata->state);
-		break;
-	case CB_S_TIMEOUT:
-		printFunctionNotice(__fname, "multiple TIMEOUT occurred");
-		break;
-	default:
-		signalCBStateReceptionError(__fname, cbdata->state);
-	}
-}
+// Utilities
 
 void TCPSocketMgr::cleanupSocket(socket_id_t id)
 {
 	freePort(id);
 	removeTimeout(id);
+
 	// delete the socket
-	TCPSocket * socket = _socket_map.removeSocket(id);
+	socket_ptr_t socket = removeSocket(_socket_pool, id);
 	if (socket != NULL)
 	{
 		delete socket;
-	}
-//	else
-//	{
-//		socket = _rejected_sockets_map.removeSocket(socket_id);
-//		if (socket)
-//		{
-//			delete socket;
-//		}
-//	}
-
-	// delete callback data
-	Id_CBDataMap::iterator rcb_itr = _registered_callbacks.find(id);
-	if (rcb_itr != _registered_callbacks.end())
-	{
-		if (rcb_itr->second)
-		{
-			delete rcb_itr->second;
-		}
-		_registered_callbacks.erase(rcb_itr);
-
 	}
 }
 
 void TCPSocketMgr::freePort(socket_id_t id)
 {
-	TCPSocket * socket = _socket_map.getSocket(id);
+	socket_ptr_t socket = getSocket(_socket_pool, id);
+
 	if (socket == NULL)
 	{
 		return;
@@ -740,131 +547,33 @@ void TCPSocketMgr::freePort(socket_id_t id)
 	}
 }
 
-TCPSocket * TCPSocketMgr::findAndCheckSocket(socket_id_t id, str_cref_t fname)
+socket_ptr_t TCPSocketMgr::findAndCheckSocket(socket_id_t id, str_cref_t fname)
 {
-	TCPSocket * socket = _socket_map.getSocket(id);
+	socket_ptr_t socket = getSocket(_socket_pool, id);
 	if (socket == NULL)
 	{
 		throw cRuntimeError(this, "%s: invalid socket id %d", fname.c_str(), id);
 	}
+	// else
 	return socket;
 }
 
-cb_data_ptr_t TCPSocketMgr::makeCallbackData(socket_id_t id,
-		cb_inet_handler_ptr_t cbobj, user_data_ptr_t userptr, CALLBACK_STATE state)
+socket_ptr_t TCPSocketMgr::getSocket(TCPSocketMap & pool, socket_id_t id)
 {
-
-	cb_data_ptr_t cbdata = new CallbackData();
-	cbdata->socket_id = id;
-	cbdata->cbobj = cbobj;
-	cbdata->userptr = userptr;
-	cbdata->state = state;
-	cbdata->cbobj_for_accepted = cbobj;
-	return cbdata;
+	return dynamic_cast<socket_ptr_t>(pool.getSocket(id));
 }
 
-cb_data_ptr_t TCPSocketMgr::getAcceptCallback(port_t port)
+socket_ptr_t TCPSocketMgr::removeSocket(TCPSocketMap & pool, socket_id_t id)
 {
-	// IMPORTANT can't do it through _bound_ports since the accepted
-	// sockets have the same port as the passive listening socket
-
-	std::map<int, cb_data_ptr_t>::iterator pcb_itr = _passive_callbacks.find(port);
-
-	if (pcb_itr == _passive_callbacks.end())
-	{
-		return NULL;
-	}
-
-	if (pcb_itr->second->state != CB_S_ACCEPT)
-	{
-		return NULL;
-	}
-
-	return pcb_itr->second;
+	return dynamic_cast<socket_ptr_t>(pool.removeSocket(id));
 }
 
-cb_data_ptr_t TCPSocketMgr::getPassiveCallback(port_t port)
+socket_ptr_t TCPSocketMgr::findSocketFor(TCPSocketMap & pool, cMessage * msg)
 {
-	// IMPORTANT can't do it through _bound_ports since the accepted
-	// sockets have the same port as the passive listening socket
-
-	std::map<int, cb_data_ptr_t>::iterator pcb_itr = _passive_callbacks.find(port);
-
-	if (pcb_itr == _passive_callbacks.end())
-	{
-		return NULL;
-	}
-
-	return pcb_itr->second;
+	return dynamic_cast<socket_ptr_t>(pool.findSocketFor(msg));
 }
 
-std::string TCPSocketMgr::getStateName(CALLBACK_STATE state)
-{
-	std::string name = "";
-	switch (state)
-	{
-	case CB_S_RECV:
-		name = "RECV";
-		break;
-	case CB_S_CONNECT:
-		name = "CONNECT";
-		break;
-	case CB_S_ACCEPT:
-		name = "ACCEPT";
-		break;
-	case CB_S_CLOSE:
-		name = "CLOSE";
-		break;
-	case CB_S_TIMEOUT:
-		name = "TIMEOUT";
-		break;
-	case CB_S_NONE:
-		name = "NONE";
-		break;
-	case CB_S_WAIT:
-		name = "WAIT";
-		break;
-	default:
-		name = "unknown";
-	}
-	return name;
-}
-
-void TCPSocketMgr::signalFunctionError(str_cref_t fname, str_cref_t details)
-{
-	std::string msg = fname + ": "+details;
-	throw cRuntimeError(this, msg.c_str());
-}
-
-void TCPSocketMgr::signalCBStateReceptionError(str_cref_t fname, CALLBACK_STATE state)
-{
-	std::string details = getStateName(state) + " callback received";
-	signalFunctionError(fname, details);
-}
-
-void TCPSocketMgr::signalCBStateInconsistentError(str_cref_t fname, CALLBACK_STATE state)
-{
-	std::string details = "inconsistent state: "+getStateName(state);
-	signalFunctionError(fname, details);
-}
-
-void TCPSocketMgr::signalCBNullError(str_cref_t fname)
-{
-	signalFunctionError(fname, "no callback data with socket");
-}
-
-void TCPSocketMgr::printFunctionNotice(str_cref_t fname, str_cref_t notice)
-{
-	LOG_DEBUG_LN(fname << ": " << notice);
-}
-
-void TCPSocketMgr::printCBStateReceptionNotice(str_cref_t fname, CALLBACK_STATE state)
-{
-	std::string notice = getStateName(state) + " callback received";
-	printFunctionNotice(fname, notice);
-}
-
-void TCPSocketMgr::emitTCPConnInfo(TCPSocket * socket)
+void TCPSocketMgr::emitTCPConnInfo(socket_ptr_t socket)
 {
 	if (_should_map_tcp_connections)
 	{

@@ -198,7 +198,7 @@ public:
 		virtual void socketStatusArrived(int connId, void *yourPtr, TCPStatusInfo *status) {delete status;}
 	};
 
-	/* +++> Added ACCEPTING, RECEIVING, and TIMED_OUT states <+++ */
+	/* +++> Added ACCEPTING and RECEIVING states <+++ */
 	enum State
 	{					/* +++> comments are new */
 		NOT_BOUND, 		/**< Socket is not bound. */
@@ -212,7 +212,6 @@ public:
 		LOCALLY_CLOSED, /**< This end of the TCP connection has closed. */
 		CLOSED,			/**< Socket is closed. */
 		SOCKERROR,		/**< An error has occurred on the socket. */
-		TIMED_OUT		/**< Socket has timed out. */
 						/* <+++ */
 	};
 

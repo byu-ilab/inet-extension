@@ -31,6 +31,7 @@ typedef address_cref_t 	domain_name_cref_t;
 
 typedef str_t			uri_t;
 
+#define BYTECOUNT_NULL -1
 #define PORT_NULL -1
 #define ADDRESS_NULL ""
 #define URI_NULL ""

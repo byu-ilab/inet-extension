@@ -116,7 +116,7 @@ void ByteRangeClient::connectCallback(int socket_id, int ret_status, void * myPt
 //	}
 //
 //	_socketapi->send(socket_id, request);
-	_socketapi->recv(socket_id, TCPSocketAPI_Base::RECV_MODE_PACKET, myPtr);
+	_socketapi->recv(socket_id, TCPSocketAPI_Base::RECV_MODE_WHOLE, myPtr);
 }
 
 void ByteRangeClient::recvCallback(int socket_id, int ret_status, cPacket * msg, void * myPtr)
@@ -194,13 +194,13 @@ void ByteRangeClient::recvCallback(int socket_id, int ret_status, cPacket * msg,
 	{
 		sendBRRequest(socket_id, rri_ptr->request_id+1, rri_ptr->range_id);
 		rri_ptr->request_id = rri_ptr->request_id+1;
-		_socketapi->recv(socket_id, TCPSocketAPI_Base::RECV_MODE_PACKET, (void *) rri_ptr);
+		_socketapi->recv(socket_id, TCPSocketAPI_Base::RECV_MODE_WHOLE, (void *) rri_ptr);
 	}
 	else if (_request_round == 0)
 	{
 		sendBRRequest(socket_id, 0, rri_ptr->range_id);
 		rri_ptr->request_id = 0;
-		_socketapi->recv(socket_id, TCPSocketAPI_Base::RECV_MODE_PACKET, (void *) rri_ptr);
+		_socketapi->recv(socket_id, TCPSocketAPI_Base::RECV_MODE_WHOLE, (void *) rri_ptr);
 
 		if (_num_requests_made - (_num_requests_to_make*_num_ranges) == _num_ranges)
 		{
