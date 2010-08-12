@@ -8,7 +8,7 @@
 #ifndef ACTIVETCPSOCKETPOOL_H_
 #define ACTIVETCPSOCKETPOOL_H_
 
-#include "TCPSocketAPI.h"
+#include "TCPSocketAPI_Inet.h"
 #include "TCPPortRangeDefs.h"
 
 #include "DebugDef.h"
@@ -33,7 +33,7 @@ enum RequestStatus { RS_PENDING, RS_SENT, RS_UNKNOWN };
 
 /// TODO accept a pattern to emit signals on
 
-class ActiveTCPSocketPool : public TCPSocketAPI::CallbackInterface
+class ActiveTCPSocketPool : public TCPSocketAPI_Inet::CallbackHandler
 {
 
 protected:
@@ -51,8 +51,8 @@ protected:
 	typedef std::map<int, int *> PendingRequestsForSocketMap;
 	typedef std::set<int> RequestIdSet;
 
-	TCPSocketAPI * _socketapi; //< the socket API to use
-	TCPSocketAPI::CallbackInterface * _pool_owner; //< the pool owner who will recv responses
+	TCPSocketAPI_Inet * _socketapi; //< the socket API to use
+	TCPSocketAPI_Inet::CallbackHandler * _pool_owner; //< the pool owner who will recv responses
 	RequestIdSet _sent_requests; //< tracks the id of the requests that have been sent
 	RequestRecordQueue _pending_requests; //< the requests that remain to be scheduled
 	int _socket_cap; //< the maximum number of sockets in this socket pool
@@ -71,7 +71,7 @@ protected:
 public:
 	// if max_load is UNLIMITED_LOAD (by default) then the socket pool will not limit the number of
 	// requests sent and pending response on any socket
-	ActiveTCPSocketPool(TCPSocketAPI * socketapi, TCPSocketAPI::CallbackInterface * pool_owner,
+	ActiveTCPSocketPool(TCPSocketAPI_Inet * socketapi, TCPSocketAPI_Inet::CallbackHandler * pool_owner,
 			int max_num_sockets, const std::string server_address, int server_port,
 			simtime_t timeout, int max_load = UNLIMITED_LOAD, void * your_recv_info_ptr=NULL);
 

@@ -17,7 +17,7 @@
 
 #define DEBUG_CLASS false
 
-Enforce_Single_Class_Instance_Definitions(TCPConnInfoMappingObserver);
+Singleton_Definitions(TCPConnInfoMappingObserver);
 
 std::string TCPConnInfoMappingObserver::__default_signal_name = "tcpconninfo";
 

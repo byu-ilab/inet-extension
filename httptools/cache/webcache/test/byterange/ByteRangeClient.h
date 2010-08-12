@@ -17,8 +17,8 @@
 #define __BYTERANGECLIENT_H__
 
 #include <omnetpp.h>
-#include "TCPSocketAPI.h"
-#include "TCPSocketAPIAppUtils.h"
+#include "TCPSocketAPI_Inet.h"
+#include "TCPSocketMgrAppUtils.h"
 #include "httptController.h"
 #include "httptLogdefs.h"
 #include "httptNodeBase.h"
@@ -40,10 +40,12 @@ struct RangeRequestInfo
 	}
 };
 
-class ByteRangeClient : public httptNodeBase, TCPSocketAPI::CallbackInterface
+class ByteRangeClient
+	: public httptNodeBase,
+	  public TCPSocketAPI_Inet::CallbackHandler
 {
 protected:
-	TCPSocketAPI * _socketapi;
+	TCPSocketAPI_Inet * _socketapi;
 	httptController * _controller;
 	int _range_size;
 	int _file_size;

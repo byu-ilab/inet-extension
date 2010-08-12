@@ -21,9 +21,9 @@
 #include <omnetppextension.h>
 
 #include "httptServerBase.h"
-#include "TCPSocketAPI.h"
+#include "TCPSocketAPI_Inet.h"
 #include "VideoTitleWorkloadGenerator.h"
-#include "TCPSocketAPIAppUtils.h"
+#include "TCPSocketMgrAppUtils.h"
 #include "DuplicateHttpMessageNameObserver.h"
 
 /**
@@ -35,13 +35,15 @@
 
 enum VSMessageType { START = 1 };
 
-class INET_API VideoServer : public httptServerBase, public TCPSocketAPI::CallbackInterface
+class INET_API VideoServer
+	: public httptServerBase,
+	  public TCPSocketAPI_Inet::CallbackHandler
 {
 
 	protected:
 		// internals
 		httptController *controller; // Reference to central controller object.
-		TCPSocketAPI * tcp_api;
+		TCPSocketAPI_Inet * tcp_api;
 		VideoTitleWorkloadGenerator * workload_generator;
 
 		// stats

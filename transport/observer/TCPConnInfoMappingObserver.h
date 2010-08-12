@@ -50,7 +50,7 @@ typedef std::list<TCPConnInfoPair> TCPConnInfoPairList;
 class TCPConnInfoMappingObserver : public cLoggableObserver, public noncopyable
 {
 
-	Enforce_Single_Class_Instance_Declarations(TCPConnInfoMappingObserver);
+	Singleton_Declarations(TCPConnInfoMappingObserver);
 
 private:
 	static std::string __default_signal_name;

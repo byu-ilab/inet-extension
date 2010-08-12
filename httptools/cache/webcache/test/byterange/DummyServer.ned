@@ -15,10 +15,10 @@
 
 package inet.httptools.cache.webcache.test.byterange;
 
-import inet.applications.tcpapp.socketapi.TCPSocketAPIAppInterface;
+import inet.applications.tcpapp.socketapi.ITCPSocketMgrApp;
 import inet.httptools.base.httptServerBaseInterface;
 
-simple DummyServer like TCPSocketAPIAppInterface, httptServerBaseInterface
+simple DummyServer like ITCPSocketMgrApp, httptServerBaseInterface
 {
     parameters:
         string socketapi;

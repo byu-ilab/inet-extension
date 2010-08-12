@@ -29,7 +29,7 @@
 #include <list>
 
 // From inet
-#include "TCPSocketAPI.h"
+#include "TCPSocketAPI_Inet.h"
 #include "httptServerBase.h"
 #include "LRUCache.h"
 #include "IPAddressResolver.h"
@@ -65,8 +65,10 @@ struct ConnInfo
 	int numPendingResponses;
 };
 
-class WebCacheNewAPI :
-	public httptServerBase, TCPSocketAPI::CallbackInterface {
+class WebCacheNewAPI
+	: public httptServerBase,
+	  public TCPSocketAPI_Inet::CallbackHandler
+{
 
 public:
 	WebCacheNewAPI();
@@ -75,7 +77,7 @@ public:
 protected:
 	// internals
 	Cache * resourceCache;
-	TCPSocketAPI * tcp_api;
+	TCPSocketAPI_Inet * tcp_api;
 	string upstream_server;
 	int request_timeout;
 	CacheRequestMgr pendingDownstreamRequests;

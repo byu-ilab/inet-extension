@@ -122,290 +122,362 @@ class TCPStatusInfo;
  */
 class INET_API TCPSocket
 {
-  public:
-    /**
-     * Abstract base class for your callback objects. See setCallbackObject()
-     * and processMessage() for more info.
-     *
-     * Note: this class is not subclassed from cPolymorphic, because
-     * classes may have both this class and cSimpleModule as base class,
-     * and cSimpleModule is already a cPolymorphic.
-     */
-    class CallbackInterface
-    {
-      public:
-        virtual ~CallbackInterface() {}
-        virtual void socketDataArrived(int connId, void *yourPtr, cPacket *msg, bool urgent) = 0;
-        virtual void socketEstablished(int connId, void *yourPtr) {}
-        virtual void socketPeerClosed(int connId, void *yourPtr) {}
-        virtual void socketClosed(int connId, void *yourPtr) {}
-        virtual void socketFailure(int connId, void *yourPtr, int code) {}
-        virtual void socketStatusArrived(int connId, void *yourPtr, TCPStatusInfo *status) {delete status;}
-    };
+public:
+	/**
+	 * Abstract base class for your callback objects. See setCallbackObject()
+	 * and processMessage() for more info.
+	 *
+	 * Note: this class is not subclassed from cPolymorphic, because
+	 * classes may have both this class and cSimpleModule as base class,
+	 * and cSimpleModule is already a cPolymorphic.
+	 */
+	class CallbackInterface
+	{
+	public:
+		virtual ~CallbackInterface() {}
+		/* +++> */ /**
+		 * Handles the reception of data on the indicated socket.
+		 *
+		 * @param connId -- Connection ID of the socket to which the data pertains.
+		 * @param yourPtr -- Context data provided to the TCPSocket.
+		 * @param msg -- Received data.
+		 * @param urgent -- Flags whether the data is urgent.
+		 */ /* <+++ */
+		virtual void socketDataArrived(int connId, void *yourPtr, cPacket *msg, bool urgent) = 0;
 
-    enum State {NOT_BOUND, BOUND, LISTENING, CONNECTING, CONNECTED, PEER_CLOSED, LOCALLY_CLOSED, CLOSED, SOCKERROR};
+		/* +++> */ /**
+		 * Handles the establishment of the indicated socket.
+		 *
+		 * @param connId -- Connection ID of the established socket.
+		 * @param yourPtr -- Context data provided to the TCPSocket.
+		 *
+		 * By default does nothing.
+		 */ /* <+++ */
+		virtual void socketEstablished(int connId, void *yourPtr) {}
 
-  protected:
-    int connId;
-    int sockstate;
+		/* +++> */ /**
+		 * Handles the closure of the remote end of the indicated socket.
+		 *
+		 * @param connId -- Connection ID of the socket whose remote end closed.
+		 * @param yourPtr -- Context data provided to the TCPSocket.
+		 *
+		 * By default does nothing.
+		 */ /* <+++ */
+		virtual void socketPeerClosed(int connId, void *yourPtr) {}
 
-    IPvXAddress localAddr;
-    int localPrt;
-    IPvXAddress remoteAddr;
-    int remotePrt;
+		/* +++> */ /**
+		 * Handles the closure of the indicated socket.
+		 *
+		 * @param connId -- Connection ID of the socket that closed.
+		 * @param yourPtr -- Context data provided to the TCPSocket.
+		 *
+		 * By default does nothing.
+		 */ /* <+++ */
+		virtual void socketClosed(int connId, void *yourPtr) {}
 
-    CallbackInterface *cb;
-    void *yourPtr;
+		/* +++> */ /**
+		 * Handles the failure of the indicated socket.
+		 *
+		 * @param connId -- Connection ID of the socket that failed.
+		 * @param yourPtr -- Context data provided to the TCPSocket.
+		 * @param code -- Failure classification code.
+		 *
+		 * By default does nothing.
+		 */ /* <+++ */
+		virtual void socketFailure(int connId, void *yourPtr, int code) {}
 
-    cGate *gateToTcp;
+		/* +++> */ /**
+		 * Handles the status information for the indicated socket.
+		 *
+		 * @param connId -- Connection ID of the socket whose status info arrived.
+		 * @param yourPtr -- Context data provided to the TCPSocket.
+		 * @param status -- Status information for the socket.
+		 *
+		 * By default just deletes the status information.
+		 */ /* <+++ */
+		virtual void socketStatusArrived(int connId, void *yourPtr, TCPStatusInfo *status) {delete status;}
+	};
 
-    std::string sendQueueClass;
-    std::string receiveQueueClass;
-    std::string tcpAlgorithmClass;
+	/* +++> Added ACCEPTING and RECEIVING states <+++ */
+	enum State
+	{					/* +++> comments are new */
+		NOT_BOUND, 		/**< Socket is not bound. */
+		BOUND,			/**< Socket is bound. */
+		LISTENING,		/**< Socket is a listening socket. */
+		ACCEPTING,		/**< Socket should accept a new socket and notify the application when ready. */
+		CONNECTING,		/**< Socket is connecting. */
+		CONNECTED,		/**< Socket is connected. */
+		RECEIVING,		/**< Socket should buffer received bytes and notify the application when ready. */
+		PEER_CLOSED,	/**< The other end of the TCP connection has closed. */
+		LOCALLY_CLOSED, /**< This end of the TCP connection has closed. */
+		CLOSED,			/**< Socket is closed. */
+		SOCKERROR,		/**< An error has occurred on the socket. */
+						/* <+++ */
+	};
+
+protected:
+	int connId;
+	int sockstate;
+
+	IPvXAddress localAddr;
+	int localPrt;
+	IPvXAddress remoteAddr;
+	int remotePrt;
+
+	CallbackInterface *cb;
+	void *yourPtr;
+
+	cGate *gateToTcp;
+
+	std::string sendQueueClass;
+	std::string receiveQueueClass;
+	std::string tcpAlgorithmClass;
 
 
-  protected:
-    void sendToTCP(cMessage *msg);
+protected:
+	/* +++> */ virtual /* <+++ */ void sendToTCP(cMessage *msg);
 
-    // internal: implementation behind listen() and listenOnce()
-    void listen(bool fork);
+	// internal: implementation behind listen() and listenOnce()
+	/* +++> */ virtual /* <+++ */ void listen(bool fork);
 
-  public:
-    /**
-     * Constructor. The getConnectionId() method returns a valid Id right after
-     * constructor call.
-     */
-    TCPSocket();
+public:
+	/**
+	 * Constructor. The getConnectionId() method returns a valid Id right after
+	 * constructor call.
+	 */
+	TCPSocket();
 
-    /**
-     * Constructor, to be used with forked sockets (see listen()).
-     * The new connId will be picked up from the message: it should have
-     * arrived from TCP and contain TCPCommmand control info.
-     */
-    TCPSocket(cMessage *msg);
+	/**
+	 * Constructor, to be used with forked sockets (see listen()).
+	 * The new connId will be picked up from the message: it should have
+	 * arrived from TCP and contain TCPCommmand control info.
+	 */
+	TCPSocket(cMessage *msg);
 
-    /**
-     * Destructor
-     */
-    ~TCPSocket() {}
+	/**
+	 * Destructor.
+	 */
+	/* +++> */ virtual /* <+++ */ ~TCPSocket() {}
 
-    /**
-     * Returns the internal connection Id. TCP uses the (gate index, connId) pair
-     * to identify the connection when it receives a command from the application
-     * (or TCPSocket).
-     */
-    int getConnectionId() const  {return connId;}
+	/**
+	 * Returns the internal connection Id. TCP uses the (gate index, connId) pair
+	 * to identify the connection when it receives a command from the application
+	 * (or TCPSocket).
+	 */
+	int getConnectionId() const  {return connId;}
 
-    /**
-     * Returns the socket state, one of NOT_BOUND, CLOSED, LISTENING, CONNECTING,
-     * CONNECTED, etc. Messages received from TCP must be routed through
-     * processMessage() in order to keep socket state up-to-date.
-     */
-    int getState()   {return sockstate;}
+	/**
+	 * Returns the socket state, one of NOT_BOUND, CLOSED, LISTENING, CONNECTING,
+	 * CONNECTED, etc. Messages received from TCP must be routed through
+	 * processMessage() in order to keep socket state up-to-date.
+	 */
+	int getState()   {return sockstate;}
 
-    /**
-     * Returns name of socket state code returned by getState().
-     */
-    static const char *stateName(int state);
+	/**
+	 * Returns name of socket state code returned by getState().
+	 */
+	static const char *stateName(int state);
 
-    /** @name Getter functions */
-    //@{
-    IPvXAddress getLocalAddress() {return localAddr;}
-    int getLocalPort() {return localPrt;}
-    IPvXAddress getRemoteAddress() {return remoteAddr;}
-    int getRemotePort() {return remotePrt;}
-    //@}
+	/** @name Getter functions */
+	//@{
+	IPvXAddress getLocalAddress() {return localAddr;}
+	int getLocalPort() {return localPrt;}
+	IPvXAddress getRemoteAddress() {return remoteAddr;}
+	int getRemotePort() {return remotePrt;}
+	//@}
 
-    /** @name Opening and closing connections, sending data */
-    //@{
+	/** @name Opening and closing connections, sending data */
+	//@{
 
-    /**
-     * Sets the gate on which to send to TCP. Must be invoked before socket
-     * can be used. Example: <tt>socket.setOutputGate(gate("tcpOut"));</tt>
-     */
-    void setOutputGate(cGate *toTcp)  {gateToTcp = toTcp;}
+	/**
+	 * Sets the gate on which to send to TCP. Must be invoked before socket
+	 * can be used. Example: <tt>socket.setOutputGate(gate("tcpOut"));</tt>
+	 */
+	/* +++> */ virtual /* <+++ */ void setOutputGate(cGate *toTcp)  {gateToTcp = toTcp;}
 
-    /**
-     * Bind the socket to a local port number.
-     */
-    void bind(int localPort);
+	/**
+	 * Bind the socket to a local port number.
+	 */
+	/* +++> */ virtual /* <+++ */ void bind(int localPort);
 
-    /**
-     * Bind the socket to a local port number and IP address (useful with
-     * multi-homing).
-     */
-    void bind(IPvXAddress localAddr, int localPort);
+	/**
+	 * Bind the socket to a local port number and IP address (useful with
+	 * multi-homing).
+	 */
+	/* +++> */ virtual /* <+++ */ void bind(IPvXAddress localAddr, int localPort);
 
-    /**
-     * Returns the current sendQueueClass parameter.
-     */
-    const char *getSendQueueClass() const {return sendQueueClass.c_str();}
+	/**
+	 * Returns the current sendQueueClass parameter.
+	 */
+	const char *getSendQueueClass() const {return sendQueueClass.c_str();}
 
-    /**
-     * Returns the current receiveQueueClass parameter.
-     */
-    const char *getReceiveQueueClass() const {return receiveQueueClass.c_str();}
+	/**
+	 * Returns the current receiveQueueClass parameter.
+	 */
+	const char *getReceiveQueueClass() const {return receiveQueueClass.c_str();}
 
-    /**
-     * Returns the current tcpAlgorithmClass parameter.
-     */
-    const char *getTCPAlgorithmClass() const {return tcpAlgorithmClass.c_str();}
+	/**
+	 * Returns the current tcpAlgorithmClass parameter.
+	 */
+	const char *getTCPAlgorithmClass() const {return tcpAlgorithmClass.c_str();}
 
-    /**
-     * Sets the sendQueueClass parameter of the next connect() or listen() call.
-     */
-    void setSendQueueClass(const char *sendQueueClass) { this->sendQueueClass = sendQueueClass; }
+	/**
+	 * Sets the sendQueueClass parameter of the next connect() or listen() call.
+	 */
+	/* +++> */ virtual /* <+++ */ void setSendQueueClass(const char *sendQueueClass) { this->sendQueueClass = sendQueueClass; }
 
-    /**
-     * Sets the receiveQueueClass parameter of the next connect() or listen() call.
-     */
-    void setReceiveQueueClass(const char *receiveQueueClass) { this->receiveQueueClass = receiveQueueClass; }
+	/**
+	 * Sets the receiveQueueClass parameter of the next connect() or listen() call.
+	 */
+	/* +++> */ virtual /* <+++ */ void setReceiveQueueClass(const char *receiveQueueClass) { this->receiveQueueClass = receiveQueueClass; }
 
-    /**
-     * Sets the tcpAlgorithmClass parameter of the next connect() or listen() call.
-     */
-    void setTCPAlgorithmClass(const char *tcpAlgorithmClass) { this->tcpAlgorithmClass = tcpAlgorithmClass; }
+	/**
+	 * Sets the tcpAlgorithmClass parameter of the next connect() or listen() call.
+	 */
+	/* +++> */ virtual /* <+++ */ void setTCPAlgorithmClass(const char *tcpAlgorithmClass) { this->tcpAlgorithmClass = tcpAlgorithmClass; }
 
-    /**
-     * Initiates passive OPEN, creating a "forking" connection that will listen
-     * on the port you bound the socket to. Every incoming connection will
-     * get a new connId (and thus, must be handled with a new TCPSocket object),
-     * while the original connection (original connId) will keep listening on
-     * the port. The new TCPSocket object must be created with the
-     * TCPSocket(cMessage *msg) constructor.
-     *
-     * If you need to handle multiple incoming connections, the TCPSocketMap
-     * class can also be useful, and TCPSrvHostApp shows how to put it all
-     * together. See also TCPOpenCommand documentation (neddoc) for more info.
-     */
-    void listen()  {listen(true);}
+	/**
+	 * Initiates passive OPEN, creating a "forking" connection that will listen
+	 * on the port you bound the socket to. Every incoming connection will
+	 * get a new connId (and thus, must be handled with a new TCPSocket object),
+	 * while the original connection (original connId) will keep listening on
+	 * the port. The new TCPSocket object must be created with the
+	 * TCPSocket(cMessage *msg) constructor.
+	 *
+	 * If you need to handle multiple incoming connections, the TCPSocketMap
+	 * class can also be useful, and TCPSrvHostApp shows how to put it all
+	 * together. See also TCPOpenCommand documentation (neddoc) for more info.
+	 */
+	/* +++> */ virtual /* <+++ */ void listen()  {listen(true);}
 
-    /**
-     * Initiates passive OPEN to create a non-forking listening connection.
-     * Non-forking means that TCP will accept the first incoming
-     * connection, and refuse subsequent ones.
-     *
-     * See TCPOpenCommand documentation (neddoc) for more info.
-     */
-    void listenOnce()  {listen(false);}
+	/**
+	 * Initiates passive OPEN to create a non-forking listening connection.
+	 * Non-forking means that TCP will accept the first incoming
+	 * connection, and refuse subsequent ones.
+	 *
+	 * See TCPOpenCommand documentation (neddoc) for more info.
+	 */
+	/* +++> */ virtual /* <+++ */ void listenOnce()  {listen(false);}
 
-    /**
-     * Active OPEN to the given remote socket.
-     */
-    void connect(IPvXAddress remoteAddr, int remotePort);
+	/**
+	 * Active OPEN to the given remote socket.
+	 */
+	/* +++> */ virtual /* <+++ */ void connect(IPvXAddress remoteAddr, int remotePort);
 
-    /**
-     * Sends data packet.
-     */
-    void send(cMessage *msg);
+	/**
+	 * Sends data packet.
+	 */
+	/* +++> */ virtual /* <+++ */ void send(cMessage *msg);
 
-    /**
-     * Closes the local end of the connection. With TCP, a CLOSE operation
-     * means "I have no more data to send", and thus results in a one-way
-     * connection until the remote TCP closes too (or the FIN_WAIT_1 timeout
-     * expires)
-     */
-    void close();
+	/**
+	 * Closes the local end of the connection. With TCP, a CLOSE operation
+	 * means "I have no more data to send", and thus results in a one-way
+	 * connection until the remote TCP closes too (or the FIN_WAIT_1 timeout
+	 * expires)
+	 */
+	/* +++> */ virtual /* <+++ */ void close();
 
-    /**
-     * Aborts the connection.
-     */
-    void abort();
+	/**
+	 * Aborts the connection.
+	 */
+	/* +++> */ virtual /* <+++ */ void abort();
 
-    /**
-     * Causes TCP to reply with a fresh TCPStatusInfo, attached to a dummy
-     * message as getControlInfo(). The reply message can be recognized by its
-     * message kind TCP_I_STATUS, or (if a callback object is used)
-     * the socketStatusArrived() method of the callback object will be
-     * called.
-     */
-    void requestStatus();
+	/**
+	 * Causes TCP to reply with a fresh TCPStatusInfo, attached to a dummy
+	 * message as getControlInfo(). The reply message can be recognized by its
+	 * message kind TCP_I_STATUS, or (if a callback object is used)
+	 * the socketStatusArrived() method of the callback object will be
+	 * called.
+	 */
+	/* +++> */ virtual /* <+++ */ void requestStatus();
 
-    /**
-     * Required to re-connect with a "used" TCPSocket object.
-     * By default, a TCPSocket object is tied to a single TCP connection,
-     * via the connectionId. When the connection gets closed or aborted,
-     * you cannot use the socket to connect again (by connect() or listen())
-     * unless you obtain a new connectionId by calling this method.
-     *
-     * BEWARE if you use TCPSocketMap! TCPSocketMap uses connectionId
-     * to find TCPSockets, so after calling this method you have to remove
-     * the socket from your TCPSocketMap, and re-add it. Otherwise TCPSocketMap
-     * will get confused.
-     *
-     * The reason why one must obtain a new connectionId is that TCP still
-     * has to maintain the connection data structure (identified by the old
-     * connectionId) internally for a while (2 maximum segment lifetimes = 240s)
-     * after it reported "connection closed" to us.
-     */
-    void renewSocket();
-    //@}
+	/**
+	 * Required to re-connect with a "used" TCPSocket object.
+	 * By default, a TCPSocket object is tied to a single TCP connection,
+	 * via the connectionId. When the connection gets closed or aborted,
+	 * you cannot use the socket to connect again (by connect() or listen())
+	 * unless you obtain a new connectionId by calling this method.
+	 *
+	 * BEWARE if you use TCPSocketMap! TCPSocketMap uses connectionId
+	 * to find TCPSockets, so after calling this method you have to remove
+	 * the socket from your TCPSocketMap, and re-add it. Otherwise TCPSocketMap
+	 * will get confused.
+	 *
+	 * The reason why one must obtain a new connectionId is that TCP still
+	 * has to maintain the connection data structure (identified by the old
+	 * connectionId) internally for a while (2 maximum segment lifetimes = 240s)
+	 * after it reported "connection closed" to us.
+	 */
+	/* +++> */ virtual /* <+++ */ void renewSocket();
+	//@}
 
-    /** @name String representation of the socket */
-    //@{
-    /// if full_address is true then will display the full address
-    /// otherwise it will only display relevant address information
-    /// the default is false
-    std::string toString(bool full_address=false);
-    //@}
+	/* +++> */
+	/** @name String representation of the socket */
+	//@{
+	/// if full_address is true then will display the full address
+	/// otherwise it will only display relevant address information
+	/// the default is false
+	/* +++> */ virtual /* <+++ */ std::string toString(bool full_address=false);
+	//@}
+	/* <+++ */
 
-    /** @name Handling of messages arriving from TCP */
-    //@{
-    /**
-     * Returns true if the message belongs to this socket instance (message
-     * has a TCPCommand as getControlInfo(), and the connId in it matches
-     * that of the socket.)
-     */
-    bool belongsToSocket(cMessage *msg);
+	/** @name Handling of messages arriving from TCP */
+	//@{
+	/**
+	 * Returns true if the message belongs to this socket instance (message
+	 * has a TCPCommand as getControlInfo(), and the connId in it matches
+	 * that of the socket.)
+	 */
+	/* +++> */ virtual /* <+++ */ bool belongsToSocket(cMessage *msg);
 
-    /**
-     * Returns true if the message belongs to any TCPSocket instance.
-     * (This basically checks if the message has a TCPCommand attached to
-     * it as getControlInfo().)
-     */
-    static bool belongsToAnyTCPSocket(cMessage *msg);
+	/**
+	 * Returns true if the message belongs to any TCPSocket instance.
+	 * (This basically checks if the message has a TCPCommand attached to
+	 * it as getControlInfo().)
+	 */
+	static bool belongsToAnyTCPSocket(cMessage *msg);
 
-    /**
-     * Sets a callback object, to be used with processMessage().
-     * This callback object may be your simple module itself (if it
-     * multiply inherits from CallbackInterface too, that is you
-     * declared it as
-     * <pre>
-     * class MyAppModule : public cSimpleModule, public TCPSocket::CallbackInterface
-     * </pre>
-     * and redefined the necessary virtual functions; or you may use
-     * dedicated class (and objects) for this purpose.
-     *
-     * TCPSocket doesn't delete the callback object in the destructor
-     * or on any other occasion.
-     *
-     * YourPtr is an optional pointer. It may contain any value you wish --
-     * TCPSocket will not look at it or do anything with it except passing
-     * it back to you in the CallbackInterface calls. You may find it
-     * useful if you maintain additional per-connection information:
-     * in that case you don't have to look it up by connId in the callbacks,
-     * you can have it passed to you as yourPtr.
-     */
-    void setCallbackObject(CallbackInterface *cb, void *yourPtr=NULL);
+	/**
+	 * Sets a callback object, to be used with processMessage().
+	 * This callback object may be your simple module itself (if it
+	 * multiply inherits from CallbackInterface too, that is you
+	 * declared it as
+	 * <pre>
+	 * class MyAppModule : public cSimpleModule, public TCPSocket::CallbackInterface
+	 * </pre>
+	 * and redefined the necessary virtual functions; or you may use
+	 * dedicated class (and objects) for this purpose.
+	 *
+	 * TCPSocket doesn't delete the callback object in the destructor
+	 * or on any other occasion.
+	 *
+	 * YourPtr is an optional pointer. It may contain any value you wish --
+	 * TCPSocket will not look at it or do anything with it except passing
+	 * it back to you in the CallbackInterface calls. You may find it
+	 * useful if you maintain additional per-connection information:
+	 * in that case you don't have to look it up by connId in the callbacks,
+	 * you can have it passed to you as yourPtr.
+	 */
+	/* +++> */ virtual /* <+++ */ void setCallbackObject(CallbackInterface *cb, void *yourPtr=NULL);
 
-    /**
-     * Examines the message (which should have arrived from TCP),
-     * updates socket state, and if there is a callback object installed
-     * (see setCallbackObject(), class CallbackInterface), dispatches
-     * to the appropriate method of it with the same yourPtr that
-     * you gave in the setCallbackObject() call.
-     *
-     * The method deletes the message, unless (1) there is a callback object
-     * installed AND (2) the message is payload (message kind TCP_I_DATA or
-     * TCP_I_URGENT_DATA) when the responsibility of destruction is on the
-     * socketDataArrived() callback method.
-     *
-     * IMPORTANT: for performance reasons, this method doesn't check that
-     * the message belongs to this socket, i.e. belongsToSocket(msg) would
-     * return true!
-     */
-    void processMessage(cMessage *msg);
-    //@}
+	/**
+	 * Examines the message (which should have arrived from TCP),
+	 * updates socket state, and if there is a callback object installed
+	 * (see setCallbackObject(), class CallbackInterface), dispatches
+	 * to the appropriate method of it with the same yourPtr that
+	 * you gave in the setCallbackObject() call.
+	 *
+	 * The method deletes the message, unless (1) there is a callback object
+	 * installed AND (2) the message is payload (message kind TCP_I_DATA or
+	 * TCP_I_URGENT_DATA) when the responsibility of destruction is on the
+	 * socketDataArrived() callback method.
+	 *
+	 * IMPORTANT: for performance reasons, this method doesn't check that
+	 * the message belongs to this socket, i.e. belongsToSocket(msg) would
+	 * return true!
+	 */
+	/* +++> */ virtual /* <+++ */ void processMessage(cMessage *msg);
+	//@}
 };
 
 #endif

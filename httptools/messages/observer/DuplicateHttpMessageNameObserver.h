@@ -40,7 +40,7 @@
  */
 class DuplicateHttpMessageNameObserver : public cMessageEventObserver, public noncopyable
 {
-Enforce_Single_Class_Instance_Declarations(DuplicateHttpMessageNameObserver);
+Singleton_Declarations(DuplicateHttpMessageNameObserver);
 
 private:
 	DuplicateRecordMap _message_records;

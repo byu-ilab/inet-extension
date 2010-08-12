@@ -20,7 +20,7 @@
 #include <dynamicresultrecorders.h>
 #include "httptServerBase.h"
 #include "ByteBufferNode.h"
-#include "TCPSocketAPI.h"
+#include "TCPSocketAPI_Inet.h"
 
 #define SIGNAME_MSGEV "msgevent"
 #define STATNAME_REPS_SENT "server.replies.sent"
@@ -56,11 +56,13 @@ public:
 	}
 };
 
-class ByteBufferServer : public httptServerBase, public TCPSocketAPI::CallbackInterface
+class ByteBufferServer
+	: public httptServerBase,
+	  public TCPSocketAPI_Inet::CallbackHandler
 {
 private:
 	ByteBufferNodeMode mode;
-	TCPSocketAPI * socketapi;
+	TCPSocketAPI_Inet * socketapi;
 	int msg_size_step;
 	int starting_msg_size;
 	int max_msgs_in_step_interval;

@@ -19,7 +19,7 @@
 
 #define DEBUG_CLASS true
 
-Enforce_Single_Class_Instance_Definitions(DuplicateHttpMessageNameObserver)
+Singleton_Definitions(DuplicateHttpMessageNameObserver)
 
 DuplicateHttpMessageNameObserver::DuplicateHttpMessageNameObserver()
 	: cMessageEventObserver()

@@ -34,7 +34,7 @@ void VideoServer::initialize()
 	updateDisplay();
 
 	// get socket api
-	tcp_api = findTCPSocketAPI(this);
+	tcp_api = findTCPSocketMgr(this);
 
 	shouldTrackDupHttpMsgNames = par("shouldTrackDuplicateMessageNames");
 	if (shouldTrackDupHttpMsgNames)
@@ -91,7 +91,7 @@ void VideoServer::acceptCallback(int socket_id, int ret_status, void * yourPtr) 
 	tcp_api->accept(socket_id);
 
 	switch(ret_status) {
-		case TCPSocketAPI::CB_E_UNKNOWN:
+		case TCPSocketAPI_Inet::CB_E_UNKNOWN:
 			opp_error("videoServer::acceptCallback: unknown error.");
 			break;
 		default: // read data from new socket
@@ -110,7 +110,7 @@ void VideoServer::recvCallback(int socket_id, int ret_status,
 
 	Enter_Method_Silent();
 
-	if (TCPSocketAPI::isCallbackError(ret_status))
+	if (TCPSocketAPI_Inet::isCallbackError(ret_status))
 	{
 		// msg is NULL so don't call delete
 		closeSocket(socket_id);

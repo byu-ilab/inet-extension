@@ -18,7 +18,7 @@ import inet.networklayer.autorouting.FlatNetworkConfigurator;
 import inet.nodes.inet.Router;
 import inet.nodes.inet.StandardHost;
 import ned.DatarateChannel;
-import inet.nodes.inet.StandardHostWithTCPSocketAPI;
+import inet.nodes.inet.StandardHostWithTCPSocketMgr;
 import inet.httptools.base.*;
 
 network ImprovedCacheNetwork
@@ -51,7 +51,7 @@ network ImprovedCacheNetwork
             parameters:
                 @display("p=245,72,row,100;i=device/pc2");
         }
-        cache: StandardHostWithTCPSocketAPI {
+        cache: StandardHostWithTCPSocketMgr {
             parameters:
                 @display("p=135,171,i=device/pc1");
         }

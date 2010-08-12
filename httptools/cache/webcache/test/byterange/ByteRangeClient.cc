@@ -41,7 +41,7 @@ void ByteRangeClient::initialize()
 	outputFormat = lf_short;
 
 
-	_socketapi = findTCPSocketAPI(this);
+	_socketapi = findTCPSocketMgr(this);
 
 	_controller = check_and_cast<httptController *>(simulation.getSystemModule()->getSubmodule(par("controller")));
 
@@ -90,7 +90,7 @@ void ByteRangeClient::connectCallback(int socket_id, int ret_status, void * myPt
 //
 //	int range_id = *rid_ptr;
 
-	if (TCPSocketAPI::isCallbackError(ret_status))
+	if (TCPSocketAPI_Inet::isCallbackError(ret_status))
 	{
 		LOG_DEBUG_LN("Error connecting on request "<<rri_ptr->request_id<<
 			" to request byte range "<<rri_ptr->range_id);
@@ -116,7 +116,7 @@ void ByteRangeClient::connectCallback(int socket_id, int ret_status, void * myPt
 //	}
 //
 //	_socketapi->send(socket_id, request);
-	_socketapi->recv(socket_id, myPtr);
+	_socketapi->recv(socket_id, TCPSocketAPI_Base::RECV_MODE_WHOLE, myPtr);
 }
 
 void ByteRangeClient::recvCallback(int socket_id, int ret_status, cPacket * msg, void * myPtr)
@@ -136,7 +136,7 @@ void ByteRangeClient::recvCallback(int socket_id, int ret_status, cPacket * msg,
 //
 //	int range_id = *rid_ptr;
 
-	if (TCPSocketAPI::isCallbackError(ret_status))
+	if (TCPSocketAPI_Inet::isCallbackError(ret_status))
 	{
 		LOG_DEBUG_LN("Error receiving on request "<<rri_ptr->request_id<<
 					" to request byte range "<<rri_ptr->range_id);
@@ -194,13 +194,13 @@ void ByteRangeClient::recvCallback(int socket_id, int ret_status, cPacket * msg,
 	{
 		sendBRRequest(socket_id, rri_ptr->request_id+1, rri_ptr->range_id);
 		rri_ptr->request_id = rri_ptr->request_id+1;
-		_socketapi->recv(socket_id, (void *) rri_ptr);
+		_socketapi->recv(socket_id, TCPSocketAPI_Base::RECV_MODE_WHOLE, (void *) rri_ptr);
 	}
 	else if (_request_round == 0)
 	{
 		sendBRRequest(socket_id, 0, rri_ptr->range_id);
 		rri_ptr->request_id = 0;
-		_socketapi->recv(socket_id, (void *) rri_ptr);
+		_socketapi->recv(socket_id, TCPSocketAPI_Base::RECV_MODE_WHOLE, (void *) rri_ptr);
 
 		if (_num_requests_made - (_num_requests_to_make*_num_ranges) == _num_ranges)
 		{

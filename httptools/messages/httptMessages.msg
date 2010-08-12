@@ -43,18 +43,20 @@
 //
 // ----------------------------------------------------------------------------
 
+cplusplus
+{{
+    #include "HTTPMsgDefs.h"
+}}
+enum HTTPProtocol;
+enum RequestMethod;
+enum ByteRangeState;
+
 enum HTTPMessageKind
 {
     HTTPT_REQUEST_MESSAGE 			= 10000;
     HTTPT_DELAYED_REQUEST_MESSAGE 	= 10001;
     HTTPT_RESPONSE_MESSAGE 			= 10010;
     HTTPT_DELAYED_RESPONSE_MESSAGE 	= 10011;
-};
-
-enum HTTPProtocol
-{
-    HTTP_10 = 10;
-    HTTP_11 = 11;
 };
 
 //
@@ -73,29 +75,12 @@ packet httptBaseMessage
     int protocol enum(HTTPProtocol) = HTTP_11; // 10 for http/1.0, 11 for http/1.1.
     bool keepAlive = true;			// The keep-alive header
     int serial = 0;					// Convenience field which allows resource requests to be serially tagged for ease of analysis.
-    string heading = "";				// The message heading - request string for requests, response for replies
-    string payload = "";				// The payload field
+    string heading = "";			// The message heading - request string for requests, response for replies
+    string payload = "";			// The payload field
+    								// These two values should add together to match the total byte length of the packet:
+    int headerLength = 0;			// The length of the header block in bytes
+    int contentLength = 0;			// The length of the entity body in bytes and the value of the Content-Length headerp
 }
-
-// see http://www.w3.org/Protocols/rfc2616/rfc2616-sec9.html
-enum RequestMethod
-{
-    RM_NONE = -1; // signals that no request method has been set
-    RM_OPTIONS = 0;
-    RM_GET = 1;
-    RM_HEAD = 2;
-    RM_POST = 3;
-    RM_PUT = 4;
-    RM_DELETE = 5;
-    RM_TRACE = 6;
-    RM_CONNECT = 7;
-};
-
-enum ByteRangeState
-{
-    BRS_UNSPECIFIED = -1;
-    BRS_ASTERISK = -2;
-};
 
 //
 // Message class for HTTP requests

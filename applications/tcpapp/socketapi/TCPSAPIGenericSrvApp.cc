@@ -30,7 +30,7 @@ void TCPSAPIGenericSrvApp::initialize()
     if (api_obj_name.empty())
     	opp_error("TCPSAPIGenericSrvApp::initialize(): no tcp socket api specified!");
 
-    socketapi = check_and_cast<TCPSocketAPI *>(getParentModule()->getSubmodule(api_obj_name.c_str()));
+    socketapi = check_and_cast<TCPSocketAPI_Inet *>(getParentModule()->getSubmodule(api_obj_name.c_str()));
 
     EV << "vector/scalar initialization...";
     msgsRcvd = msgsSent = bytesRcvd = bytesSent = 0;
@@ -97,13 +97,6 @@ void TCPSAPIGenericSrvApp::handleMessage(cMessage *msg)
 	EV << "TCPSAPIGenericSrvApp::handleMessage(): recieved a message: " << msg->getClassName()
 		<< ", " << msg->getName();
 	delete msg;
-}
-
-bool TCPSAPIGenericSrvApp::hasCallback (TCPSocketAPI::CALLBACK_TYPE type) {
-	if (type == TCPSocketAPI::CB_T_ACCEPT || type == TCPSocketAPI::CB_T_RECV)
-		return true;
-	else
-		return false;
 }
 
 void TCPSAPIGenericSrvApp::acceptCallback(int socket_id, int ret_status, void * myPtr)

@@ -13,17 +13,25 @@
 // along with this program.  If not, see http://www.gnu.org/licenses/.
 // 
 
-package inet.applications.tcpapp.socketapi;
+#ifndef __INET__ACCESSTCPSOCKETMGRAPP_H_
+#define __INET__ACCESSTCPSOCKETMGRAPP_H_
 
-//import inet.applications.tcpapp.TCPApp;
+// from omnetpp
+#include <omnetpp.h>
 
-// See TCPSocketAPIAppUtils for a function that will take in a
-// cSimpleModule pointer, verify that the parameter "socketapi"
-// is specified, and find the referenced TCPSocketAPI module
-// in its parent's module.
+// forward declarations		// source should:				// from
+class TCPSocketMgr;			// #include "TCPSocketMgr.h"	// inet
 
-moduleinterface TCPSocketAPIAppInterface
+class AccessTCPSocketMgrApp : public cSimpleModule
 {
-    parameters:
-        string socketapi;
-}
+private:
+	TCPSocketMgr * _socketmgr;
+
+protected:
+    virtual void initialize();
+
+public:
+    virtual TCPSocketMgr * getTCPSocketMgr() const { return _socketmgr; }
+};
+
+#endif /* __INET__ACCESSTCPSOCKETMGRAPP_H_ */

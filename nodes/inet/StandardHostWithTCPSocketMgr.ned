@@ -22,8 +22,7 @@ package inet.nodes.inet;
 
 import inet.applications.pingapp.PingApp;
 import inet.applications.sctpapp.SCTPApp;
-//import inet.applications.tcpapp.TCPApp;
-import inet.applications.tcpapp.socketapi.*;//TCPSocketAPIApp;
+import inet.applications.tcpapp.socketapi.ITCPSocketMgrApp;
 import inet.applications.udpapp.UDPApp;
 import inet.base.NotificationBoard;
 import inet.linklayer.ethernet.EthernetInterface;
@@ -34,7 +33,7 @@ import inet.networklayer.ipv4.RoutingTable;
 import inet.transport.sctp.SCTP;
 import inet.transport.tcp.ITCP;
 import inet.transport.udp.UDP;
-import inet.transport.contract.TCPSocketAPI;
+import inet.transport.contract.TCPSocketMgr;
 import inet.util.NAMTraceWriter;
 import inet.util.TCPDump;
 
@@ -42,7 +41,7 @@ import inet.util.TCPDump;
 //
 // \IP host with TCP, UDP layers and applications.
 //
-module StandardHostWithTCPSocketAPI
+module StandardHostWithTCPSocketMgr
 {
     parameters:
         @node();
@@ -83,11 +82,11 @@ module StandardHostWithTCPSocketAPI
                 routingFile = routingFile;
                 @display("p=57,214");
         }
-        tcpsocketapi: TCPSocketAPI {
+        tcpsocketapi: TCPSocketMgr {//TODO rename to tcpsocketmgr
             parameters:
                 @display("p=186,102");
         }
-        tcpApp[numTcpApps]: <tcpAppType> like TCPSocketAPIAppInterface {
+        tcpApp[numTcpApps]: <tcpAppType> like ITCPSocketMgrApp {
             parameters:
                 @display("p=186,33");
                 socketapi = "tcpsocketapi";

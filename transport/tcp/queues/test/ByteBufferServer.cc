@@ -14,7 +14,7 @@
 // 
 
 #include "ByteBufferServer.h"
-#include "TCPSocketAPIAppUtils.h"
+#include "TCPSocketMgrAppUtils.h"
 #include "MsgByteBuffer.h"
 
 #define DEBUG_CLASS true
@@ -59,7 +59,7 @@ void ByteBufferServer::initialize()
 	current_msgs_sent_in_step_interval = 0;
 	current_interval = 0;
 
-	socketapi = findTCPSocketAPI(this);
+	socketapi = findTCPSocketMgr(this);
 
 	setMode(mode, par("mode"));
 
@@ -86,7 +86,7 @@ void ByteBufferServer::acceptCallback(int listening_socket_id, int accepted_sock
 
 	LOG_DEBUG_FUN_BEGIN("");
 
-	ASSERT(!TCPSocketAPI::isCallbackError(accepted_socket_id));
+	ASSERT(!TCPSocketAPI_Inet::isCallbackError(accepted_socket_id));
 	ASSERT(myPtr == NULL);
 
 	LOG_DEBUG_APPEND_LN("accepted socket "<<accepted_socket_id<<" from socket "<<listening_socket_id);
@@ -107,14 +107,14 @@ void ByteBufferServer::recvCallback(int socket_id, int ret_status, cPacket * msg
 	Enter_Method_Silent();
 
 	LOG_DEBUG_FUN_BEGIN("received "<<ret_status<<" bytes on socket "<<socket_id);
-	if (ret_status == TCPSocketAPI::CB_E_CLOSED)
+	if (ret_status == TCPSocketAPI_Inet::CB_E_CLOSED)
 	{
 		socketapi->close(socket_id);
 		LOG_DEBUG_FUN_END("socket "<<socket_id<<" closed");
 		return;
 	}
 
-	ASSERT(!TCPSocketAPI::isCallbackError(ret_status));
+	ASSERT(!TCPSocketAPI_Inet::isCallbackError(ret_status));
 	ASSERT(myPtr == NULL);
 
 	httptReplyMessage * reply = NULL;

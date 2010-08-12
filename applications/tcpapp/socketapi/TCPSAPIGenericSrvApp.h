@@ -16,7 +16,7 @@
 
 #include <omnetpp.h>
 #include "INETDefs.h"
-#include "TCPSocketAPI.h"
+#include "TCPSocketAPI_Inet.h"
 
 /**
  * Generic server application. It serves requests coming in GenericAppMsg
@@ -24,14 +24,16 @@
  *
  * @see GenericAppMsg, TCPGenericCliAppBase
  */
-class INET_API TCPSAPIGenericSrvApp : public cSimpleModule, TCPSocketAPI::CallbackInterface
+class INET_API TCPSAPIGenericSrvApp
+	: public cSimpleModule,
+	  public TCPSocketAPI_Inet::CallbackHandler
 {
   protected:
 //	  int port;
     simtime_t delay;
     simtime_t maxMsgDelay;
 
-    TCPSocketAPI * socketapi;
+    TCPSocketAPI_Inet * socketapi;
 
 //    cMessage * mymsg;
 
@@ -49,7 +51,6 @@ class INET_API TCPSAPIGenericSrvApp : public cSimpleModule, TCPSocketAPI::Callba
     virtual void handleMessage(cMessage *msg);
     virtual void finish();
 
-    virtual bool hasCallback (TCPSocketAPI::CALLBACK_TYPE type);
     //virtual void connectCallback(int socket_id, int ret_status, void * myPtr);
     virtual void acceptCallback (int socket_id, int ret_status, void * myPtr);
     virtual void recvCallback   (int socket_id, int ret_status, cPacket * msg, void * myPtr);

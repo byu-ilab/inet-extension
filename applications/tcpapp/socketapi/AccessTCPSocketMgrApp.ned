@@ -13,25 +13,10 @@
 // along with this program.  If not, see http://www.gnu.org/licenses/.
 // 
 
-package inet.httptools.cache.webcache.test.byterange;
+package inet.applications.tcpapp.socketapi;
 
-import inet.applications.tcpapp.socketapi.ITCPSocketMgrApp;
-
-simple ByteRangeClient like ITCPSocketMgrApp
+simple AccessTCPSocketMgrApp like ITCPSocketMgrApp
 {
     parameters:
-        string socketapi;
-        string controller = default("controller");
-        string serverwww = default("server.omnet.net");
-        //int serverport = default(1000);
-        int numRequests = default(1);
-        int numRanges = default(3);
-        int requestFileSize @unit(KB) = default(1KB);
-        
-        string address = default("");
-        int port = default(2000);
-        int httpProtocol = default(11);
- 		int logLevel = default(2);
- 		string logFile = default("");
- 		
+        string socketapi = default("tcpsocketapi");
 }
