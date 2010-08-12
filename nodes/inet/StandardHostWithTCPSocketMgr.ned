@@ -82,7 +82,7 @@ module StandardHostWithTCPSocketMgr
                 routingFile = routingFile;
                 @display("p=57,214");
         }
-        tcpsocketapi: TCPSocketMgr {
+        tcpsocketapi: TCPSocketMgr {//TODO rename to tcpsocketmgr
             parameters:
                 @display("p=186,102");
         }

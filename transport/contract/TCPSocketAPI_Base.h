@@ -385,7 +385,7 @@ public:
 	 */
 	virtual socket_id_t makeActiveSocket (cb_base_handler_ptr_t cbobj,
 			address_cref_t local_address,  port_t local_port,
-			address_cref_t remote_address, port_t remote_port);
+			address_cref_t remote_address, port_t remote_port) =0;
 
 
 	/**
