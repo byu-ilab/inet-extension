@@ -48,6 +48,11 @@ void TCPSocketAPI_Inet::CallbackHandler::recvCallback(
 
 cb_inet_handler_ptr_t TCPSocketAPI_Inet::verifyCallbackHandlerType(cb_base_handler_ptr_t cbobj)
 {
+	if (cbobj == NULL)
+	{
+		throw cRuntimeError("Pointer is NULL.");
+	}
+
 	cb_inet_handler_ptr_t inet_cbobj = dynamic_cast<cb_inet_handler_ptr_t>(cbobj);
 
 	if (inet_cbobj == NULL)
@@ -58,24 +63,24 @@ cb_inet_handler_ptr_t TCPSocketAPI_Inet::verifyCallbackHandlerType(cb_base_handl
 	return inet_cbobj;
 }
 
-socket_id_t TCPSocketAPI_Inet::socket(cb_base_handler_ptr_t cbobj)
-{
-	return this->socket( verifyCallbackHandlerType(cbobj) );
-}
+//socket_id_t TCPSocketAPI_Inet::socket(cb_base_handler_ptr_t cbobj)
+//{
+//	return this->socket( verifyCallbackHandlerType(cbobj) );
+//}
 
-void TCPSocketAPI_Inet::listen (
-	socket_id_t id,
-	cb_base_handler_ptr_t cbobj_for_accepted)
-{
-	if (cbobj_for_accepted == NULL)
-	{
-		return this->listen(id, static_cast<cb_inet_handler_ptr_t>(NULL));
-	}
-	else
-	{
-		return this->listen(id, verifyCallbackHandlerType(cbobj_for_accepted));
-	}
-}
+//void TCPSocketAPI_Inet::listen (
+//	socket_id_t id,
+//	cb_base_handler_ptr_t cbobj_for_accepted)
+//{
+//	if (cbobj_for_accepted == NULL)
+//	{
+//		return this->listen(id, static_cast<cb_inet_handler_ptr_t>(NULL));
+//	}
+//	else
+//	{
+//		return this->listen(id, verifyCallbackHandlerType(cbobj_for_accepted));
+//	}
+//}
 
 //---
 

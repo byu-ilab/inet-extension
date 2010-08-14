@@ -307,7 +307,7 @@ void TCPSocket::processMessage(cMessage *msg)
     }
 }
 
-std::string TCPSocket::toString(bool full_address)
+std::string TCPSocket::toString(bool full_address) const
 {
 	std::stringstream info;
 	info << "id: "<< connId << " state: "<<stateName(sockstate)<<" address: ";

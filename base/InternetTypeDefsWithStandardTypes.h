@@ -32,10 +32,11 @@ typedef address_cref_t 	domain_name_cref_t;
 
 typedef str_t			uri_t;
 
-#define BYTECOUNT_NULL -1
-#define PORT_NULL -1
-#define ADDRESS_NULL ""
-#define URI_NULL ""
+#define SOCKET_ID_NULL ((socket_id_t) -1)
+#define BYTECOUNT_NULL ((bytecount_t) -1)
+#define PORT_NULL 	   ((port_t) -1)
+#define ADDRESS_NULL   ""
+#define URI_NULL       ""
 
 // inclusive
 #define TCP_PORT_RANGE_MIN 0

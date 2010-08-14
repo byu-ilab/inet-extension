@@ -25,10 +25,10 @@
 #include <deque>
 
 /** Set of socket ids. */
-typedef std::set<socket_id_t> IdSet;
+typedef std::set<socket_id_t> SocketIDSet;
 
 /** Maps port to socket id set. */
-typedef std::map<port_t, IdSet > Port_IdSetMap;
+typedef std::map<port_t, SocketIDSet > Port_IdSetMap;
 
 /** Socket pointer type. */
 typedef TCPSocketExtension * socket_ptr_t;
@@ -166,7 +166,8 @@ public:
 	 *
 	 * @throws Throws a std::exception if an error occurs.
 	 */
-	virtual socket_id_t socket(cb_inet_handler_ptr_t cbobj);
+//	virtual socket_id_t socket(cb_inet_handler_ptr_t cbobj);
+	virtual socket_id_t socket(cb_base_handler_ptr_t cbobj);
 
 
 	/**
@@ -191,6 +192,10 @@ public:
 	 * one of the local parameters should have a value other than the default.  Thus
 	 * if bind is called with an empty local address and a local port or -1 an error
 	 * will be thrown.
+	 *
+	 * @todo Make the socket manager find the available interfaces so that bind can
+	 * check instead of waiting for connect or listen to be called and pass it down
+	 * to the TCP core.
 	 */
 	virtual void bind (socket_id_t id, address_cref_t local_address,
 			port_t local_port);
@@ -243,8 +248,10 @@ public:
 	 *
 	 * @throws Throws a std::exception if an error occurs.
 	 */
+//	virtual void listen (socket_id_t id,
+//				cb_inet_handler_ptr_t cbobj_for_accepted=NULL);
 	virtual void listen (socket_id_t id,
-				cb_inet_handler_ptr_t cbobj_for_accepted=NULL);
+					cb_base_handler_ptr_t cbobj_for_accepted=NULL);
 
 
 	/**
@@ -269,14 +276,14 @@ public:
 	 *
 	 * @throws Throws a std::exception if an error occurs.
 	 */
-	virtual socket_id_t makeActiveSocket (cb_base_handler_ptr_t cbobj,
-				address_cref_t local_address,  port_t local_port,
-				address_cref_t remote_address, port_t remote_port);
-
-	virtual socket_id_t makeActiveSocket (cb_base_handler_ptr_t cbobj,
-			address_cref_t local_address,  port_t local_port,
-			address_cref_t remote_address, port_t remote_port,
-			user_data_ptr_t yourPtr);
+//	virtual socket_id_t makeActiveSocket (cb_base_handler_ptr_t cbobj,
+//				address_cref_t local_address,  port_t local_port,
+//				address_cref_t remote_address, port_t remote_port);
+//
+//	virtual socket_id_t makeActiveSocket (cb_base_handler_ptr_t cbobj,
+//			address_cref_t local_address,  port_t local_port,
+//			address_cref_t remote_address, port_t remote_port,
+//			user_data_ptr_t yourPtr);
 
 
 	/**
@@ -296,10 +303,10 @@ public:
 	 *
 	 * @throws Throws a std::exception if an error occurs.
 	 */
-	virtual socket_id_t makePassiveSocket (cb_base_handler_ptr_t cbobj,
-			address_cref_t local_address,
-			port_t local_port,
-			cb_base_handler_ptr_t cbobj_for_accepted=NULL);
+//	virtual socket_id_t makePassiveSocket (cb_base_handler_ptr_t cbobj,
+//			address_cref_t local_address,
+//			port_t local_port,
+//			cb_base_handler_ptr_t cbobj_for_accepted=NULL);
 
 
 	/**
