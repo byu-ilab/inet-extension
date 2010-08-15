@@ -22,7 +22,7 @@
 #define OPP_ERROR_INCONSISTENT_STATE opp_error("%s::%s inconsistent state %s",\
 		__FILE__, __FUNCTION__, stateName(sockstate))
 
-#define DEBUG_CLASS true
+#define DEBUG_CLASS false
 
 //==============================================================================
 // Initialization
@@ -409,13 +409,15 @@ void TCPSocketExtension::close ()
 
 	if (sockstate == CLOSED || sockstate == LOCALLY_CLOSED)
 	{
-		OPP_ERROR("already called on this socket");
+		LOG_DEBUG_LN("Already called on this socket.");
+		return;
 	}
 	// else
 	removeTimeout();
 
 	if (sockstate != NOT_BOUND && sockstate != BOUND && sockstate != SOCKERROR)
 	{
+		// send off close command to other end of the connection
 		TCPSocket::close();
 	}
 	else
@@ -496,6 +498,7 @@ void TCPSocketExtension::processMessage (cMessage * msg)
 
 	if (dynamic_cast<SocketTimeoutMsg *>(msg) != NULL)
 	{
+		delete msg;
 		processFailure(TCPSocketAPI_Base::CB_E_TIMEOUT);
 		LOG_DEBUG_FUN_END(toString());
 		return;
@@ -688,8 +691,10 @@ void TCPSocketExtension::processClosed()
 	LOG_DEBUG_FUN_BEGIN(toString());
 
 	sockstate = CLOSED; // TODO when should it be LOCALLY_CLOSED?
+
 	LOG_DEBUG_FUN_END(toString());
-	_cb_handler->closeCallback(connId, 0, removeUserContext());
+
+	//_cb_handler->closeCallback(connId, 0, removeUserContext());
 }
 
 void TCPSocketExtension::processFailure(int code)

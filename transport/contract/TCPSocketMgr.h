@@ -22,7 +22,7 @@
 // From standard C++ libraries
 #include <map>
 #include <set>
-#include <deque>
+#include <list>
 
 /** Set of socket ids. */
 typedef std::set<socket_id_t> SocketIDSet;
@@ -32,6 +32,9 @@ typedef std::map<port_t, SocketIDSet > Port_IdSetMap;
 
 /** Socket pointer type. */
 typedef TCPSocketExtension * socket_ptr_t;
+
+/** List of Socket pointers. */
+typedef std::list<socket_ptr_t> SocketList;
 
 /** Maps port to socket pointer. */
 typedef std::map<port_t, socket_ptr_t> Port_SocketMap;
@@ -62,6 +65,9 @@ protected:
 
 	/** Tracks the current socket objects. */
 	TCPSocketMap _socket_pool;
+
+	/** Tracks the closed sockets so that they can be deleted once fully closed. */
+	SocketList _closed_sockets;
 
 	/** Tracks the callback handler registered for a given socket. */
 	Id_CBHandlerMap _app_cb_handler_map;
@@ -465,6 +471,13 @@ protected:
     virtual void finish();
 	//@}
 
+    /** @name More specific message handlers */
+    //@{
+    virtual void handleTimeoutMessage(cMessage *msg);
+//    virtual void handleClosedMessage(cMessage *msg);
+    virtual void handleAcceptedMessage(cMessage *msg);
+    //@}
+
     /** @name Overridden functions from TCPSocketAPI_Inet::CallbackHandler */
     //@{
 
@@ -477,8 +490,8 @@ protected:
 	virtual void recvCallback(socket_id_t id, cb_status_t result,
     				cPacket * msg, user_data_ptr_t context);
 
-	virtual void closeCallback (socket_id_t id, cb_status_t result,
-					user_data_ptr_t context);
+//	virtual void closeCallback (socket_id_t id, cb_status_t result,
+//					user_data_ptr_t context);
 
 	//@}
 
@@ -487,7 +500,9 @@ protected:
 	//@{
 
 	/** Cleans up all data associated with a socket */
-	virtual void cleanupSocket(socket_id_t id);
+//	virtual void cleanupSocket(socket_id_t id);
+
+	virtual void cleanupClosedSockets();
 
 	/**
 	 * Removes the indicated socket ID from the set of sockets IDs associated
