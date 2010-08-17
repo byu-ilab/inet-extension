@@ -417,7 +417,7 @@ public:
 	/// if full_address is true then will display the full address
 	/// otherwise it will only display relevant address information
 	/// the default is false
-	/* +++> */ virtual /* <+++ */ std::string toString(bool full_address=false);
+	/* +++> */ virtual /* <+++ */ std::string toString(bool full_address=false) const;
 	//@}
 	/* <+++ */
 

@@ -40,7 +40,7 @@
 #include <iostream>
 #include <sstream>
 
-#define DEBUG_CLASS false
+#define DEBUG_CLASS true
 
 Define_Module(TCPSocketMgr);
 
@@ -51,12 +51,19 @@ TCPSocketMgr::TCPSocketMgr()
 	: _socket_pool(), _app_cb_handler_map(), _bound_ports(),
 	  _passive_socket_map(), _pending_socket_pool()
 {
+	LOG_DEBUG_FUN_BEGIN(getFullPath());
+
+	LOG_DEBUG_FUN_END("");
 }
 
 TCPSocketMgr::~TCPSocketMgr()
 {
+	LOG_DEBUG_FUN_BEGIN(getFullPath());
+
 	_socket_pool.deleteSockets();
 	_pending_socket_pool.deleteSockets();
+
+	LOG_DEBUG_FUN_END("");
 }
 
 //==============================================================================
@@ -66,7 +73,7 @@ void TCPSocketMgr::initialize()
 {
 	cSimpleModule::initialize();
 
-	LOG_DEBUG_FUN_BEGIN("");
+	LOG_DEBUG_FUN_BEGIN(getFullPath());
 
 	// other variables, scalars/vectors WATCH calls
 
@@ -87,64 +94,120 @@ void TCPSocketMgr::initialize()
 	{
 		DuplicateHttpMessageNameObserver::getInstance()->subscribeOnDefaultSignal(this);
 	}
+
+	LOG_DEBUG_FUN_END("");
 }
 
 void TCPSocketMgr::handleMessage(cMessage *msg)
 {
 	ASSERT(msg != NULL);
 
-	LOG_DEBUG_FUN_BEGIN("");
+	LOG_DEBUG_FUN_BEGIN(getFullPath());
 
 	socket_ptr_t socket = NULL;
 
+	LOG_DEBUG_LN("Handle inbound message " << msg->getName()
+					<< " of kind " << msg->getKind());
+
+	// if self message then it is a timeout
 	if (msg->isSelfMessage())
 	{
-		SocketTimeoutMsg * timer = check_and_cast<SocketTimeoutMsg *>(msg);
-		ASSERT(timer != NULL); // if not, unknown self message received
+		handleTimeoutMessage(msg); // takes responsibility for the message
+		LOG_DEBUG_FUN_END("");
+		return;
+	}
+	// else if socket is current process the message on it
+	socket = findSocketFor(_socket_pool, msg);
+	if (socket != NULL)
+	{
+		LOG_DEBUG_APPEND_LN("Socket found for the message.  Processing message.");
+		socket->processMessage(msg); // takes responsibility for the message
+		cleanupClosedSockets();
+		LOG_DEBUG_FUN_END("");
+		return;
+	}
+	// else if msg is TCP_I_ESTABLISHED must be to accept a new socket
+	if (msg->getKind() == TCP_I_ESTABLISHED)
+	{
+		handleAcceptedMessage(msg); // takes responsibility for the message
+		cleanupClosedSockets();
+		LOG_DEBUG_FUN_END("accepted new socket");
+		return;
+	}
+	// else if msg is TCP_I_CLOSED or TCP_I_PEER_CLOSED absorb the message since
+	// the socket was closed
+	if (msg->getKind() == TCP_I_CLOSED || msg->getKind() == TCP_I_PEER_CLOSED)
+	{
 
-		socket_id_t socket_id = timer->getSocketId();
-		socket = getSocket(_socket_pool, socket_id);
+		DEBUG_BLOCK(
+			// extract the connection id
+			TCPCommand * cmd = check_and_cast<TCPCommand *>(msg->getControlInfo());
+			LOG_DEBUG_LN("received message for a closed socket "<<cmd->getConnId());
+					);
+		// absorb it
+		delete msg;
+		LOG_DEBUG_FUN_END("absorbed close message");
+		return;
+	}
+	// else is an erroneous message
+	LOG_DEBUG_FUN_END("absorbed erroneous message: "<<msg->getName());
+	delete msg;
+}
 
-		ASSERT(socket != NULL); // if not, timer doesn't belong to a current socket
+void TCPSocketMgr::handleTimeoutMessage(cMessage *msg)
+{
+	LOG_DEBUG_FUN_BEGIN(getFullPath());
 
-		LOG_DEBUG_LN("On the socket: " << socket->toString());
-		LOG_DEBUG_LN("Process the message " << msg->getName());
-		socket->processMessage(msg);
+	LOG_DEBUG_APPEND_LN("Checking if timer.");
+
+	// if not, unknown self message received
+	SocketTimeoutMsg * timer = check_and_cast<SocketTimeoutMsg *>(msg);
+
+	LOG_DEBUG_APPEND_LN("Timer received.")
+
+	socket_id_t socket_id = timer->getSocketId();
+
+	LOG_DEBUG_APPEND_LN("Timer received for socket "<<socket_id);
+
+	socket_ptr_t socket = getSocket(_socket_pool, socket_id);
+
+	ASSERT(socket != NULL); // if not, timer doesn't belong to a current socket
+
+	LOG_DEBUG_APPEND_LN("On the socket: " << socket->toString());
+	LOG_DEBUG_APPEND_LN("Process the message " << msg->getName());
+	socket->processMessage(msg); // takes responsibility for the message
+
+	LOG_DEBUG_FUN_END(socket->toString());
+}
+
+void TCPSocketMgr::handleAcceptedMessage(cMessage *msg)
+{
+	LOG_DEBUG_FUN_BEGIN("Accepting new socket...");
+
+	ASSERT(msg->getKind() == TCP_I_ESTABLISHED);
+
+	TCPConnectInfo * info = check_and_cast<TCPConnectInfo *>(msg->getControlInfo());
+
+	Port_SocketMap::iterator psitr = _passive_socket_map.find(info->getLocalPort());
+
+	if (psitr != _passive_socket_map.end())
+	{
+		socket_ptr_t socket = new TCPSocketExtension(msg);
+		socket->setOutputGate(gate("tcpOut"));
+		_pending_socket_pool.addSocket(socket);
+
+		LOG_DEBUG_LN("accepted: "<<socket->toString());
+
+		psitr->second->appendAcceptedSocket(socket);
 	}
 	else
 	{
-		LOG_DEBUG_LN("Handle inbound message " << msg->getName()
-				<< " of kind " << msg->getKind());
-
-		socket = findSocketFor(_socket_pool, msg);
-
-		if (socket == NULL)
-		{
-			// Accept a new connection
-			LOG_DEBUG_LN("No socket found for the message. Create a new one");
-
-			socket = new TCPSocketExtension(msg);
-			socket->setOutputGate(gate("tcpOut"));
-
-			socket_ptr_t passive_socket = _passive_socket_map[socket->getLocalPort()];
-
-			if (passive_socket == NULL)
-			{
-				LOG_DEBUG_LN("received message for connection "
-						<< socket->getConnectionId() << " on non-listening port"
-						<< " OR received a message for a closed socket");
-				delete socket;
-				delete msg;
-				return;
-			}
-			// else
-			ASSERT(msg->getKind() == TCP_I_ESTABLISHED); // if not, shouldn't be accepting
-			_pending_socket_pool.addSocket(socket);
-			passive_socket->appendAcceptedSocket(socket);
-		}
+		LOG_DEBUG_LN("received message for connection " << info->getConnId()
+			<< " on non-listening port "<< info->getLocalPort() );
 	}
 
-	// update display?
+	delete msg;
+
 	LOG_DEBUG_FUN_END("");
 }
 
@@ -199,19 +262,20 @@ str_t TCPSocketMgr::socketToString(socket_id_t id)
 //==============================================================================
 // BDS-like Socket Operations
 
-int TCPSocketMgr::socket (cb_inet_handler_ptr_t cb_handler)
+socket_id_t TCPSocketMgr::socket (cb_base_handler_ptr_t cb_handler)
 {
 	Enter_Method_Silent();
 
-	LOG_DEBUG_FUN_BEGIN("");
+	LOG_DEBUG_FUN_BEGIN(getFullPath());
 
-	ASSERT(cb_handler != NULL);
+	// checks that the pointer is non-NULL
+	cb_inet_handler_ptr_t cb_handler_mod = verifyCallbackHandlerType(cb_handler);
 
 	socket_ptr_t socket = new TCPSocketExtension(this,this);
 	socket->setOutputGate(gate("tcpOut"));
 
-	int id = socket->getConnectionId();
-	_app_cb_handler_map[id] = cb_handler;
+	socket_id_t id = socket->getConnectionId();
+	_app_cb_handler_map[id] = cb_handler_mod;
 
 	_socket_pool.addSocket(socket);
 
@@ -226,7 +290,7 @@ void TCPSocketMgr::bind (socket_id_t id, address_cref_t local_address,
 {
 	Enter_Method_Silent();
 
-	LOG_DEBUG_FUN_BEGIN("");
+	LOG_DEBUG_FUN_BEGIN(getFullPath());
 
 	// verify that socket exists
 	socket_ptr_t socket = findAndCheckSocket(id, __FUNCTION__);
@@ -237,7 +301,16 @@ void TCPSocketMgr::bind (socket_id_t id, address_cref_t local_address,
 		Port_IdSetMap::iterator bprt_itr = _bound_ports.find(local_port);
 		if (bprt_itr != _bound_ports.end())
 		{
-			throw cRuntimeError(this, "%s: %s", __FUNCTION__, "port is being used");
+			DEBUG_BLOCK(
+					SocketIDSet::iterator isitr = bprt_itr->second.begin();
+					LOG_DEBUG_APPEND("sockets on port "<<local_port<<":")
+					for ( ; isitr != bprt_itr->second.end(); isitr++ )
+					{
+						LOG_DEBUG_APPEND(" "<<*isitr);
+					}
+					LOG_DEBUG_APPEND_LN("");
+						);
+			throw cRuntimeError(this, "%s: port %d is being used by %d other sockets", __FUNCTION__, local_port, bprt_itr->second.size());
 		}
 	}
 
@@ -263,7 +336,7 @@ void TCPSocketMgr::connect (socket_id_t id, address_cref_t remote_address,
 {
 	Enter_Method_Silent();
 
-	LOG_DEBUG_FUN_BEGIN("");
+	LOG_DEBUG_FUN_BEGIN(getFullPath());
 
 	// verify that socket exists
 	socket_ptr_t socket = findAndCheckSocket(id, __FUNCTION__);
@@ -274,17 +347,24 @@ void TCPSocketMgr::connect (socket_id_t id, address_cref_t remote_address,
 }
 
 
-void TCPSocketMgr::listen (socket_id_t id, cb_inet_handler_ptr_t cbobj_for_accepted)
+void TCPSocketMgr::listen (socket_id_t id, cb_base_handler_ptr_t cbobj_for_accepted)
 {
 	Enter_Method_Silent();
 
-	LOG_DEBUG_FUN_BEGIN("");
+	LOG_DEBUG_FUN_BEGIN(getFullPath());
 
 	// verify that the socket exists
 	socket_ptr_t socket = findAndCheckSocket(id, __FUNCTION__);
 
 	// creates a forking socket
-	socket->listen(cbobj_for_accepted);
+	if (cbobj_for_accepted != NULL)
+	{
+		socket->listen(verifyCallbackHandlerType(cbobj_for_accepted));
+	}
+	else
+	{
+		socket->listen(NULL);
+	}
 
 	// add to map of passive sockets
 	_passive_socket_map[socket->getLocalPort()] = socket;
@@ -292,46 +372,6 @@ void TCPSocketMgr::listen (socket_id_t id, cb_inet_handler_ptr_t cbobj_for_accep
 	LOG_DEBUG_FUN_END(socket->toString());
 
 	emitTCPConnInfo(socket);
-}
-
-socket_id_t TCPSocketMgr::makeActiveSocket (cb_base_handler_ptr_t cbobj,
-	address_cref_t local_address, port_t local_port,
-	address_cref_t remote_address, port_t remote_port)
-{
-	return this->makeActiveSocket(cbobj, local_address,local_port,
-			remote_address,remote_port,NULL);
-}
-
-socket_id_t TCPSocketMgr::makeActiveSocket (cb_base_handler_ptr_t cb_handler,
-	address_cref_t local_address, port_t local_port,
-	address_cref_t remote_address, port_t remote_port, user_data_ptr_t context)
-{
-	Enter_Method_Silent();
-
-	int id = TCPSocketAPI_Inet::socket(cb_handler);
-	// check if bind should be skipped
-	if (!local_address.empty() || 0 <= local_port)
-	{
-		bind(id, local_address, local_port);
-	}
-	connect(id, remote_address, remote_port, context);
-
-	return id;
-}
-
-socket_id_t TCPSocketMgr::makePassiveSocket (cb_base_handler_ptr_t cb_handler,
-	address_cref_t local_address, port_t local_port,
-	cb_base_handler_ptr_t cb_handler_for_accepted)
-{
-	Enter_Method_Silent();
-
-	int id = TCPSocketAPI_Inet::socket(cb_handler);
-
-	bind(id, local_address, local_port);
-
-	TCPSocketAPI_Inet::listen(id, cb_handler_for_accepted);
-
-	return id;
 }
 
 void TCPSocketMgr::accept (socket_id_t id)
@@ -343,7 +383,7 @@ void TCPSocketMgr::accept (socket_id_t id, void * context)
 {
 	Enter_Method_Silent();
 
-	LOG_DEBUG_FUN_BEGIN("");
+	LOG_DEBUG_FUN_BEGIN(getFullPath());
 
 	// verify that the socket exists
 	socket_ptr_t socket = findAndCheckSocket(id, __FUNCTION__);
@@ -360,12 +400,16 @@ void TCPSocketMgr::send (socket_id_t id, cPacket * msg)
 {
 	Enter_Method_Silent();
 
-	LOG_DEBUG_FUN_BEGIN("");
+	LOG_DEBUG_FUN_BEGIN(getFullPath());
 
 	// verify that the socket exits
 	socket_ptr_t socket = findAndCheckSocket(id, __FUNCTION__);
 
 	// take ownership of the message
+	if (msg == NULL)
+	{
+		throw cRuntimeError(this, "Message must not be NULL.");
+	}
 	take(msg);
 
 	// emit on the message event signal
@@ -386,7 +430,7 @@ void TCPSocketMgr::recv (socket_id_t id, bytecount_t byte_mode, user_data_ptr_t 
 {
 	Enter_Method_Silent();
 
-	LOG_DEBUG_FUN_BEGIN("");
+	LOG_DEBUG_FUN_BEGIN(getFullPath());
 
 	socket_ptr_t socket = findAndCheckSocket(id, __FUNCTION__);
 
@@ -419,21 +463,37 @@ user_data_ptr_t TCPSocketMgr::close (socket_id_t id)
 {
 	Enter_Method_Silent();
 
-	LOG_DEBUG_FUN_BEGIN("");
+	LOG_DEBUG_FUN_BEGIN(getFullPath());
 
 	socket_ptr_t socket = findAndCheckSocket(id, __FUNCTION__);
 
+	LOG_DEBUG_APPEND_LN("closing socket: "<<socket->toString());
+
 	freePort(id);
+	removeTimeout(id);
 
 	user_data_ptr_t user_context = socket->getUserContext();
 
-	LOG_DEBUG_FUN_END(socket->toString());
+	//LOG_DEBUG_FUN_END(socket->toString());
+
+	// add the socket to the set of sockets to be deleted
+	_socket_pool.removeSocket(socket);
+	_closed_sockets.push_back(socket);
+
+	// if the socket is a passive socket then remove it from
+	// the passive socket map
+	if (socket->getState() == TCPSocket::LISTENING || socket->getState() == TCPSocket::ACCEPTING)
+	{
+		Port_SocketMap::iterator psitr = _passive_socket_map.find(socket->getLocalPort());
+		ASSERT( psitr != _passive_socket_map.end() );
+		_passive_socket_map.erase(psitr);
+	}
 
 	// - removes any timeouts
 	// - throws error if close() has already been called
-	// - may invoke closeCallback immediately which will delete the socket
-	// so all interaction with the socket must be done previously
 	socket->close();
+
+	LOG_DEBUG_FUN_END(socket->toString());
 
 	return user_context;
 }
@@ -490,32 +550,46 @@ void TCPSocketMgr::connectCallback (socket_id_t id, cb_status_t result,
 void TCPSocketMgr::recvCallback(socket_id_t id, cb_status_t result,
 		cPacket * msg, user_data_ptr_t context)
 {
+	ASSERT(findAndCheckSocket(id, __FUNCTION__) != NULL);
+
 	// forward callback
 	_app_cb_handler_map[id]->recvCallback(id, result, msg, context);
 }
 
-void TCPSocketMgr::closeCallback (socket_id_t id, cb_status_t result,
-					user_data_ptr_t context)
-{
-	cleanupSocket(id);
-
-	// forward callback
-	_app_cb_handler_map[id]->closeCallback(id, result, context);
-}
+//void TCPSocketMgr::closeCallback (socket_id_t id, cb_status_t result,
+//					user_data_ptr_t context)
+//{
+//	cleanupSocket(id);
+//
+//	// forward callback
+//	_app_cb_handler_map[id]->closeCallback(id, result, context);
+//}
 
 //==============================================================================
 // Utilities
 
-void TCPSocketMgr::cleanupSocket(socket_id_t id)
-{
-	freePort(id);
-	removeTimeout(id);
+//void TCPSocketMgr::cleanupSocket(socket_id_t id)
+//{
+//	freePort(id);
+//	removeTimeout(id);
+//
+//	// delete the socket
+//	socket_ptr_t socket = removeSocket(_socket_pool, id);
+//	if (socket != NULL)
+//	{
+//		delete socket;
+//	}
+//}
 
-	// delete the socket
-	socket_ptr_t socket = removeSocket(_socket_pool, id);
-	if (socket != NULL)
+void TCPSocketMgr::cleanupClosedSockets()
+{
+	// the port and timeout message should have been previously deallocated
+	SocketList::iterator csitr = _closed_sockets.begin();
+	while (csitr != _closed_sockets.end())
 	{
-		delete socket;
+		delete (*csitr);
+		_closed_sockets.erase(csitr);
+		csitr = _closed_sockets.begin();
 	}
 }
 
@@ -540,7 +614,7 @@ void TCPSocketMgr::freePort(socket_id_t id)
 		return;
 	}
 
-	IdSet::iterator id_itr = bprt_itr->second.find(id);
+	SocketIDSet::iterator id_itr = bprt_itr->second.find(id);
 	if (id_itr != bprt_itr->second.end())
 	{
 		bprt_itr->second.erase(id_itr);

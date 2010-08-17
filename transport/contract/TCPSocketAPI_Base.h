@@ -157,7 +157,7 @@ public:
 				user_data_ptr_t context) {}
 
 
-		/**
+		/*     NEED TO PUT BACK ASTERISK IF THIS IS USED
 		 * By default does nothing.
 		 *
 		 * @details Subclasses should handles the closure of the indicated
@@ -175,8 +175,8 @@ public:
 		 * On acceptance error: @em result will be a value from the
 		 * enumeration TCPSocketAPI_Base::CallbackError.
 		 */
-		virtual void closeCallback (socket_id_t id, cb_status_t result,
-				user_data_ptr_t context) {}
+//		virtual void closeCallback (socket_id_t id, cb_status_t result,
+//				user_data_ptr_t context) {}
 	};
 
 	/**
@@ -385,7 +385,7 @@ public:
 	 */
 	virtual socket_id_t makeActiveSocket (cb_base_handler_ptr_t cbobj,
 			address_cref_t local_address,  port_t local_port,
-			address_cref_t remote_address, port_t remote_port) =0;
+			address_cref_t remote_address, port_t remote_port);
 
 
 	/**
@@ -406,7 +406,7 @@ public:
 	virtual socket_id_t makeActiveSocket (cb_base_handler_ptr_t cbobj,
 			address_cref_t local_address,  port_t local_port,
 			address_cref_t remote_address, port_t remote_port,
-			user_data_ptr_t context) =0;
+			user_data_ptr_t context);
 
 
 	/**
@@ -429,7 +429,7 @@ public:
 	 */
 	virtual socket_id_t makePassiveSocket (cb_base_handler_ptr_t cbobj,
 			address_cref_t local_address, port_t local_port,
-			cb_base_handler_ptr_t cbobj_for_accepted=NULL) =0;
+			cb_base_handler_ptr_t cbobj_for_accepted=NULL);
 
 
 	/**

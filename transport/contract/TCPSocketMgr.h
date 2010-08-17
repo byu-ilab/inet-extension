@@ -22,16 +22,19 @@
 // From standard C++ libraries
 #include <map>
 #include <set>
-#include <deque>
+#include <list>
 
 /** Set of socket ids. */
-typedef std::set<socket_id_t> IdSet;
+typedef std::set<socket_id_t> SocketIDSet;
 
 /** Maps port to socket id set. */
-typedef std::map<port_t, IdSet > Port_IdSetMap;
+typedef std::map<port_t, SocketIDSet > Port_IdSetMap;
 
 /** Socket pointer type. */
 typedef TCPSocketExtension * socket_ptr_t;
+
+/** List of Socket pointers. */
+typedef std::list<socket_ptr_t> SocketList;
 
 /** Maps port to socket pointer. */
 typedef std::map<port_t, socket_ptr_t> Port_SocketMap;
@@ -62,6 +65,9 @@ protected:
 
 	/** Tracks the current socket objects. */
 	TCPSocketMap _socket_pool;
+
+	/** Tracks the closed sockets so that they can be deleted once fully closed. */
+	SocketList _closed_sockets;
 
 	/** Tracks the callback handler registered for a given socket. */
 	Id_CBHandlerMap _app_cb_handler_map;
@@ -166,7 +172,8 @@ public:
 	 *
 	 * @throws Throws a std::exception if an error occurs.
 	 */
-	virtual socket_id_t socket(cb_inet_handler_ptr_t cbobj);
+//	virtual socket_id_t socket(cb_inet_handler_ptr_t cbobj);
+	virtual socket_id_t socket(cb_base_handler_ptr_t cbobj);
 
 
 	/**
@@ -191,6 +198,10 @@ public:
 	 * one of the local parameters should have a value other than the default.  Thus
 	 * if bind is called with an empty local address and a local port or -1 an error
 	 * will be thrown.
+	 *
+	 * @todo Make the socket manager find the available interfaces so that bind can
+	 * check instead of waiting for connect or listen to be called and pass it down
+	 * to the TCP core.
 	 */
 	virtual void bind (socket_id_t id, address_cref_t local_address,
 			port_t local_port);
@@ -243,8 +254,10 @@ public:
 	 *
 	 * @throws Throws a std::exception if an error occurs.
 	 */
+//	virtual void listen (socket_id_t id,
+//				cb_inet_handler_ptr_t cbobj_for_accepted=NULL);
 	virtual void listen (socket_id_t id,
-				cb_inet_handler_ptr_t cbobj_for_accepted=NULL);
+					cb_base_handler_ptr_t cbobj_for_accepted=NULL);
 
 
 	/**
@@ -269,14 +282,14 @@ public:
 	 *
 	 * @throws Throws a std::exception if an error occurs.
 	 */
-	virtual socket_id_t makeActiveSocket (cb_base_handler_ptr_t cbobj,
-				address_cref_t local_address,  port_t local_port,
-				address_cref_t remote_address, port_t remote_port);
-
-	virtual socket_id_t makeActiveSocket (cb_base_handler_ptr_t cbobj,
-			address_cref_t local_address,  port_t local_port,
-			address_cref_t remote_address, port_t remote_port,
-			user_data_ptr_t yourPtr);
+//	virtual socket_id_t makeActiveSocket (cb_base_handler_ptr_t cbobj,
+//				address_cref_t local_address,  port_t local_port,
+//				address_cref_t remote_address, port_t remote_port);
+//
+//	virtual socket_id_t makeActiveSocket (cb_base_handler_ptr_t cbobj,
+//			address_cref_t local_address,  port_t local_port,
+//			address_cref_t remote_address, port_t remote_port,
+//			user_data_ptr_t yourPtr);
 
 
 	/**
@@ -296,10 +309,10 @@ public:
 	 *
 	 * @throws Throws a std::exception if an error occurs.
 	 */
-	virtual socket_id_t makePassiveSocket (cb_base_handler_ptr_t cbobj,
-			address_cref_t local_address,
-			port_t local_port,
-			cb_base_handler_ptr_t cbobj_for_accepted=NULL);
+//	virtual socket_id_t makePassiveSocket (cb_base_handler_ptr_t cbobj,
+//			address_cref_t local_address,
+//			port_t local_port,
+//			cb_base_handler_ptr_t cbobj_for_accepted=NULL);
 
 
 	/**
@@ -458,6 +471,13 @@ protected:
     virtual void finish();
 	//@}
 
+    /** @name More specific message handlers */
+    //@{
+    virtual void handleTimeoutMessage(cMessage *msg);
+//    virtual void handleClosedMessage(cMessage *msg);
+    virtual void handleAcceptedMessage(cMessage *msg);
+    //@}
+
     /** @name Overridden functions from TCPSocketAPI_Inet::CallbackHandler */
     //@{
 
@@ -470,8 +490,8 @@ protected:
 	virtual void recvCallback(socket_id_t id, cb_status_t result,
     				cPacket * msg, user_data_ptr_t context);
 
-	virtual void closeCallback (socket_id_t id, cb_status_t result,
-					user_data_ptr_t context);
+//	virtual void closeCallback (socket_id_t id, cb_status_t result,
+//					user_data_ptr_t context);
 
 	//@}
 
@@ -480,7 +500,9 @@ protected:
 	//@{
 
 	/** Cleans up all data associated with a socket */
-	virtual void cleanupSocket(socket_id_t id);
+//	virtual void cleanupSocket(socket_id_t id);
+
+	virtual void cleanupClosedSockets();
 
 	/**
 	 * Removes the indicated socket ID from the set of sockets IDs associated

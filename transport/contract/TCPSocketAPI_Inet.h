@@ -169,33 +169,34 @@ public:
 	/** @name BSD-like API Operations */
 	//@{
 
-	/**
-	 * @copydoc TCPSocketAPI_Base::socket()
-	 * 
-	 * Checks that the provided callback handler is of type
-	 * TCPSocketAPI_Inet::CallbackHandler and invokes socket() specific
-	 * to that handler type.
-	 */
-	virtual socket_id_t socket(cb_base_handler_ptr_t cbobj);
-
-	/** @copydoc TCPSocketAPI_Base::socket() */
-	virtual socket_id_t socket(cb_inet_handler_ptr_t cbobj) =0;
-
-
-	/**
-	 * @copydoc TCPSocketAPI_Base::listen()
-	 *
-	 * If a non-NULL callback handler is specified for the accepted sockets, checks
-	 * that the callback handler is of type TCPSocketAPI_Inet::CallbackHandler and
-	 * invokes listen() specific to that handler type.
-	 */
-	virtual void listen (socket_id_t id,
-				cb_base_handler_ptr_t cbobj_for_accepted=NULL);
-
-
-	/** @copydoc TCPSocketAPI_Base::listen() */
-	virtual void listen (socket_id_t id,
-				cb_inet_handler_ptr_t cbobj_for_accepted) =0;
+//	/**
+//	 * @copydoc TCPSocketAPI_Base::socket()
+//	 *
+//	 * Checks that the provided callback handler is of type
+//	 * TCPSocketAPI_Inet::CallbackHandler and invokes socket() specific
+//	 * to that handler type.
+//	 */
+//	virtual socket_id_t socket(cb_base_handler_ptr_t cbobj);
+//
+//
+//	/** @copydoc TCPSocketAPI_Base::socket() */
+//	virtual socket_id_t socket(cb_inet_handler_ptr_t cbobj) =0;
+//
+//
+//	/**
+//	 * @copydoc TCPSocketAPI_Base::listen()
+//	 *
+//	 * If a non-NULL callback handler is specified for the accepted sockets, checks
+//	 * that the callback handler is of type TCPSocketAPI_Inet::CallbackHandler and
+//	 * invokes listen() specific to that handler type.
+//	 */
+//	virtual void listen (socket_id_t id,
+//				cb_base_handler_ptr_t cbobj_for_accepted=NULL);
+//
+//
+//	/** @copydoc TCPSocketAPI_Base::listen() */
+//	virtual void listen (socket_id_t id,
+//				cb_inet_handler_ptr_t cbobj_for_accepted=NULL) =0;
 
 
 	/**

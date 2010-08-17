@@ -18,11 +18,11 @@
 // From standard C++ libraries
 #include <sstream>
 
-#define OPP_ERROR(DETAILS) opp_error("%s::%s%s.",__FILE__,__FUNCTION__,DETAILS)
+#define OPP_ERROR(DETAILS) opp_error("%s::%s: %s.",__FILE__,__FUNCTION__,DETAILS)
 #define OPP_ERROR_INCONSISTENT_STATE opp_error("%s::%s inconsistent state %s",\
 		__FILE__, __FUNCTION__, stateName(sockstate))
 
-#define DEBUG_CLASS true
+#define DEBUG_CLASS false
 
 //==============================================================================
 // Initialization
@@ -30,13 +30,17 @@
 void TCPSocketExtension::initialize(cb_inet_handler_ptr_t handler,
 		cSimpleModule * scheduler, IPAddressResolver::ResolutionMode mode)
 {
-	_cb_handler = NULL;
-	setCallbackHandler(handler); // just in case handler is non-NULL
+	LOG_DEBUG_FUN_BEGIN(toString());
+
+	_cb_handler = handler;
+	// setCallbackHandler(handler); // just in case handler is non-NULL
 	_cb_handler_for_accepted = NULL;
 	_user_context_data = NULL;
 	_timeout_scheduler = scheduler;
 	_timeout_msg = NULL;
 	_resolution_mode = mode;
+
+	LOG_DEBUG_FUN_END(toString());
 }
 
 //==============================================================================
@@ -44,24 +48,40 @@ void TCPSocketExtension::initialize(cb_inet_handler_ptr_t handler,
 
 TCPSocketExtension::TCPSocketExtension() : TCPSocket()
 {
+	LOG_DEBUG_FUN_BEGIN(toString());
+
 	initialize(NULL, NULL, IPAddressResolver::ADDR_PREFER_IPv4);
+
+	LOG_DEBUG_FUN_END(toString());
 }
 
-TCPSocketExtension::TCPSocketExtension(cMessage * msg) : TCPSocket()
+TCPSocketExtension::TCPSocketExtension(cMessage * msg) : TCPSocket(msg)
 {
+	LOG_DEBUG_FUN_BEGIN(toString());
+
 	initialize(NULL, NULL, IPAddressResolver::ADDR_PREFER_IPv4);
+
+	LOG_DEBUG_FUN_END(toString());
 }
 
 TCPSocketExtension::TCPSocketExtension(TCPSocketAPI_Inet::CallbackHandler * handler,
 		cSimpleModule * scheduler, IPAddressResolver::ResolutionMode mode)
 	: TCPSocket()
 {
+	LOG_DEBUG_FUN_BEGIN(toString());
+
 	initialize(handler, scheduler, mode);
+
+	LOG_DEBUG_FUN_END(toString());
 }
 
 TCPSocketExtension::~TCPSocketExtension()
 {
+	LOG_DEBUG_FUN_BEGIN(toString());
+
 	// DO NOT delete _cb_handler or _timeout_scheduler
+
+	LOG_DEBUG_FUN_END(toString());
 }
 
 //==============================================================================
@@ -69,6 +89,8 @@ TCPSocketExtension::~TCPSocketExtension()
 
 void TCPSocketExtension::bind(address_cref_t local_address, port_t local_port)
 {
+	LOG_DEBUG_FUN_BEGIN(toString());
+
 	ASSERT(_cb_handler != NULL);
 
 	if (local_address.empty())
@@ -84,10 +106,14 @@ void TCPSocketExtension::bind(address_cref_t local_address, port_t local_port)
 		TCPSocket::bind(_resolver.resolve(local_address.c_str(), _resolution_mode), local_port);
 	}
 	// fact: sockstate == BOUND
+
+	LOG_DEBUG_FUN_END(toString());
 }
 
 void TCPSocketExtension::listen (cb_inet_handler_ptr_t cb_handler_for_accepted)
 {
+	LOG_DEBUG_FUN_BEGIN(toString());
+
 	ASSERT(_cb_handler != NULL);
 
 	// Verify that the port has been specified
@@ -108,10 +134,14 @@ void TCPSocketExtension::listen (cb_inet_handler_ptr_t cb_handler_for_accepted)
 	{
 		_cb_handler_for_accepted = _cb_handler;
 	}
+
+	LOG_DEBUG_FUN_END(toString());
 }
 
 void TCPSocketExtension::listenOnce(cb_inet_handler_ptr_t cb_handler_for_accepted)
 {
+	LOG_DEBUG_FUN_BEGIN(toString());
+
 	ASSERT(_cb_handler != NULL);
 
 	// Verify that the port has been specified
@@ -132,10 +162,14 @@ void TCPSocketExtension::listenOnce(cb_inet_handler_ptr_t cb_handler_for_accepte
 	{
 		_cb_handler_for_accepted = _cb_handler;
 	}
+
+	LOG_DEBUG_FUN_END(toString());
 }
 
 void TCPSocketExtension::accept ()
 {
+	LOG_DEBUG_FUN_BEGIN(toString());
+
 	ASSERT(_cb_handler != NULL);
 
 	if (sockstate != LISTENING && sockstate != ACCEPTING)
@@ -155,19 +189,27 @@ void TCPSocketExtension::accept ()
 		// notify the user of acceptance immediately
 		processEstablished();
 	}
+
+	LOG_DEBUG_FUN_END(toString());
 }
 
 void TCPSocketExtension::accept (user_data_ptr_t context)
 {
+	LOG_DEBUG_FUN_BEGIN(toString());
+
 	// context data must be set first in the event that there is a connection
 	// in the pending connections queue
 	_user_context_data = context;
 	this->accept();
+
+	LOG_DEBUG_FUN_END(toString());
 }
 
 
 void TCPSocketExtension::appendAcceptedSocket(TCPSocketExtension * socket)
 {
+	LOG_DEBUG_FUN_BEGIN(toString());
+
 	ASSERT(_cb_handler != NULL);
 
 	if (sockstate != LISTENING && sockstate != ACCEPTING)
@@ -184,11 +226,15 @@ void TCPSocketExtension::appendAcceptedSocket(TCPSocketExtension * socket)
 	{
 		processEstablished();
 	}
+
+	LOG_DEBUG_FUN_END(toString());
 }
 
 
 void TCPSocketExtension::connect(address_cref_t remote_address, port_t remote_port)
 {
+	LOG_DEBUG_FUN_BEGIN(toString());
+
 	ASSERT(_cb_handler != NULL);
 
 	// Check here because this isn't checked until the TCP core processes the
@@ -203,17 +249,25 @@ void TCPSocketExtension::connect(address_cref_t remote_address, port_t remote_po
 			remote_port);
 
 	// fact: sockstate == CONNECTING
+
+	LOG_DEBUG_FUN_END(toString());
 }
 
 void TCPSocketExtension::connect (address_cref_t remote_address,
 		port_t remote_port, user_data_ptr_t context)
 {
+	LOG_DEBUG_FUN_BEGIN(toString());
+
 	_user_context_data = context;
 	this->connect(remote_address, remote_port);
+
+	LOG_DEBUG_FUN_END(toString());
 }
 
 void TCPSocketExtension::send(cMessage *msg)
 {
+	LOG_DEBUG_FUN_BEGIN(toString());
+
 	ASSERT(_cb_handler != NULL);
 
 	if (msg == NULL)
@@ -229,11 +283,15 @@ void TCPSocketExtension::send(cMessage *msg)
 	}
 
 	TCPSocket::send(msg);
+
+	LOG_DEBUG_FUN_END(toString());
 }
 
 
 void TCPSocketExtension::recv (bytecount_t byte_mode)
 {
+	LOG_DEBUG_FUN_BEGIN(toString());
+
 	ASSERT(_cb_handler != NULL);
 
 	if (sockstate != CONNECTED && sockstate != RECEIVING)
@@ -259,18 +317,26 @@ void TCPSocketExtension::recv (bytecount_t byte_mode)
 	{
 		_timeout_scheduler->scheduleAt(simTime()+_timeout_msg->getTimeoutInterval(), _timeout_msg);
 	}
+
+	LOG_DEBUG_FUN_END(toString());
 }
 
 
 void TCPSocketExtension::recv (bytecount_t byte_mode,
 		user_data_ptr_t context)
 {
+	LOG_DEBUG_FUN_BEGIN(toString());
+
 	_user_context_data = context;
 	this->recv(byte_mode);
+
+	LOG_DEBUG_FUN_END(toString());
 }
 
 void TCPSocketExtension::setTimeout(simtime_t timeout_period)
 {
+	LOG_DEBUG_FUN_BEGIN(toString());
+
 	ASSERT(timeout_period >= 0);
 	ASSERT(_timeout_scheduler != NULL);
 
@@ -289,13 +355,18 @@ void TCPSocketExtension::setTimeout(simtime_t timeout_period)
 
 	// set period on timer
 	_timeout_msg->setTimeoutInterval(timeout_period.dbl());
+
+	LOG_DEBUG_FUN_END(toString());
 }
 
 
 bool TCPSocketExtension::removeTimeout ()
 {
+	LOG_DEBUG_FUN_BEGIN(toString());
+
 	if (_timeout_msg == NULL)
 	{
+		LOG_DEBUG_FUN_END(toString());
 		return false;
 	}
 
@@ -307,72 +378,99 @@ bool TCPSocketExtension::removeTimeout ()
 
 	_timeout_scheduler->cancelAndDelete(_timeout_msg);
 	_timeout_msg = NULL;
+
+	LOG_DEBUG_FUN_END(toString());
+
 	return true;
 }
 
 bool TCPSocketExtension::canModifyTimeout() const
 {
+	LOG_DEBUG_FUN_BEGIN(toString());
+
 	if (	   sockstate == NOT_BOUND
 			|| sockstate == BOUND
 			|| sockstate == CONNECTING
 			|| sockstate == CONNECTED)
 	{
+		LOG_DEBUG_FUN_END(toString());
 		return true;
 	}
 	// else
+	LOG_DEBUG_FUN_END(toString());
 	return false;
 }
 
 void TCPSocketExtension::close ()
 {
+	LOG_DEBUG_FUN_BEGIN(toString());
+
 	ASSERT(_cb_handler != NULL);
 
 	if (sockstate == CLOSED || sockstate == LOCALLY_CLOSED)
 	{
-		OPP_ERROR("already called on this socket");
+		LOG_DEBUG_LN("Already called on this socket.");
+		return;
 	}
 	// else
 	removeTimeout();
 
 	if (sockstate != NOT_BOUND && sockstate != BOUND && sockstate != SOCKERROR)
 	{
+		// send off close command to other end of the connection
 		TCPSocket::close();
 	}
 	else
 	{
 		processClosed();
 	}
+
+	LOG_DEBUG_FUN_END(toString());
 }
 
 user_data_ptr_t TCPSocketExtension::getUserContext ()
 {
+	LOG_DEBUG_FUN_BEGIN(toString());
+
+	LOG_DEBUG_FUN_END(toString());
 	return _user_context_data;
 }
 
 user_data_ptr_t TCPSocketExtension::removeUserContext ()
 {
+	LOG_DEBUG_FUN_BEGIN(toString());
+
 	user_data_ptr_t context = _user_context_data;
 	_user_context_data = NULL;
+
+	LOG_DEBUG_FUN_END(toString());
 	return context;
 }
 
 bool TCPSocketExtension::setTimeoutScheduler(cSimpleModule * scheduler)
 {
+	LOG_DEBUG_FUN_BEGIN(toString());
 	if (_timeout_scheduler == NULL)
 	{
 		_timeout_scheduler = scheduler;
+		LOG_DEBUG_FUN_END(toString());
 		return true;
 	}
+	LOG_DEBUG_FUN_END(toString());
 	return false;
 }
 
 void TCPSocketExtension::setAddressResolutionMode(IPAddressResolver::ResolutionMode mode)
 {
+	LOG_DEBUG_FUN_BEGIN(toString());
 	_resolution_mode = mode;
+	LOG_DEBUG_FUN_END(toString());
 }
 
 IPAddressResolver::ResolutionMode TCPSocketExtension::getAddressResolutionMode()
 {
+	LOG_DEBUG_FUN_BEGIN(toString());
+	LOG_DEBUG_FUN_END(toString());
 	return _resolution_mode;
 }
 
@@ -383,21 +481,26 @@ void TCPSocketExtension::setCallbackObject(TCPSocket::CallbackInterface *cb, voi
 
 void TCPSocketExtension::setCallbackHandler(cb_inet_handler_ptr_t handler)
 {
+	LOG_DEBUG_FUN_BEGIN(toString());
 	if (handler == NULL)
 	{
-		OPP_ERROR("callback handler may not be NULL");
+		OPP_ERROR("callback handler must not be NULL");
 	}
 	_cb_handler = handler;
+	LOG_DEBUG_FUN_END(toString());
 }
 
 void TCPSocketExtension::processMessage (cMessage * msg)
 {
+	LOG_DEBUG_FUN_BEGIN(toString());
 	ASSERT(_cb_handler != NULL);
 	ASSERT(msg != NULL);
 
 	if (dynamic_cast<SocketTimeoutMsg *>(msg) != NULL)
 	{
+		delete msg;
 		processFailure(TCPSocketAPI_Base::CB_E_TIMEOUT);
+		LOG_DEBUG_FUN_END(toString());
 		return;
 	}
 
@@ -423,12 +526,13 @@ void TCPSocketExtension::processMessage (cMessage * msg)
 		// TCPSocketExtension, so you won't get here. Rather, when you see
 		// TCP_I_ESTABLISHED, you'll want to create a new TCPSocketExtension
 		// object via new TCPSocketExtension(msg).
-		sockstate = CONNECTED;
+
 		connectInfo = dynamic_cast<TCPConnectInfo *>(msg->getControlInfo());
 		localAddr = connectInfo->getLocalAddr();
 		remoteAddr = connectInfo->getRemoteAddr();
 		localPrt = connectInfo->getLocalPort();
 		remotePrt = connectInfo->getRemotePort();
+		// DO NOT delete connectInfo it was not removed from msg so msg will delete it
 		delete msg;
 		processEstablished();
 		break;
@@ -471,10 +575,13 @@ void TCPSocketExtension::processMessage (cMessage * msg)
 		delete msg;
 		OPP_ERROR(details.str().c_str());
 	}
+	LOG_DEBUG_FUN_END(toString());
 }
 
 void TCPSocketExtension::processDataArrived(cPacket *msg, bool urgent)
 {
+	LOG_DEBUG_FUN_BEGIN(toString());
+
 	// depends on receiving mode
 	if (sockstate == RECEIVING)
 	{
@@ -508,10 +615,14 @@ void TCPSocketExtension::processDataArrived(cPacket *msg, bool urgent)
 	{
 		OPP_ERROR_INCONSISTENT_STATE;
 	}
+
+	LOG_DEBUG_FUN_END(toString());
 }
 
 void TCPSocketExtension::processEstablished()
 {
+	LOG_DEBUG_FUN_BEGIN(toString());
+
 	// invoke the "connect" or "accept" callback
 	if (sockstate == CONNECTING)
 	{
@@ -541,10 +652,14 @@ void TCPSocketExtension::processEstablished()
 	{
 		OPP_ERROR_INCONSISTENT_STATE;
 	}
+
+	LOG_DEBUG_FUN_END(toString());
 }
 
 void TCPSocketExtension::processPeerClosed()
 {
+	LOG_DEBUG_FUN_BEGIN(toString());
+
 	if (sockstate == RECEIVING)
 	{
 		sockstate = PEER_CLOSED;
@@ -553,24 +668,39 @@ void TCPSocketExtension::processPeerClosed()
 	}
 	else if (sockstate == CONNECTED)
 	{
-		sockstate == PEER_CLOSED;
+		sockstate = PEER_CLOSED;
 		this->close(); // when closed the close callback is invoked
+	}
+	else if (sockstate == LOCALLY_CLOSED)
+	{
+		sockstate = CLOSED;
 	}
 	else
 	{
-		// the TCPSocket::processMessage would set the state to CLOSED
+		// fact: sockstate == NOT_BOUND | BOUND | CONNECTING? | LISTENING |
+		//					  ACCEPTING | PEER_CLOSED | CLOSED | SOCKERROR
+		// the TCPSocket::processMessage would simple set the state to CLOSED
 		OPP_ERROR_INCONSISTENT_STATE;
 	}
+
+	LOG_DEBUG_FUN_END(toString());
 }
 
 void TCPSocketExtension::processClosed()
 {
+	LOG_DEBUG_FUN_BEGIN(toString());
+
 	sockstate = CLOSED; // TODO when should it be LOCALLY_CLOSED?
-	_cb_handler->closeCallback(connId, 0, removeUserContext());
+
+	LOG_DEBUG_FUN_END(toString());
+
+	//_cb_handler->closeCallback(connId, 0, removeUserContext());
 }
 
 void TCPSocketExtension::processFailure(int code)
 {
+	LOG_DEBUG_FUN_BEGIN(toString());
+
 	sockstate = SOCKERROR;
 
 	if (sockstate == CONNECTING)
@@ -585,11 +715,17 @@ void TCPSocketExtension::processFailure(int code)
 	{
 		LOG_DEBUG_LN("state: "<<stateName(sockstate));
 	}
+
+	LOG_DEBUG_FUN_END(toString());
 }
 
 void TCPSocketExtension::processStatusArrived(TCPStatusInfo *status)
 {
+	LOG_DEBUG_FUN_BEGIN(toString());
+
 	// nothing special for now
 	ASSERT(status != NULL);
 	delete status;
+
+	LOG_DEBUG_FUN_END(toString());
 }
