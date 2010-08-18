@@ -40,7 +40,7 @@
 #include <iostream>
 #include <sstream>
 
-#define DEBUG_CLASS true
+#define DEBUG_CLASS false
 
 Define_Module(TCPSocketMgr);
 
