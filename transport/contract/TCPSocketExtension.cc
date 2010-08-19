@@ -22,7 +22,7 @@
 #define OPP_ERROR_INCONSISTENT_STATE opp_error("%s::%s inconsistent state %s",\
 		__FILE__, __FUNCTION__, stateName(sockstate))
 
-#define DEBUG_CLASS false
+#define DEBUG_CLASS true
 
 //==============================================================================
 // Initialization
@@ -701,19 +701,19 @@ void TCPSocketExtension::processFailure(int code)
 {
 	LOG_DEBUG_FUN_BEGIN(toString());
 
-	sockstate = SOCKERROR;
-
 	if (sockstate == CONNECTING)
 	{
+		sockstate = SOCKERROR;
 		_cb_handler->connectCallback(connId, code, removeUserContext());
 	}
 	else if (sockstate == RECEIVING)
 	{
+		sockstate = SOCKERROR;
 		_cb_handler->recvCallback(connId, code, NULL, removeUserContext());
 	}
 	else
 	{
-		LOG_DEBUG_LN("state: "<<stateName(sockstate));
+		sockstate = SOCKERROR;
 	}
 
 	LOG_DEBUG_FUN_END(toString());
