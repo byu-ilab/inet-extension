@@ -42,6 +42,9 @@ typedef std::map<port_t, socket_ptr_t> Port_SocketMap;
 /** Maps socket id to callback handler pointer. */
 typedef std::map<socket_id_t, cb_inet_handler_ptr_t> Id_CBHandlerMap;
 
+/** Maps port to callback handler pointer. */
+typedef std::map<port_t, cb_inet_handler_ptr_t> Port_CBHandlerMap;
+
 
 // Class documentation at bottom of file
 class INET_API TCPSocketMgr
@@ -71,6 +74,9 @@ protected:
 
 	/** Tracks the callback handler registered for a given socket. */
 	Id_CBHandlerMap _app_cb_handler_map;
+
+	/** Tracks the callback handler to be used for accepted sockets on a given port. */
+	Port_CBHandlerMap _accepted_cb_handler_map;
 
 	/**
 	 * Tracks the ports that are being used (bound) and which socket(s) is

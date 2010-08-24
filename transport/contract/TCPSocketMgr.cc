@@ -195,6 +195,8 @@ void TCPSocketMgr::handleAcceptedMessage(cMessage *msg)
 		socket_ptr_t socket = new TCPSocketExtension(msg);
 		socket->setOutputGate(gate("tcpOut"));
 		_pending_socket_pool.addSocket(socket);
+		_app_cb_handler_map[socket->getConnectionId()] =
+				_accepted_cb_handler_map[psitr->second->getLocalPort()];
 
 		LOG_DEBUG_LN("accepted: "<<socket->toString());
 
@@ -357,17 +359,21 @@ void TCPSocketMgr::listen (socket_id_t id, cb_base_handler_ptr_t cbobj_for_accep
 	socket_ptr_t socket = findAndCheckSocket(id, __FUNCTION__);
 
 	// creates a forking socket
-	if (cbobj_for_accepted != NULL)
-	{
-		socket->listen(verifyCallbackHandlerType(cbobj_for_accepted));
-	}
-	else
-	{
-		socket->listen(NULL);
-	}
+	socket->listen(NULL);
 
 	// add to map of passive sockets
 	_passive_socket_map[socket->getLocalPort()] = socket;
+
+	// register the cbobj_for_accepted handler with this passive socket's port
+	if (cbobj_for_accepted != NULL)
+	{
+		_accepted_cb_handler_map[socket->getLocalPort()] =
+				verifyCallbackHandlerType(cbobj_for_accepted);
+	}
+	else
+	{
+		_accepted_cb_handler_map[socket->getLocalPort()] = _app_cb_handler_map[id];
+	}
 
 	LOG_DEBUG_FUN_END(socket->toString());
 

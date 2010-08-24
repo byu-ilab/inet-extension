@@ -123,6 +123,8 @@ bytecount_t TCPSocketAPI_Inet::LogicalAppMsgRecord::insertBytes(bytecount_t buff
 
 bytecount_t TCPSocketAPI_Inet::LogicalAppMsgRecord::extractAvailableBytes(MsgByteBuffer * buffer, bytecount_t max)
 {
+	LOG_DEBUG_FUN_BEGIN("");
+
 	ASSERT(buffer != NULL);
 	ASSERT(_extracted_bytes <= _rcvd_bytes);
 
@@ -145,6 +147,8 @@ bytecount_t TCPSocketAPI_Inet::LogicalAppMsgRecord::extractAvailableBytes(MsgByt
 	_extracted_bytes += extracted;
 
 	buffer->setByteLength(buffer->getByteLength() + extracted);
+
+	LOG_DEBUG_FUN_END("");
 
 	return extracted;
 }
@@ -200,7 +204,9 @@ void TCPSocketAPI_Inet::ReceiveBuffer::insertData(cPacket * msg)
 	ASSERT(msg != NULL);
 	ASSERT(0 <= msg->getByteLength()); // TODO should virtual virtual messages be allowed (i.e. of size 0 bytes)?
 
-	LOG_DEBUG_FUN_BEGIN("");
+	LOG_DEBUG_FUN_BEGIN("msgs in buffer: "<<_buffer.size());
+
+	LOG_DEBUG_APPEND_LN("inserting msg: "<<msg->getName()<<" of size: "<<msg->getByteLength());
 
 	MsgByteBuffer * mbb = dynamic_cast<MsgByteBuffer *>(msg);
 	if (mbb == NULL)
@@ -256,11 +262,13 @@ void TCPSocketAPI_Inet::ReceiveBuffer::insertData(cPacket * msg)
 		}
 	}
 
-	LOG_DEBUG_FUN_END("");
+	LOG_DEBUG_FUN_END("msgs in buffer: "<<_buffer.size());
 }
 
 cPacket * TCPSocketAPI_Inet::ReceiveBuffer::extractAvailableBytes(bytecount_t recv_mode)
 {
+	LOG_DEBUG_FUN_BEGIN("");
+
 	if (_buffer.empty())
 	{
 		return NULL;
@@ -289,17 +297,22 @@ cPacket * TCPSocketAPI_Inet::ReceiveBuffer::extractAvailableBytes(bytecount_t re
 		break;
 	}
 
+	LOG_DEBUG_FUN_END("");
+
 	return ret_packet;
 }
 
 cPacket *  TCPSocketAPI_Inet::ReceiveBuffer::extractWhole()
 {
+	LOG_DEBUG_FUN_BEGIN("");
+
 	ASSERT(!_buffer.empty()); // should be checked by extractAvailableBytes
 
 	lam_record_ptr_t record = _buffer.front();
 
 	if (!record->isComplete())
 	{
+		LOG_DEBUG_FUN_END("no whole message");
 		return NULL;
 	}
 	// else
@@ -319,20 +332,26 @@ cPacket *  TCPSocketAPI_Inet::ReceiveBuffer::extractWhole()
 	{
 		cPacket * ret_packet = ret_buffer->removeFirstPayloadMessage();
 		delete ret_buffer;
+
+		LOG_DEBUG_FUN_END("one whole message");
 		return ret_packet;
 	}
 	// else
+	LOG_DEBUG_FUN_END("more than one whole message?");
 	return ret_buffer;
 }
 
 cPacket * TCPSocketAPI_Inet::ReceiveBuffer::extractInstantMaintainBoundaries()
 {
+	LOG_DEBUG_FUN_BEGIN("");
+
 	ASSERT(!_buffer.empty()); // should be checked by extractAvailableBytes
 
 	lam_record_ptr_t record = _buffer.front();
 
 	if (record->getAvailableBytes() == 0)
 	{
+		LOG_DEBUG_FUN_END("no available bytes");
 		return NULL;
 	}
 
@@ -350,20 +369,25 @@ cPacket * TCPSocketAPI_Inet::ReceiveBuffer::extractInstantMaintainBoundaries()
 	if (0 == extracted)
 	{
 		delete ret_buffer;
+		LOG_DEBUG_FUN_END("");
 		return NULL;
 	}
 	// else
+	LOG_DEBUG_FUN_END("");
 	return ret_buffer;
 }
 
 cPacket * TCPSocketAPI_Inet::ReceiveBuffer::extractInstantNoBuffer()
 {
+	LOG_DEBUG_FUN_BEGIN("");
+
 	ASSERT(!_buffer.empty()); // should be checked by extractAvailableBytes
 
 	lam_record_ptr_t record = _buffer.front();
 
 	if (record->getAvailableBytes() == 0)
 	{
+		LOG_DEBUG_FUN_END("no available bytes");
 		return NULL;
 	}
 
@@ -385,14 +409,18 @@ cPacket * TCPSocketAPI_Inet::ReceiveBuffer::extractInstantNoBuffer()
 	if (0 == ret_buffer->getByteLength())
 	{
 		delete ret_buffer;
+		LOG_DEBUG_FUN_END("no available bytes");
 		return NULL;
 	}
 	// else
+	LOG_DEBUG_FUN_END("message byte buffer returned");
 	return ret_buffer;
 }
 
 cPacket * TCPSocketAPI_Inet::ReceiveBuffer::extractUpto(bytecount_t max)
 {
+	LOG_DEBUG_FUN_BEGIN("");
+
 	ASSERT(!_buffer.empty()); // should be checked by extractAvailableBytes
 	ASSERT(0 < max);
 
@@ -400,6 +428,7 @@ cPacket * TCPSocketAPI_Inet::ReceiveBuffer::extractUpto(bytecount_t max)
 
 	if (record->getAvailableBytes() == 0)
 	{
+		LOG_DEBUG_FUN_END("no available bytes");
 		return NULL;
 	}
 
@@ -412,9 +441,11 @@ cPacket * TCPSocketAPI_Inet::ReceiveBuffer::extractUpto(bytecount_t max)
 	if (extracted == 0)
 	{
 		delete ret_buffer;
+		LOG_DEBUG_FUN_END("no available bytes");
 		return NULL;
 	}
 	// else
+	LOG_DEBUG_FUN_END("returning "<<extracted<<" bytes");
 	return ret_buffer;
 }
 

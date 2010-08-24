@@ -313,9 +313,13 @@ void TCPSocketExtension::recv (bytecount_t byte_mode)
 		// no change in state
 		_cb_handler->recvCallback(connId, ret_msg->getByteLength(), ret_msg, removeUserContext());
 	}
-	else if (_timeout_msg != NULL)
+	else
 	{
-		_timeout_scheduler->scheduleAt(simTime()+_timeout_msg->getTimeoutInterval(), _timeout_msg);
+		sockstate = RECEIVING;
+		if (_timeout_msg != NULL)
+		{
+			_timeout_scheduler->scheduleAt(simTime()+_timeout_msg->getTimeoutInterval(), _timeout_msg);
+		}
 	}
 
 	LOG_DEBUG_FUN_END(toString());
@@ -585,14 +589,6 @@ void TCPSocketExtension::processDataArrived(cPacket *msg, bool urgent)
 	// depends on receiving mode
 	if (sockstate == RECEIVING)
 	{
-		sockstate = CONNECTED;
-
-		// cancel timeout if any
-		if (_timeout_msg != NULL)
-		{
-			_timeout_scheduler->cancelEvent(_timeout_msg);
-		}
-
 		// add message to receive buffer
 		_recv_buffer.insertData(msg);
 
@@ -601,6 +597,14 @@ void TCPSocketExtension::processDataArrived(cPacket *msg, bool urgent)
 
 		if (ret_msg != NULL)
 		{
+			sockstate = CONNECTED;
+
+			// cancel timeout if any
+			if (_timeout_msg != NULL)
+			{
+				_timeout_scheduler->cancelEvent(_timeout_msg);
+			}
+
 			_cb_handler->recvCallback(connId, ret_msg->getByteLength(), ret_msg, removeUserContext());
 		}
 	}
