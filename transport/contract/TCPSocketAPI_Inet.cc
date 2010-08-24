@@ -28,7 +28,7 @@
 // From omnetpp extension
 #include <omnetppextension.h>
 
-#define DEBUG_CLASS true
+#define DEBUG_CLASS false
 
 //---
 
@@ -139,7 +139,7 @@ bytecount_t TCPSocketAPI_Inet::LogicalAppMsgRecord::extractAvailableBytes(MsgByt
 		buffer->addPayloadMessage(_message->dup());
 	}
 
-	bytecount_t extracted = _rcvd_bytes - _extracted_bytes;
+	bytecount_t extracted = getAvailableBytes();
 	if (max < extracted && max != BYTECOUNT_NULL)
 	{
 		extracted = max;
@@ -151,6 +151,11 @@ bytecount_t TCPSocketAPI_Inet::LogicalAppMsgRecord::extractAvailableBytes(MsgByt
 	LOG_DEBUG_FUN_END("");
 
 	return extracted;
+}
+
+bool TCPSocketAPI_Inet::LogicalAppMsgRecord::isFullyExtracted() const
+{
+	return getExtractedBytes() == getExpectedBytes();
 }
 
 void TCPSocketAPI_Inet::LogicalAppMsgRecord::setMessage(cPacket * msg)
@@ -224,7 +229,7 @@ void TCPSocketAPI_Inet::ReceiveBuffer::insertData(cPacket * msg)
 		while (0 < remainder)
 		{
 			LOG_DEBUG_APPEND_LN("remaining rcvd bytes: "<<remainder);
-			LOG_DEBUG_APPEND_LN("bytes to rcv: "<<record->getOutstandingBytes());
+			LOG_DEBUG_APPEND_LN("bytes to rcv: "<<(record != NULL ? record->getOutstandingBytes() : -1));
 			LOG_DEBUG_APPEND_LN("byte buffer payload array size: "<<mbb->getPayloadArraySize());
 
 			// If there is not a reply that is currently being received
@@ -253,7 +258,7 @@ void TCPSocketAPI_Inet::ReceiveBuffer::insertData(cPacket * msg)
 			if (0 == remainder)
 			{
 				ASSERT(0 == mbb->getPayloadArraySize());
-				ASSERT(record == NULL);
+//				ASSERT(record == NULL); // may not be null if the mbb doesn't have whole message
 			}
 			else // fact: 0 < remainder
 			{
@@ -271,6 +276,7 @@ cPacket * TCPSocketAPI_Inet::ReceiveBuffer::extractAvailableBytes(bytecount_t re
 
 	if (_buffer.empty())
 	{
+		LOG_DEBUG_FUN_END("no available bytes");
 		return NULL;
 	}
 
@@ -297,7 +303,13 @@ cPacket * TCPSocketAPI_Inet::ReceiveBuffer::extractAvailableBytes(bytecount_t re
 		break;
 	}
 
-	LOG_DEBUG_FUN_END("");
+	if (!_buffer.empty())
+	{
+		ASSERT(!_buffer.front()->isFullyExtracted()); // if not, then handling
+		// code didn't delete the extracted record from the buffer
+	}
+
+	LOG_DEBUG_FUN_END("extracted "<<(ret_packet != NULL ? ret_packet->getByteLength() : 0) <<" bytes");
 
 	return ret_packet;
 }
@@ -322,7 +334,7 @@ cPacket *  TCPSocketAPI_Inet::ReceiveBuffer::extractWhole()
 	bytecount_t extracted = record->extractAvailableBytes(ret_buffer);
 
 	ASSERT(0 < extracted);
-	ASSERT(record->getExtractedBytes() == record->getExpectedBytes());
+	ASSERT(record->isFullyExtracted());
 
 	_buffer.pop_front();
 	delete record;
@@ -359,7 +371,7 @@ cPacket * TCPSocketAPI_Inet::ReceiveBuffer::extractInstantMaintainBoundaries()
 
 	bytecount_t extracted = record->extractAvailableBytes(ret_buffer);
 
-	if (record->getExtractedBytes() == record->getExpectedBytes())
+	if (record->isFullyExtracted())
 	{
 		_buffer.pop_front();
 		delete record;
@@ -398,7 +410,7 @@ cPacket * TCPSocketAPI_Inet::ReceiveBuffer::extractInstantNoBuffer()
 	do
 	{
 		extracted = record->extractAvailableBytes(ret_buffer);
-		if (record->getExtractedBytes() == record->getExpectedBytes())
+		if (record->isFullyExtracted())
 		{
 			_buffer.pop_front();
 			delete record;
@@ -444,7 +456,12 @@ cPacket * TCPSocketAPI_Inet::ReceiveBuffer::extractUpto(bytecount_t max)
 		LOG_DEBUG_FUN_END("no available bytes");
 		return NULL;
 	}
-	// else
+	else if (record->isFullyExtracted())
+	{
+		_buffer.pop_front();
+		delete record;
+	}
+
 	LOG_DEBUG_FUN_END("returning "<<extracted<<" bytes");
 	return ret_buffer;
 }

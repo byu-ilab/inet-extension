@@ -353,13 +353,15 @@ public:
 	/**
 	 * Removes the timeout on this (active) socket.
 	 *
+	 * @param closing -- Indicates if the socket is being closed.
+	 *
 	 * @return True if there was a timeout set on the socket and it was
 	 * removed; false otherwise.
 	 *
 	 * @exception Throws a cRuntimeError if there is no timeout scheduler set or if
 	 * the socket state will not allow the timeout to be removed.
 	 */
-	virtual bool removeTimeout ();
+	virtual bool removeTimeout (bool closing=false);
 
 	/**
 	 * @return True if the socket state will allow the timeout period to be modified;

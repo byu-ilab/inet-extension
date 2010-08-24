@@ -506,6 +506,9 @@ public:
 		RECV_MODE_INSTANT_NO_BUFFER = -2
 	};
 
+	static bool isValidRecvMode(bytecount_t byte_mode);
+	static str_t getRecvModeName(bytecount_t byte_mode);
+
 
 	/**
 	 * Signals to the (active) socket that it should receive incoming

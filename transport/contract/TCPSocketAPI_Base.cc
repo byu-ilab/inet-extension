@@ -9,8 +9,11 @@
  * @todo Add GPL notice.
  */
 
+// from inet
 #include "TCPSocketAPI_Base.h"
 
+// from standard C++ libraries
+#include <sstream>
 //---
 
 bool TCPSocketAPI_Base::isCallbackError(error_id_t error)
@@ -91,4 +94,39 @@ socket_id_t TCPSocketAPI_Base::makePassiveSocket (cb_base_handler_ptr_t cb_handl
 	listen(id, cb_handler_for_accepted);
 
 	return id;
+}
+
+bool TCPSocketAPI_Base::isValidRecvMode(bytecount_t byte_mode)
+{
+	return (	0 < byte_mode
+			|| byte_mode == TCPSocketAPI_Base::RECV_MODE_WHOLE
+			|| byte_mode == TCPSocketAPI_Base::RECV_MODE_INSTANT_MAINTAIN_BOUNDARIES
+			|| byte_mode == TCPSocketAPI_Base::RECV_MODE_INSTANT_NO_BUFFER);
+}
+
+str_t TCPSocketAPI_Base::getRecvModeName(bytecount_t byte_mode)
+{
+	if (0 < byte_mode)
+	{
+		std::stringstream stringbuilder;
+		stringbuilder << byte_mode;
+		return stringbuilder.str();
+	}
+	// else
+	if (byte_mode == TCPSocketAPI_Base::RECV_MODE_WHOLE)
+	{
+		return "RECV_MODE_WHOLE";
+	}
+	// else
+	if (byte_mode == TCPSocketAPI_Base::RECV_MODE_INSTANT_MAINTAIN_BOUNDARIES)
+	{
+		return "RECV_MODE_INSTANT_MAINTAIN_BOUNDARIES";
+	}
+	// else
+	if (byte_mode == TCPSocketAPI_Base::RECV_MODE_INSTANT_NO_BUFFER)
+	{
+		return "RECV_MODE_INSTANT_NO_BUFFER";
+	}
+	// else
+	return "unknown";
 }

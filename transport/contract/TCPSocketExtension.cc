@@ -22,7 +22,7 @@
 #define OPP_ERROR_INCONSISTENT_STATE opp_error("%s::%s inconsistent state %s",\
 		__FILE__, __FUNCTION__, stateName(sockstate))
 
-#define DEBUG_CLASS true
+#define DEBUG_CLASS false
 
 //==============================================================================
 // Initialization
@@ -364,7 +364,7 @@ void TCPSocketExtension::setTimeout(simtime_t timeout_period)
 }
 
 
-bool TCPSocketExtension::removeTimeout ()
+bool TCPSocketExtension::removeTimeout (bool closing)
 {
 	LOG_DEBUG_FUN_BEGIN(toString());
 
@@ -375,7 +375,7 @@ bool TCPSocketExtension::removeTimeout ()
 	}
 
 	ASSERT(_timeout_scheduler != NULL);
-	if (!canModifyTimeout())
+	if (!canModifyTimeout() && !closing)
 	{
 		OPP_ERROR("socket state won't allow timeout to be removed");
 	}
@@ -417,7 +417,15 @@ void TCPSocketExtension::close ()
 		return;
 	}
 	// else
-	removeTimeout();
+	// remove the timeout without regard to socket state
+	removeTimeout(true);
+
+//	if (_timeout_msg != NULL)
+//	{
+//		ASSERT(_timeout_scheduler != NULL);
+//		_timeout_scheduler->cancelAndDelete(_timeout_msg);
+//		_timeout_msg = NULL;
+//	}
 
 	if (sockstate != NOT_BOUND && sockstate != BOUND && sockstate != SOCKERROR)
 	{
@@ -502,11 +510,14 @@ void TCPSocketExtension::processMessage (cMessage * msg)
 
 	if (dynamic_cast<SocketTimeoutMsg *>(msg) != NULL)
 	{
+		ASSERT(_timeout_msg == msg);
 		delete msg;
+		_timeout_msg = NULL;
 		processFailure(TCPSocketAPI_Base::CB_E_TIMEOUT);
 		LOG_DEBUG_FUN_END(toString());
 		return;
 	}
+	// else
 
 	// only works if the message has TCPCommandInfo
 	ASSERT(belongsToSocket(msg));
@@ -591,6 +602,7 @@ void TCPSocketExtension::processDataArrived(cPacket *msg, bool urgent)
 	{
 		// add message to receive buffer
 		_recv_buffer.insertData(msg);
+		delete msg;
 
 		// get bytes to return
 		cPacket * ret_msg = _recv_buffer.extractAvailableBytes(_recv_mode);
@@ -612,6 +624,7 @@ void TCPSocketExtension::processDataArrived(cPacket *msg, bool urgent)
 	{
 		// add message to receive buffer
 		_recv_buffer.insertData(msg);
+		delete msg;
 
 		// no change in socket state
 	}

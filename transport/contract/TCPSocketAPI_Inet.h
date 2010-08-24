@@ -130,6 +130,7 @@ public:
 		virtual void setRcvdBytes(bytecount_t rcvd_so_far);
 
 		virtual bool isComplete() const;
+		virtual bool isFullyExtracted() const;
 		virtual bytecount_t getAvailableBytes() const;
 	};
 

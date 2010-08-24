@@ -44,7 +44,7 @@ void ByteBufferClient::initialize()
 {
 	LOG_DEBUG_FUN_BEGIN("");
 	// configuration from ned file
-	reqs_to_send = par("numRequestsToSend");
+	reqs_to_send = par("numRequestsToSend").longValue();
 	req_phase_density = par("requestPhaseDensity");
 		ASSERT(0 < req_phase_density);
 	serverwww = par("serverwww").stdstringValue();

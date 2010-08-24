@@ -40,7 +40,7 @@
 #include <iostream>
 #include <sstream>
 
-#define DEBUG_CLASS true
+#define DEBUG_CLASS false
 
 Define_Module(TCPSocketMgr);
 
@@ -476,7 +476,6 @@ user_data_ptr_t TCPSocketMgr::close (socket_id_t id)
 	LOG_DEBUG_APPEND_LN("closing socket: "<<socket->toString());
 
 	freePort(id);
-	removeTimeout(id);
 
 	user_data_ptr_t user_context = socket->getUserContext();
 
