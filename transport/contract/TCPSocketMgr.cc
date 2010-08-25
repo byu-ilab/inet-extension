@@ -113,6 +113,7 @@ void TCPSocketMgr::handleMessage(cMessage *msg)
 	if (msg->isSelfMessage())
 	{
 		handleTimeoutMessage(msg); // takes responsibility for the message
+		cleanupClosedSockets();
 		LOG_DEBUG_FUN_END("");
 		return;
 	}

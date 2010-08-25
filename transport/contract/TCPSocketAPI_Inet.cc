@@ -70,6 +70,7 @@ typedef LAMR * lam_record_ptr_t;
 typedef std::deque<lam_record_ptr_t> LAMRQueue;
 
 TCPSocketAPI_Inet::LogicalAppMsgRecord::LogicalAppMsgRecord(cPacket* msg, bytecount_t rcvd_so_far)
+	: _message(NULL)
 {
 	setMessage(msg);
 	setRcvdBytes(rcvd_so_far);
@@ -77,10 +78,11 @@ TCPSocketAPI_Inet::LogicalAppMsgRecord::LogicalAppMsgRecord(cPacket* msg, byteco
 
 TCPSocketAPI_Inet::LogicalAppMsgRecord::~LogicalAppMsgRecord()
 {
-	if (_message != NULL)
-	{
-		delete _message;
-	}
+	LOG_DEBUG_FUN_BEGIN("");
+
+	deleteSafe(_message);
+
+	LOG_DEBUG_FUN_END("");
 }
 
 bytecount_t TCPSocketAPI_Inet::LogicalAppMsgRecord::insertBytes(bytecount_t buffer)
@@ -144,6 +146,8 @@ void TCPSocketAPI_Inet::LogicalAppMsgRecord::setMessage(cPacket * msg)
 	ASSERT(msg != NULL);
 	ASSERT(0 <= msg->getByteLength());
 
+	deleteSafe(_message);
+
 	_message = msg;
 	_expected_bytes = _message->getByteLength();
 	_extracted_bytes = 0;
@@ -175,14 +179,15 @@ TCPSocketAPI_Inet::ReceiveBuffer::ReceiveBuffer()
 
 TCPSocketAPI_Inet::ReceiveBuffer::~ReceiveBuffer()
 {
+	LOG_DEBUG_FUN_BEGIN("Logical app msgs in buffer: "<<_buffer.size());
+
 	LAMRQueue::iterator bitr = _buffer.begin();
 	for ( ; bitr != _buffer.end(); bitr++)
 	{
-		if ((*bitr)->getMessage() != NULL)
-		{
-			delete (*bitr)->getMessage();
-		}
+		delete (*bitr);
 	}
+
+	LOG_DEBUG_FUN_END("");
 }
 
 void TCPSocketAPI_Inet::ReceiveBuffer::insertData(cPacket * msg)
@@ -246,6 +251,8 @@ void TCPSocketAPI_Inet::ReceiveBuffer::insertData(cPacket * msg)
 				ASSERT(0 < mbb->getPayloadArraySize());
 			}
 		}
+
+		delete mbb;
 	}
 
 	LOG_DEBUG_FUN_END("msgs in buffer: "<<_buffer.size());

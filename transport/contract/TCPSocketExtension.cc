@@ -277,7 +277,7 @@ void TCPSocketExtension::send(cMessage *msg)
 
 	// remove any control info with the message
 	cObject * ctrl_info = msg->removeControlInfo();
-	if (ctrl_info)
+	if (ctrl_info != NULL)
 	{
 		delete ctrl_info;
 	}
@@ -601,8 +601,7 @@ void TCPSocketExtension::processDataArrived(cPacket *msg, bool urgent)
 	if (sockstate == RECEIVING)
 	{
 		// add message to receive buffer
-		_recv_buffer.insertData(msg);
-		delete msg;
+		_recv_buffer.insertData(msg); // takes responsibility for the message
 
 		// get bytes to return
 		cPacket * ret_msg = _recv_buffer.extractAvailableBytes(_recv_mode);
@@ -623,8 +622,7 @@ void TCPSocketExtension::processDataArrived(cPacket *msg, bool urgent)
 	else if (sockstate == CONNECTED)
 	{
 		// add message to receive buffer
-		_recv_buffer.insertData(msg);
-		delete msg;
+		_recv_buffer.insertData(msg); // takes responsibility for the message
 
 		// no change in socket state
 	}
