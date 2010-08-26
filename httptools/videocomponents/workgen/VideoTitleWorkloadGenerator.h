@@ -3,10 +3,16 @@
 #ifndef __VIDEOTITLEWORKLOADGENERATOR_H__
 #define __VIDEOTITLEWORKLOADGENERATOR_H__
 
+// from omnetpp
 #include <omnetpp.h>
-#include <string.h>
-#include <sstream>
+
+// from inet
 #include "VideoMetaData.h"
+#include "IVMDAccess.h"
+
+// from standard C++ libraries
+#include <sstream>
+
 
 struct VideoTitlePopularity
 {
@@ -26,7 +32,7 @@ struct VideoTitlePopularity
 /// rather would pertain to their rank.  Also record the zipf
 /// exponent and rank offset in the cfg file (perhaps even the
 /// zipf normalization constant).
-class VideoTitleWorkloadGenerator : public cSimpleModule
+class VideoTitleWorkloadGenerator : public cSimpleModule, public IVMDAccess
 {
 protected:
 	/// the directory to write meta data out to
@@ -55,14 +61,16 @@ public:
 	// returns a video title id according to the Zipf popularity distribution
 	virtual int getNextVideoTitle();
 
-	virtual struct VideoTitleMetaData getMetaData(int video_title_id);
-	virtual struct VideoTitleMetaData getMetaData(const std::string & video_title);
+	virtual struct VideoTitleMetaData getVideoTitleMetaData(int video_title_id);
 
-	virtual std::string getMetaDataFilePath(int video_title_id);
 
-	virtual std::string getVideoTitleAsString(int video_title_id);
+	virtual struct VideoTitleMetaData getVideoTitleMetaData(str_cref_t video_title);
+
+	virtual str_t getMetaDataFilePath(int video_title_id);
+
+	virtual str_t getVideoTitleAsString(int video_title_id);
 	// returns -1 if there is an error in the video title
-	virtual int getVideoTitleAsInt(const std::string & video_title);
+	virtual int getVideoTitleAsInt(str_cref_t video_title);
 	//@}
 
 	/** @name Video Segment functions */
@@ -72,13 +80,13 @@ public:
 	 * Throws an error if the uri isn't in the right format.  Does not check if
 	 * the uri pertains to an actual segment.
 	 */
-	virtual struct VideoSegmentMetaData parseVideoSegmentUri(const std::string & uri);
+	virtual struct VideoSegmentMetaData parseVideoSegmentUri(uri_t uri);
 
 	/*
 	 * Simple creates a video segment uri according to the provided parameters.
 	 * Does not check if the parameters are valid.
 	 */
-	virtual std::string createVideoSegmentUri(const std::string & type, const std::string & title,
+	virtual uri_t createVideoSegmentUri(str_cref_t type, str_cref_t title,
 			int quality_level, int segment_number, int fbp = -1, int lbp = -1);
 
 	/*
@@ -87,7 +95,7 @@ public:
 	 */
 	virtual bool isVideoSegmentDataValid(const struct VideoSegmentMetaData & vsdata);
 
-	virtual bool isVideoSegmentDataValid(const std::string & uri);
+	virtual bool isVideoSegmentDataValid(uri_t uri);
 	//@}
 
 protected:
