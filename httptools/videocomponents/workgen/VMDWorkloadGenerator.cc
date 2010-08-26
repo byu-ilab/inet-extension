@@ -1,19 +1,30 @@
-// Author: Kevin Black
-//
-// The Zipf distribution functions are based off of code
-// provided in BYU CS 360's Winter 2010 semester.
+//===========================================================================80>
+/**
+ * @file VMDWorkloadGenerator.h
+ *
+ * VMDWorkloadGenerator class definitions.
+ *
+ * Created: Aug 26, 2010
+ *
+ * @todo Add GPL notice.
+ */
 
-#include "VideoTitleWorkloadGenerator.h"
+// from inet
+#include "VMDWorkloadGenerator.h"
 
+// from omnetpp
+#include <omnetpp.h>
+#include "httptUtils.h"
+
+// from standard C++ libraries
+#include <sstream>  // for crafting URIs
 #include <cmath>	// for pow and ceil
 #include <fstream>	// for writing out to files
 #include <vector>	// for parsing results
-#include <sstream>	// for crafting URIs
-#include "httptUtils.h"
 
-Define_Module(VideoTitleWorkloadGenerator);
+Define_Module(VMDWorkloadGenerator);
 
-VideoTitleWorkloadGenerator::VideoTitleWorkloadGenerator () :
+VMDWorkloadGenerator::VMDWorkloadGenerator () :
 	_metadata_directory(), _video_title_map()
 {
 	_popularity_array = NULL;
@@ -22,7 +33,7 @@ VideoTitleWorkloadGenerator::VideoTitleWorkloadGenerator () :
 	_num_requests_made = 0;
 }
 
-VideoTitleWorkloadGenerator::~VideoTitleWorkloadGenerator ()
+VMDWorkloadGenerator::~VMDWorkloadGenerator ()
 {
 	if (_popularity_array)
 	{
@@ -31,7 +42,7 @@ VideoTitleWorkloadGenerator::~VideoTitleWorkloadGenerator ()
 	}
 }
 
-void VideoTitleWorkloadGenerator::initialize()
+void VMDWorkloadGenerator::initialize()
 {
 	std::string input_file = par("inputFile").stdstringValue();
 
@@ -53,7 +64,7 @@ void VideoTitleWorkloadGenerator::initialize()
 	scheduleAt(simTime()+1.0, msg);
 }
 
-void VideoTitleWorkloadGenerator::handleMessage(cMessage *msg)
+void VMDWorkloadGenerator::handleMessage(cMessage *msg)
 {
 	// for testing
 	if (msg->isSelfMessage())
@@ -94,7 +105,7 @@ void VideoTitleWorkloadGenerator::handleMessage(cMessage *msg)
 }
 
 
-void VideoTitleWorkloadGenerator::finish()
+void VMDWorkloadGenerator::finish()
 {
 	EV << "Total titles: "<<_popularity_array_size<<endl;
 	EV << "rank title popularity requests"<<endl;
@@ -116,7 +127,7 @@ void VideoTitleWorkloadGenerator::finish()
 }
 
 
-int VideoTitleWorkloadGenerator::getNextVideoTitle()
+int VMDWorkloadGenerator::getNextVideoTitle()
 {
 	// get a probability [0,1]
 	double desired_popularity = uniform(0,1);
@@ -134,7 +145,7 @@ int VideoTitleWorkloadGenerator::getNextVideoTitle()
 	return _popularity_array[current_rank].video_title_id;
 }
 
-struct VideoTitleMetaData VideoTitleWorkloadGenerator::getVideoTitleMetaData(int video_title_id)
+struct VideoTitleMetaData VMDWorkloadGenerator::getVideoTitleMetaData(int video_title_id)
 {
 	std::map<int, VideoTitleMetaData>::iterator vt_itr = _video_title_map.find(video_title_id);
 
@@ -148,14 +159,14 @@ struct VideoTitleMetaData VideoTitleWorkloadGenerator::getVideoTitleMetaData(int
 	return vt_itr->second;
 }
 
-struct VideoTitleMetaData VideoTitleWorkloadGenerator::getVideoTitleMetaData(const std::string & video_title)
+struct VideoTitleMetaData VMDWorkloadGenerator::getVideoTitleMetaData(const std::string & video_title)
 {
 	int video_title_id = getVideoTitleAsInt(video_title);
 
 	return getVideoTitleMetaData(video_title_id);
 }
 
-std::string VideoTitleWorkloadGenerator::getMetaDataFilePath(int video_title_id)
+std::string VMDWorkloadGenerator::getMetaDataFilePath(int video_title_id)
 {
 	std::map<int, VideoTitleMetaData>::iterator vt_itr = _video_title_map.find(video_title_id);
 
@@ -165,7 +176,7 @@ std::string VideoTitleWorkloadGenerator::getMetaDataFilePath(int video_title_id)
 	return file_path;
 }
 
-std::string VideoTitleWorkloadGenerator::getVideoTitleAsString(int video_title_id)
+std::string VMDWorkloadGenerator::getVideoTitleAsString(int video_title_id)
 {
 	std::string hexrep = "";
 	int remainder = 0;
@@ -200,7 +211,7 @@ std::string VideoTitleWorkloadGenerator::getVideoTitleAsString(int video_title_i
 	return getReverseString(hexrep);
 }
 
-int VideoTitleWorkloadGenerator::getVideoTitleAsInt(const std::string & video_title)
+int VMDWorkloadGenerator::getVideoTitleAsInt(const std::string & video_title)
 {
 	// check that the indicated string can be converted to a positive integer
 	if (video_title.size() > 8) {
@@ -265,12 +276,12 @@ int VideoTitleWorkloadGenerator::getVideoTitleAsInt(const std::string & video_ti
 //}
 
 
-void VideoTitleWorkloadGenerator::configureFromInput(const std::string & input_file)
+void VMDWorkloadGenerator::configureFromInput(const std::string & input_file)
 {
 	// currently not supported
 }
 
-void VideoTitleWorkloadGenerator::generateConfiguration()
+void VMDWorkloadGenerator::generateConfiguration()
 {
 	// read in NED settings
 	_metadata_directory = par("outputDir").stdstringValue();
@@ -412,7 +423,7 @@ void VideoTitleWorkloadGenerator::generateConfiguration()
  * Returns the video segment data as contained in the uri.
  * Throws an error if the uri isn't in the right format.
  */
-struct VideoSegmentMetaData VideoTitleWorkloadGenerator::parseVideoSegmentUri(uri_t uri)
+struct VideoSegmentMetaData VMDWorkloadGenerator::parseVideoSegmentUri(uri_t uri)
 {
 	cStringTokenizer tokenizer = cStringTokenizer(uri.c_str(),"/#,");
 	vector<string> res = tokenizer.asVector();
@@ -446,7 +457,7 @@ struct VideoSegmentMetaData VideoTitleWorkloadGenerator::parseVideoSegmentUri(ur
  * Simple creates a video segment uri according to the provided parameters.
  * Does not check if the parameters are valid.
  */
-std::string VideoTitleWorkloadGenerator::createVideoSegmentUri(const std::string & type,
+std::string VMDWorkloadGenerator::createVideoSegmentUri(const std::string & type,
 		const std::string & title, int quality_level, int segment_number, int fbp, int lbp)
 {
 	if (0 <= lbp)
@@ -503,7 +514,7 @@ std::string VideoTitleWorkloadGenerator::createVideoSegmentUri(const std::string
  * Determines whether the provided video segment data is valid according to
  * it's corresponding video title's meta data.
  */
-bool VideoTitleWorkloadGenerator::isVideoSegmentDataValid(const struct VideoSegmentMetaData & vsdata)
+bool VMDWorkloadGenerator::isVideoSegmentDataValid(const struct VideoSegmentMetaData & vsdata)
 {
 	VideoTitleMetaData vtmd = getVideoTitleMetaData(vsdata.video_title);
 
@@ -532,7 +543,7 @@ bool VideoTitleWorkloadGenerator::isVideoSegmentDataValid(const struct VideoSegm
 	return true;
 }
 
-bool VideoTitleWorkloadGenerator::isVideoSegmentDataValid(uri_t uri)
+bool VMDWorkloadGenerator::isVideoSegmentDataValid(uri_t uri)
 {
 	return isVideoSegmentDataValid(parseVideoSegmentUri(uri));
 }

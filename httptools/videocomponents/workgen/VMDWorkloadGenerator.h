@@ -1,63 +1,45 @@
-// Author: Kevin Black
+//===========================================================================80>
+/**
+ * @file VMDWorkloadGenerator.h
+ *
+ * VMDWorkloadGenerator class declarations
+ *
+ * Created: Aug 26, 2010
+ *
+ * @todo Add GPL notice.
+ */
 
-#ifndef __VIDEOTITLEWORKLOADGENERATOR_H__
-#define __VIDEOTITLEWORKLOADGENERATOR_H__
-
-// from omnetpp
-#include <omnetpp.h>
+#ifndef _VMDWORKLOADGENERATOR_H_
+#define _VMDWORKLOADGENERATOR_H_
 
 // from inet
 #include "VideoMetaData.h"
 #include "IVMDAccess.h"
+#include "PopularizedResourceCollection.h"
 
-// from standard C++ libraries
-#include <sstream>
-
-
-struct VideoTitlePopularity
+/**
+ * To Improve: in the event that the configuration should be
+ * read in from a configuration file provide the option
+ * to output sequential video titles instead of random
+ * ones as that will only require the starting video title
+ * to be recorded in the vtwg.cfg file instead of every
+ * video title, and/or just output the files in a sequence
+ * that doesn't have to correspond to their actual title, and
+ * rather would pertain to their rank.  Also record the zipf
+ * exponent and rank offset in the cfg file (perhaps even the
+ * zipf normalization constant).
+ *
+ * @todo rename to VtmdWorkloadGenerator
+ */
+class VMDWorkloadGenerator : public cSimpleModule, public IVMDAccess
 {
-	int video_title_id;
-	double popularity;
-	int times_requested;
-};
-
-
-/// To Improve: in the event that the configuration should be
-/// read in from a configuration file provide the option
-/// to output sequential video titles instead of random
-/// ones as that will only require the starting video title
-/// to be recorded in the vtwg.cfg file instead of every
-/// video title, and/or just output the files in a sequence
-/// that doesn't have to correspond to their actual title, and
-/// rather would pertain to their rank.  Also record the zipf
-/// exponent and rank offset in the cfg file (perhaps even the
-/// zipf normalization constant).
-class VideoTitleWorkloadGenerator : public cSimpleModule, public IVMDAccess
-{
-protected:
-	/// the directory to write meta data out to
-	/// currently only used for testing
-	std::string _metadata_directory;
-
-    /// rank (index) to popularity for ranked item
-    /// supports getNextVideoTitle
-    VideoTitlePopularity * _popularity_array;
-    int _popularity_array_size;
-
-    /// maps video title id to video title meta data
-    /// supports getMetaData and getMetaDataFilePath
-    std::map<int, VideoTitleMetaData> _video_title_map;
-
-    // for testing
-    int _num_requests_to_make;
-    int _num_requests_made;
-
 public:
-	VideoTitleWorkloadGenerator();
-	virtual ~VideoTitleWorkloadGenerator();
+	VMDWorkloadGenerator();
+	virtual ~VMDWorkloadGenerator();
 
 	/** @name Video Title functions */
 	//@{
+
 	// returns a video title id according to the Zipf popularity distribution
 	virtual int getNextVideoTitle();
 
@@ -68,13 +50,18 @@ public:
 
 	virtual str_t getMetaDataFilePath(int video_title_id);
 
+	// TODO move to VTMD itself
 	virtual str_t getVideoTitleAsString(int video_title_id);
+
+	// TODO move to VTMD itself
 	// returns -1 if there is an error in the video title
 	virtual int getVideoTitleAsInt(str_cref_t video_title);
+
 	//@}
 
 	/** @name Video Segment functions */
 	//@{
+	//TODO move these to the VSMD struct itself
 	/*
 	 * Returns the video segment data as contained in the uri.
 	 * Throws an error if the uri isn't in the right format.  Does not check if
@@ -125,6 +112,36 @@ protected:
     /// to the user (only if this is going to be distributed)
     virtual void generateConfiguration();
     //@}
+
+private:
+    PopularizedResourceCollection _title_collection;
+
+    /** Directory to write meta data out to; currently only used for testing. */
+	str_t _metadata_directory;
+
+    /// maps video title id to video title meta data
+    /// supports getVideoTitleMetaData and getVideoTitleMetaDataFilePath
+    std::map<int, VideoTitleMetaData> _video_title_map;
+
+    // for testing
+    int _num_requests_to_make;
+    int _num_requests_made;
 };
 
-#endif
+/**
+ * VTMD resource wrapper to store VTMD structs in the
+ * PopularizedResourceCollection.
+ */
+class PopularizableVTMD : public PopularizedResource
+{
+public:
+	virtual ~PopularizedVTMD() {}
+
+	virtual void setVTMD(VideoTitleMetaData vtmd) { _vtmd = vtmd; }
+	VideoTitleMetaData getVTMD() const { return _vtmd; }
+
+private:
+	VideoTitleMetaData _vtmd;
+};
+
+#endif /* _VMDWORKLOADGENERATOR_H_ */
