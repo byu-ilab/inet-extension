@@ -20,6 +20,7 @@ struct VideoTitleMetaData
 	std::string video_title;
 	std::string video_type;
 	int num_segments;
+	double segment_duration;
 	int num_quality_levels;
 	int quality_interval;
 };
