@@ -647,8 +647,8 @@ typedef TCPSocketAPI_Base::cb_base_handler_ptr_t cb_base_handler_ptr_t;
  * or passive sockets are also defined.
  *
  * @par	TCP Socket Callback Handling:
- * The major difference from the BSD API is that this API is intended to be
- * completely asynchronous so as to fit into the asynchronous architecture of
+ * The major difference from the BSD API is that this API is non-blocking
+ * so as to fit into the asynchronous architecture of
  * OMNET++.  Traditionally the functions connect(), accept(), and recv() are
  * blocking system calls, meaning that they do not return until a socket is
  * connected, accepted, or data has been received over the socket respectively.
@@ -687,7 +687,7 @@ typedef TCPSocketAPI_Base::cb_base_handler_ptr_t cb_base_handler_ptr_t;
  * be expected to trigger their corresponding callback whenever an accept or
  * receive event occurs.  Generally, if repeated accept or recv operations are
  * required they should be reinvoked in the acceptCallback() or recvCallback()
- * implementation respectively; in a synchronous environment this is in	essence
+ * implementation respectively; in a block socket call environment this is in essence
  * what a loop in an accepting or receiving thread does.
  *
  * @par
@@ -701,8 +701,8 @@ typedef TCPSocketAPI_Base::cb_base_handler_ptr_t cb_base_handler_ptr_t;
  * element in the event that the simulation terminates abnormally, yet the using
  * application can deallocate the element if it stores the context information.
  *
- * @par	Synchronous to Asynchronous Pseudocode Example:
- * In a synchronous environment, a client application may have the following
+ * @par	Blocking to Non-blocking Pseudocode Example:
+ * In a blocking socket call environment, a client application may have the following
  * sequence of socket operations (without specific regard to the BSD API;
  * comments are between '#' symbols):
  *
@@ -720,7 +720,7 @@ typedef TCPSocketAPI_Base::cb_base_handler_ptr_t cb_base_handler_ptr_t;
  * </pre>
  *
  * @par
- * Using this asynchronous API, the same functionality can be achieved as
+ * Using this non-blocking API, the same functionality can be achieved as
  * follows:
  *
  * @par
@@ -788,7 +788,7 @@ typedef TCPSocketAPI_Base::cb_base_handler_ptr_t cb_base_handler_ptr_t;
  *
  * @todo Level 1 Add an emergency callback function to the callback handler
  * class that will notify the handler of abnormal socket failure, or define
- * a diferent exception to be thrown that will indicate that condition when
+ * a different exception to be thrown that will indicate that condition when
  * an operation is requested on a failed/unstable socket.
  */
 
