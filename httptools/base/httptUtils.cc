@@ -30,6 +30,8 @@
 
 #include "httptUtils.h"
 
+#include <sstream>
+
 string trimLeft( string str )
 {
 	string::iterator i;
@@ -195,6 +197,42 @@ WEB_CONTENT_TYPE getResourceCategory(string resourceExt)
 		return rt_vidseg;
 
 	return rt_unknown;
+}
+
+string httpVersionAsString(int version)
+{
+	if (version == HTTP_10)
+	{
+		return "HTTP/1.0";
+	}
+	// else
+	if (version == HTTP_11)
+	{
+		return "HTTP/1.1";
+	}
+	// else
+	return "unknown";
+}
+
+string makeRequestHeader(RequestMethod method, string uri, HTTPProtocol version)
+{
+	string header = httpMethodAsString(method) + " " + uri + " " + httpVersionAsString(version);
+	return header;
+}
+
+
+string makeResponseHeader(HTTPProtocol version, int code, string reason_phrase)
+{
+	string header = httpVersionAsString(version) + " " + httpCodeAsString(code) + " ";
+	if (reason_phrase.empty())
+	{
+		header += httpPhraseFromCode(code);
+	}
+	else
+	{
+		header += reason_phrase;
+	}
+	return header;
 }
 
 RequestMethod httpMethodFromString(const string & methodstr)

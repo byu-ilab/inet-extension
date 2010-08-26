@@ -79,7 +79,7 @@ packet httptBaseMessage
     string payload = "";			// The payload field
     								// These two values should add together to match the total byte length of the packet:
     int headerLength = 0;			// The length of the header block in bytes
-    int contentLength = 0;			// The length of the entity body in bytes and the value of the Content-Length headerp
+    int contentLength = 0;			// The length of the entity body in bytes and the value of the Content-Length header
 }
 
 //
@@ -127,6 +127,8 @@ packet httptReplyMessage extends httptBaseMessage
     @omitGetVerb(true);
     int result = 0; 				// e.g. 200 for OK, 404 for NOT FOUND.
     int contentType = 0;			// The content type: HTML pages, text or image resources.
+    string contentTypeString = "";	// provided to allow for other content types not know to
+    								// httputils
     string phrase = "";				// The description phrase associated with the status code
     								// provided here to allow for use of status codes other
     								// than the ones known to httptutils

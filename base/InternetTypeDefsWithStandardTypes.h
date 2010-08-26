@@ -1,6 +1,6 @@
-
+//===========================================================================80>
 /**
- * \file InternetTypeDefsWithStandardTypes.h
+ * @file InternetTypeDefsWithStandardTypes.h
  *
  * Created: Aug 5, 2010
  * Author: Kevin Black
@@ -17,6 +17,11 @@
 // Standard string defs
 typedef std::string		str_t;
 typedef const str_t &	str_cref_t;
+
+// Standard count defs
+typedef int				counter_t
+
+#define COUNTER_NULL ((counter_t) -1)
 
 // Internet type defs
 typedef int				bytecount_t;

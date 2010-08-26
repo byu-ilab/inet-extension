@@ -88,6 +88,12 @@ std::vector<std::string> parseResourceName(string resource);
 WEB_CONTENT_TYPE getResourceCategory(vector<std::string> res);
 WEB_CONTENT_TYPE getResourceCategory(string resourceExt);
 
+string httpVersionAsString(int version);
+
+string makeRequestHeader(RequestMethod method, string uri, HTTPProtocol version);
+
+string makeResponseHeader(HTTPProtocol version, int status_code, string reason_phrase="");
+
 // returns RM_NONE if the methodstr doesn't contain a known http method
 RequestMethod httpMethodFromString(const string & methodstr);
 

@@ -332,6 +332,7 @@ void TCP::addSockPair(TCPConnection *conn, IPvXAddress localAddr, IPvXAddress re
     TcpConnMap::iterator it = tcpConnMap.find(key);
     if (it!=tcpConnMap.end())
     {
+    	/* +++> debugger hook */ int tmp = 0; /* <+++ */
         // throw "address already in use" error
         if (remoteAddr.isUnspecified() && remotePort==-1)
             error("Address already in use: there is already a connection listening on %s:%d",
@@ -416,7 +417,7 @@ void TCP::removeConnection(TCPConnection *conn)
     if (it!=usedEphemeralPorts.end())
         usedEphemeralPorts.erase(it);
 
-    /* DEBUG > */
+    /* DEBUG +++> */
     if (usedEphemeralPorts.size() != 0)
     {
 		LOG_DEBUG_WHERE
@@ -458,7 +459,7 @@ void TCP::removeConnection(TCPConnection *conn)
 			LOG_DEBUG_APPEND(std::endl);
 		}
     }
-    /* < DEBUG */
+    /* <+++ DEBUG */
 
     delete conn;
 }

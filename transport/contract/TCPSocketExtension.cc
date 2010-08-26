@@ -277,7 +277,7 @@ void TCPSocketExtension::send(cMessage *msg)
 
 	// remove any control info with the message
 	cObject * ctrl_info = msg->removeControlInfo();
-	if (ctrl_info)
+	if (ctrl_info != NULL)
 	{
 		delete ctrl_info;
 	}
@@ -313,9 +313,13 @@ void TCPSocketExtension::recv (bytecount_t byte_mode)
 		// no change in state
 		_cb_handler->recvCallback(connId, ret_msg->getByteLength(), ret_msg, removeUserContext());
 	}
-	else if (_timeout_msg != NULL)
+	else
 	{
-		_timeout_scheduler->scheduleAt(simTime()+_timeout_msg->getTimeoutInterval(), _timeout_msg);
+		sockstate = RECEIVING;
+		if (_timeout_msg != NULL)
+		{
+			_timeout_scheduler->scheduleAt(simTime()+_timeout_msg->getTimeoutInterval(), _timeout_msg);
+		}
 	}
 
 	LOG_DEBUG_FUN_END(toString());
@@ -360,7 +364,7 @@ void TCPSocketExtension::setTimeout(simtime_t timeout_period)
 }
 
 
-bool TCPSocketExtension::removeTimeout ()
+bool TCPSocketExtension::removeTimeout (bool closing)
 {
 	LOG_DEBUG_FUN_BEGIN(toString());
 
@@ -371,7 +375,7 @@ bool TCPSocketExtension::removeTimeout ()
 	}
 
 	ASSERT(_timeout_scheduler != NULL);
-	if (!canModifyTimeout())
+	if (!canModifyTimeout() && !closing)
 	{
 		OPP_ERROR("socket state won't allow timeout to be removed");
 	}
@@ -413,7 +417,15 @@ void TCPSocketExtension::close ()
 		return;
 	}
 	// else
-	removeTimeout();
+	// remove the timeout without regard to socket state
+	removeTimeout(true);
+
+//	if (_timeout_msg != NULL)
+//	{
+//		ASSERT(_timeout_scheduler != NULL);
+//		_timeout_scheduler->cancelAndDelete(_timeout_msg);
+//		_timeout_msg = NULL;
+//	}
 
 	if (sockstate != NOT_BOUND && sockstate != BOUND && sockstate != SOCKERROR)
 	{
@@ -498,11 +510,14 @@ void TCPSocketExtension::processMessage (cMessage * msg)
 
 	if (dynamic_cast<SocketTimeoutMsg *>(msg) != NULL)
 	{
+		ASSERT(_timeout_msg == msg);
 		delete msg;
+		_timeout_msg = NULL;
 		processFailure(TCPSocketAPI_Base::CB_E_TIMEOUT);
 		LOG_DEBUG_FUN_END(toString());
 		return;
 	}
+	// else
 
 	// only works if the message has TCPCommandInfo
 	ASSERT(belongsToSocket(msg));
@@ -585,29 +600,29 @@ void TCPSocketExtension::processDataArrived(cPacket *msg, bool urgent)
 	// depends on receiving mode
 	if (sockstate == RECEIVING)
 	{
-		sockstate = CONNECTED;
-
-		// cancel timeout if any
-		if (_timeout_msg != NULL)
-		{
-			_timeout_scheduler->cancelEvent(_timeout_msg);
-		}
-
 		// add message to receive buffer
-		_recv_buffer.insertData(msg);
+		_recv_buffer.insertData(msg); // takes responsibility for the message
 
 		// get bytes to return
 		cPacket * ret_msg = _recv_buffer.extractAvailableBytes(_recv_mode);
 
 		if (ret_msg != NULL)
 		{
+			sockstate = CONNECTED;
+
+			// cancel timeout if any
+			if (_timeout_msg != NULL)
+			{
+				_timeout_scheduler->cancelEvent(_timeout_msg);
+			}
+
 			_cb_handler->recvCallback(connId, ret_msg->getByteLength(), ret_msg, removeUserContext());
 		}
 	}
 	else if (sockstate == CONNECTED)
 	{
 		// add message to receive buffer
-		_recv_buffer.insertData(msg);
+		_recv_buffer.insertData(msg); // takes responsibility for the message
 
 		// no change in socket state
 	}
@@ -701,19 +716,19 @@ void TCPSocketExtension::processFailure(int code)
 {
 	LOG_DEBUG_FUN_BEGIN(toString());
 
-	sockstate = SOCKERROR;
-
 	if (sockstate == CONNECTING)
 	{
+		sockstate = SOCKERROR;
 		_cb_handler->connectCallback(connId, code, removeUserContext());
 	}
 	else if (sockstate == RECEIVING)
 	{
+		sockstate = SOCKERROR;
 		_cb_handler->recvCallback(connId, code, NULL, removeUserContext());
 	}
 	else
 	{
-		LOG_DEBUG_LN("state: "<<stateName(sockstate));
+		sockstate = SOCKERROR;
 	}
 
 	LOG_DEBUG_FUN_END(toString());
