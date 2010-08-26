@@ -19,7 +19,7 @@ typedef std::string		str_t;
 typedef const str_t &	str_cref_t;
 
 // Standard count defs
-typedef int				counter_t
+typedef int				counter_t;
 
 #define COUNTER_NULL ((counter_t) -1)
 

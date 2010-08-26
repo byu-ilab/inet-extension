@@ -154,7 +154,7 @@ httptReplyMessage* VideoServer::handleGetRequest( httptRequestMessage *request, 
 		return generateErrorReply(request, resource_uri, 404);
 	}
 
-	VideoTitleMetaData vtmd =  workload_generator->getMetaData(vsmd.video_title);
+	VideoTitleMetaData vtmd =  workload_generator->getVideoTitleMetaData(vsmd.video_title);
 
 	int res_size = vtmd.quality_interval * vsmd.quality_level;
 

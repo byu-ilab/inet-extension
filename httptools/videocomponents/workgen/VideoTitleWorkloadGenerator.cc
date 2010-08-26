@@ -134,7 +134,7 @@ int VideoTitleWorkloadGenerator::getNextVideoTitle()
 	return _popularity_array[current_rank].video_title_id;
 }
 
-struct VideoTitleMetaData VideoTitleWorkloadGenerator::getMetaData(int video_title_id)
+struct VideoTitleMetaData VideoTitleWorkloadGenerator::getVideoTitleMetaData(int video_title_id)
 {
 	std::map<int, VideoTitleMetaData>::iterator vt_itr = _video_title_map.find(video_title_id);
 
@@ -148,11 +148,11 @@ struct VideoTitleMetaData VideoTitleWorkloadGenerator::getMetaData(int video_tit
 	return vt_itr->second;
 }
 
-struct VideoTitleMetaData VideoTitleWorkloadGenerator::getMetaData(const std::string & video_title)
+struct VideoTitleMetaData VideoTitleWorkloadGenerator::getVideoTitleMetaData(const std::string & video_title)
 {
 	int video_title_id = getVideoTitleAsInt(video_title);
 
-	return getMetaData(video_title_id);
+	return getVideoTitleMetaData(video_title_id);
 }
 
 std::string VideoTitleWorkloadGenerator::getMetaDataFilePath(int video_title_id)
@@ -412,7 +412,7 @@ void VideoTitleWorkloadGenerator::generateConfiguration()
  * Returns the video segment data as contained in the uri.
  * Throws an error if the uri isn't in the right format.
  */
-struct VideoSegmentMetaData VideoTitleWorkloadGenerator::parseVideoSegmentUri(const std::string & uri)
+struct VideoSegmentMetaData VideoTitleWorkloadGenerator::parseVideoSegmentUri(uri_t uri)
 {
 	cStringTokenizer tokenizer = cStringTokenizer(uri.c_str(),"/#,");
 	vector<string> res = tokenizer.asVector();
@@ -505,7 +505,7 @@ std::string VideoTitleWorkloadGenerator::createVideoSegmentUri(const std::string
  */
 bool VideoTitleWorkloadGenerator::isVideoSegmentDataValid(const struct VideoSegmentMetaData & vsdata)
 {
-	VideoTitleMetaData vtmd = getMetaData(vsdata.video_title);
+	VideoTitleMetaData vtmd = getVideoTitleMetaData(vsdata.video_title);
 
 	if (vtmd.num_segments < MIN_SEGMENT_NUMBER) //implicitly checks that the titles are the same
 	{
@@ -532,7 +532,7 @@ bool VideoTitleWorkloadGenerator::isVideoSegmentDataValid(const struct VideoSegm
 	return true;
 }
 
-bool VideoTitleWorkloadGenerator::isVideoSegmentDataValid(const std::string & uri)
+bool VideoTitleWorkloadGenerator::isVideoSegmentDataValid(uri_t uri)
 {
 	return isVideoSegmentDataValid(parseVideoSegmentUri(uri));
 }

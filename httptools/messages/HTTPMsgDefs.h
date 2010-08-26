@@ -1,5 +1,5 @@
 /**
- * \file HTTPMsgDefs.h
+ * @file HTTPMsgDefs.h
  *
  * Created: Aug 4, 2010
  * Author: Kevin Black
@@ -45,5 +45,32 @@ enum ByteRangeState
     BRS_UNSPECIFIED = -1,
     BRS_ASTERISK = -2
 };
+
+
+// currently identified HTTP request method names
+#define HTTP_METHOD_OPTIONS "OPTIONS"
+#define HTTP_METHOD_GET 	"GET"
+#define HTTP_METHOD_HEAD	"HEAD"
+#define HTTP_METHOD_POST	"POST"
+#define HTTP_METHOD_PUT		"PUT"
+#define HTTP_METHOD_DELETE	"DELETE"
+#define HTTP_METHOD_TRACE	"TRACE"
+#define HTTP_METHOD_CONNECT	"CONNECT"
+
+// currently supported HTTP codes and phrases
+#define HTTP_CODE_MIN	100
+#define HTTP_CODE_MAX	505
+
+#define HTTP_CODE_200 	200
+#define HTTP_PHRASE_200 "OK"
+#define HTTP_CODE_206 	206
+#define HTTP_PHRASE_206 "PARTIAL CONTENT"
+
+#define HTTP_CODE_400 	400
+#define HTTP_PHRASE_400 "ERROR"
+#define HTTP_CODE_404 	404
+#define HTTP_PHRASE_404 "NOT FOUND"
+#define HTTP_CODE_416 	416
+#define HTTP_PHRASE_416 "REQUESTED RANGE NOT SATISFIABLE"
 
 #endif /* _HTTPMSGDEFS_H_ */
