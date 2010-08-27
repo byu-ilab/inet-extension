@@ -22,7 +22,7 @@
 
 #include "httptServerBase.h"
 #include "TCPSocketAPI_Inet.h"
-#include "VideoTitleWorkloadGenerator.h"
+#include "VMDWorkloadGenerator.h"
 #include "TCPSocketMgrAppUtils.h"
 #include "DuplicateHttpMessageNameObserver.h"
 

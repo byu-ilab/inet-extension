@@ -6,45 +6,44 @@
  *
  * Created: Aug 26, 2010
  *
+ * Based on previous VideoTitleWorkloadGenerator dating from May 2010.
+ *
  * @todo Add GPL notice.
  */
 
 // from inet
 #include "VMDWorkloadGenerator.h"
 
-// from omnetpp
-#include <omnetpp.h>
-#include "httptUtils.h"
+// from omnetpp extension
+#include <omnetppextension.h>
 
 // from standard C++ libraries
-#include <sstream>  // for crafting URIs
-#include <cmath>	// for pow and ceil
 #include <fstream>	// for writing out to files
-#include <vector>	// for parsing results
+#include <cmath>	// for ceil
+
+//---
 
 Define_Module(VMDWorkloadGenerator);
 
 VMDWorkloadGenerator::VMDWorkloadGenerator () :
-	_metadata_directory(), _video_title_map()
+		_video_title_map(), _title_collection(), _metadata_directory(), _test_output_file()
 {
-	_popularity_array = NULL;
-	_popularity_array_size = 0;
 	_num_requests_to_make = 0;
 	_num_requests_made = 0;
 }
 
 VMDWorkloadGenerator::~VMDWorkloadGenerator ()
 {
-	if (_popularity_array)
+	ID_VTMD_Map::iterator vt_itr = _video_title_map.begin();
+	for ( ; vt_itr != _video_title_map.end(); vt_itr++)
 	{
-		delete[] _popularity_array;
-		_popularity_array = NULL;
+		deleteSafe(vt_itr->second);
 	}
 }
 
 void VMDWorkloadGenerator::initialize()
 {
-	std::string input_file = par("inputFile").stdstringValue();
+	str_t input_file = par("inputFile").stdstringValue();
 
 	if (!input_file.empty())
 	{
@@ -53,15 +52,46 @@ void VMDWorkloadGenerator::initialize()
 	}
 	else
 	{
+		// Get and verify NED parameters
+		_metadata_directory = par("outputDir").stdstringValue();
+		if (!_metadata_directory.empty() && _metadata_directory.at((int)_metadata_directory.size()-1) != '/')
+		{
+			_metadata_directory += "/";
+		}
+		//	int num_vod_titles = par("numVODTitles");
+		//		ASSERT(num_vod_titles >= 0);
+		//	int num_live_titles = par("numLiveTitles");
+		//		ASSERT(num_live_titles >= 0);
+		//		ASSERT(num_vod_titles + num_live_titles >= 1 &&
+		//				num_vod_titles + num_live_titles < std::Int32::MaxValue);
+		titles_to_generate = par("numTitles");
+			ASSERT(1 <= titles_to_generate && titles_to_generate < 0x7FFFFFFF);
+		bit_rates_to_generate = par("numBitRates");
+			ASSERT(1 <= bit_rates_to_generate);
+		quality_intervals_to_generate = par("qualityInterval");
+			ASSERT(1 <= quality_intervals_to_generate);
+		uniform_segment_duration = par("segmentDuration");
+			ASSERT(0 < uniform_segment_duration);
+
+		_title_collection.setRankOffset(par("zipfRankOffset").doubleValue());
+		_title_collection.setExponent(par("zipfExponent").doubleValue());
+
+		segments_in_smallest_title = 0x7FFFFFFF;
+		segments_in_largest_title = 0;
+
 		generateConfiguration();
 	}
+
+	// run tests
+	_test_output_file = par("testOutputFile").stdstringValue();
 	_num_requests_to_make = par("requests");
-	if (_num_requests_to_make <= 0)
+	if (0 < _num_requests_to_make)
 	{
-		return;
+		_num_requests_made = 0;
+		cMessage * msg = new cMessage("video title request");
+		scheduleAt(simTime()+1.0, msg);
 	}
-	cMessage * msg = new cMessage("video title request");
-	scheduleAt(simTime()+1.0, msg);
+	// else don't run tests
 }
 
 void VMDWorkloadGenerator::handleMessage(cMessage *msg)
@@ -69,7 +99,7 @@ void VMDWorkloadGenerator::handleMessage(cMessage *msg)
 	// for testing
 	if (msg->isSelfMessage())
 	{
-		getNextVideoTitle();
+		selectNextVideoTitle();
 		_num_requests_made++;
 		if (_num_requests_made < _num_requests_to_make)
 		{
@@ -78,76 +108,55 @@ void VMDWorkloadGenerator::handleMessage(cMessage *msg)
 		else
 		{
 			delete msg;
-			EV << "number of requests: "<<_num_requests_made<<endl;
-			EV << "rank title popularity requests"<<endl;
-			VideoTitlePopularity vtp_entry;
-			for (int r = 1; r < _popularity_array_size; r++)
-			{
-				vtp_entry = _popularity_array[r];
-				std::string video_title = getVideoTitleAsString(vtp_entry.video_title_id);
-				EV << r << "\t" << video_title << "\t";
-				if (video_title.size() < 8)
-				{
-					EV << "\t";
-				}
-				EV << vtp_entry.popularity << "\t" << vtp_entry.times_requested << endl;
-			}
+			// now finish should be called
 		}
 	}
 	else
 	{
 		delete msg;
 	}
-
-
-	// In the future could handle requests to modify popularity
-	// and/or to log information
 }
 
 
 void VMDWorkloadGenerator::finish()
 {
-	EV << "Total titles: "<<_popularity_array_size<<endl;
-	EV << "rank title popularity requests"<<endl;
-	VideoTitlePopularity vtp_entry;
-	for (int i = 1; i < _popularity_array_size; i++)
+	if (_test_output_file.empty())
 	{
-		vtp_entry = _popularity_array[i];
-		if (vtp_entry.times_requested > 0)
+		_title_collection.writeSummary(ev.getOStream());
+	}
+	else
+	{
+		str_t filename = _metadata_directory + _test_output_file;
+		std::ofstream output_file(filename.c_str());
+
+		if (output_file.bad() || output_file.fail())
 		{
-			std::string video_title = getVideoTitleAsString(vtp_entry.video_title_id);
-			EV << i << "\t" << video_title << "\t";
-			if (video_title.size() < 8)
-			{
-				EV << "\t";
-			}
-			EV << vtp_entry.popularity << "\t" << vtp_entry.times_requested << endl;
+			EV << "Can't write summary to " << _test_output_file
+					<< ".  Writing to console..." << endl;
+			_title_collection.writeSummary(ev.getOStream());
+		}
+		else
+		{
+			_title_collection.writeSummary(output_file);
 		}
 	}
 }
 
 
-int VMDWorkloadGenerator::getNextVideoTitle()
+vidt_id_t VMDWorkloadGenerator::selectNextVideoTitle()
 {
-	// get a probability [0,1]
-	double desired_popularity = uniform(0,1);
-
-	int current_rank = 0;
-	double current_popularity = 0;
-
-	do {
-		current_rank++;
-		current_popularity += _popularity_array[current_rank].popularity;
-	} while (current_popularity < desired_popularity);
-
-	_popularity_array[current_rank].times_requested++;
-
-	return _popularity_array[current_rank].video_title_id;
+	PopularizableVideoTitleID * resource = dynamic_cast<PopularizableVideoTitleID *>(_title_collection.selectResource());
+	if (resource == NULL)
+	{
+		return VIDTITLE_NULL;
+	}
+	// else
+	return resource->videoTitleID();
 }
 
-struct VideoTitleMetaData VMDWorkloadGenerator::getVideoTitleMetaData(int video_title_id)
+struct VideoTitleMetaData VMDWorkloadGenerator::getVTMD(vidt_id_t id)
 {
-	std::map<int, VideoTitleMetaData>::iterator vt_itr = _video_title_map.find(video_title_id);
+	ID_VTMD_Map::iterator vt_itr = _video_title_map.find(id);
 
 	if (vt_itr == _video_title_map.end())
 	{
@@ -156,394 +165,177 @@ struct VideoTitleMetaData VMDWorkloadGenerator::getVideoTitleMetaData(int video_
 		return nonexist;
 	}
 
-	return vt_itr->second;
+	return *(vt_itr->second);
 }
 
-struct VideoTitleMetaData VMDWorkloadGenerator::getVideoTitleMetaData(const std::string & video_title)
+struct VideoTitleMetaData VMDWorkloadGenerator::getVTMD(str_cref_t title)
 {
-	int video_title_id = getVideoTitleAsInt(video_title);
-
-	return getVideoTitleMetaData(video_title_id);
+	return getVTMD(VideoTitleMetaData::asID(title));
 }
 
-std::string VMDWorkloadGenerator::getMetaDataFilePath(int video_title_id)
+str_t VMDWorkloadGenerator::getVTMDFilePath(vidt_id_t id)
 {
-	std::map<int, VideoTitleMetaData>::iterator vt_itr = _video_title_map.find(video_title_id);
+	ID_VTMD_Map::iterator vt_itr = _video_title_map.find(id);
 
-	std::string file_path = "";
-	file_path = _metadata_directory + vt_itr->second.video_title + ".vtmd";
-
-	return file_path;
-}
-
-std::string VMDWorkloadGenerator::getVideoTitleAsString(int video_title_id)
-{
-	std::string hexrep = "";
-	int remainder = 0;
-	int temp = video_title_id;
-
-	while (temp != 0)
+	if (vt_itr == _video_title_map.end())
 	{
-		remainder = temp % 16;
-		temp = (temp - remainder) / 16;
-
-		switch(remainder)
-		{
-		case 0: hexrep = hexrep + "0"; break;
-		case 1: hexrep = hexrep + "1"; break;
-		case 2: hexrep = hexrep + "2"; break;
-		case 3: hexrep = hexrep + "3"; break;
-		case 4: hexrep = hexrep + "4"; break;
-		case 5: hexrep = hexrep + "5"; break;
-		case 6: hexrep = hexrep + "6"; break;
-		case 7: hexrep = hexrep + "7"; break;
-		case 8: hexrep = hexrep + "8"; break;
-		case 9: hexrep = hexrep + "9"; break;
-		case 10: hexrep = hexrep + "A"; break;
-		case 11: hexrep = hexrep + "B"; break;
-		case 12: hexrep = hexrep + "C"; break;
-		case 13: hexrep = hexrep + "D"; break;
-		case 14: hexrep = hexrep + "E"; break;
-		case 15: hexrep = hexrep + "F"; break;
-		}
+		return "";
 	}
-	// invert the string and return it
-	return getReverseString(hexrep);
+	// else
+	return getVTMDFilePath(vt_itr->second);
 }
 
-int VMDWorkloadGenerator::getVideoTitleAsInt(const std::string & video_title)
+str_t VMDWorkloadGenerator::getVTMDFilePath(vtmd_ptr_t vtmd)
 {
-	// check that the indicated string can be converted to a positive integer
-	if (video_title.size() > 8) {
-		return -1;
-	} else if (video_title.size() == 8){
-		char first = video_title.at(0);
-		if (first >= '8' ) {
-			return -1;
-		}
-	}
-
-	int video_title_id = 0;
-	int digit_value = 0;
-	std::string reversed = getReverseString(video_title);
-	for(unsigned int i = 0; i < reversed.size(); i++)
-	{
-		switch(reversed.at(i))
-		{
-		case '0': digit_value = 0; break;
-		case '1': digit_value = 1; break;
-		case '2': digit_value = 2; break;
-		case '3': digit_value = 3; break;
-		case '4': digit_value = 4; break;
-		case '5': digit_value = 5; break;
-		case '6': digit_value = 6; break;
-		case '7': digit_value = 7; break;
-		case '8': digit_value = 8; break;
-		case '9': digit_value = 9; break;
-		case 'A':
-		case 'a': digit_value = 10; break;
-		case 'B':
-		case 'b': digit_value = 11; break;
-		case 'C':
-		case 'c': digit_value = 12; break;
-		case 'D':
-		case 'd': digit_value = 13; break;
-		case 'E':
-		case 'e': digit_value = 14; break;
-		case 'F':
-		case 'f': digit_value = 15; break;
-		default:
-			return -1;
-		}
-
-		for (unsigned int p = 0; p < i; p++)
-		{
-			digit_value = digit_value * 16;
-		}
-		video_title_id += digit_value;
-	}
-	return video_title_id;
+	return (_metadata_directory + vtmd->video_title + ".vtmd");
 }
 
-//std::string VideoTitleWorkloadGenerator::getReverseString(const std::string & toreverse)
-//{
-//	std::string retstr = "";
-//	for (int i = toreverse.size()-1; i >= 0; i--)
-//	{
-//		retstr += toreverse.at(i);
-//	}
-//	return retstr;
-//}
-
-
-void VMDWorkloadGenerator::configureFromInput(const std::string & input_file)
+void VMDWorkloadGenerator::configureFromInput(str_cref_t input_file)
 {
-	// currently not supported
+	throw cRuntimeError(this, "not yet implemented");
 }
 
 void VMDWorkloadGenerator::generateConfiguration()
 {
-	// read in NED settings
-	_metadata_directory = par("outputDir").stdstringValue();
-	if (!_metadata_directory.empty() && _metadata_directory.at((int)_metadata_directory.size()-1) != '/')
+	for (int title_counter = 0; title_counter < titles_to_generate; title_counter++)
 	{
-		_metadata_directory += "/";
-	}
-//	int num_vod_titles = par("numVODTitles");
-//		ASSERT(num_vod_titles >= 0);
-//	int num_live_titles = par("numLiveTitles");
-//		ASSERT(num_live_titles >= 0);
-//		ASSERT(num_vod_titles + num_live_titles >= 1 &&
-//				num_vod_titles + num_live_titles < std::Int32::MaxValue);
-	int num_titles = par("numTitles");
-		ASSERT(num_titles >= 1 && num_titles < 0x7FFFFFFF);
-	int num_bit_rates = par("numBitRates");
-		ASSERT(num_bit_rates >= 1);
-	int quality_interval = par("qualityInterval");
-		ASSERT(quality_interval >= 1);
-	double segment_duration = par("segmentDuration");
-		ASSERT(segment_duration > 0);
+		// generate the video title meta data
+		vtmd_ptr_t vtmd = generateVTMD();
 
-	double zipf_exponent = par("zipfExponent");
-	double zipf_rank_offset = par("zipfRankOffset");
-		ASSERT(zipf_rank_offset >= 0);
+		// store the video title meta data
+		vidt_id_t id = VideoTitleMetaData::asID(vtmd->video_title);
+		_video_title_map[id] = vtmd;
 
-	// variables to read in volatile settings
-	double title_duration = 0.0;
-
-	// allocate popularity array
-		// +1 to accommodate for empty 0 index
-//	_popularity_array_size = num_vod_titles + num_live_titles + 1;
-	_popularity_array_size = num_titles + 1;
-	_popularity_array = new VideoTitlePopularity[_popularity_array_size];
-
-	// compute Zipf normalization constant
-	double zipf_normalization_constant = 0.0;
-	for (int r = 1; r < _popularity_array_size; r++)
-	{
-		zipf_normalization_constant += ( 1.0 / std::pow( (r+zipf_rank_offset), zipf_exponent) );
-	}
-	zipf_normalization_constant = 1.0 / zipf_normalization_constant;
-
-	// generate video title meta data
-	VideoTitleMetaData vtmd_template;
-	vtmd_template.num_quality_levels = num_bit_rates;
-	vtmd_template.quality_interval = quality_interval;
-	vtmd_template.video_type = "vod";
-
-	int video_title_id = -1;
-	VideoTitlePopularity popularity_entry;
-	popularity_entry.times_requested = 0;
-	std::string file_path = "";
-	std::ofstream output_file;
-	int min_segments = 0x7FFFFFFF;
-	int max_segments = 0;
-
-	for (int current_rank = 1; current_rank < _popularity_array_size; current_rank++)
-	{
-		// generate a title
-		do
-		{
-			//from 5 to 8 hex digits, positive values
-			video_title_id = intuniform(0x70000, 0x7FFFFFFF);
-		} while ( _video_title_map.find(video_title_id) != _video_title_map.end() );
-		vtmd_template.video_title = getVideoTitleAsString(video_title_id);
-
-		// determine number of segments
-		title_duration = par("titleDuration"); // should be in minutes
-			ASSERT(title_duration > 0.0);
-		vtmd_template.num_segments = std::ceil( (title_duration*60.0) / segment_duration );
-
-		if (vtmd_template.num_segments < min_segments)
-		{
-			min_segments = vtmd_template.num_segments;
-		}
-		if (vtmd_template.num_segments > max_segments)
-		{
-			max_segments = vtmd_template.num_segments;
-		}
-
-		// store the meta data
-		_video_title_map[video_title_id] = vtmd_template;
-
-		// calculate the popularity and store it
-		popularity_entry.video_title_id = video_title_id;
-		popularity_entry.popularity = (zipf_normalization_constant /
-				( std::pow(current_rank + zipf_rank_offset, zipf_exponent) ) );
-
-		_popularity_array[current_rank] = popularity_entry;
-
-		// write out .vtmd file
-		// writes out all files in the same directory
-		if (!_metadata_directory.empty())
-		{
-			file_path = getMetaDataFilePath(video_title_id);
-			output_file.open(file_path.c_str());
-			if (output_file.bad() || output_file.fail())
-			{
-				throw cRuntimeError(this, "Error in writing out file %s", file_path.c_str());
-			}
-			output_file << "title: "<<vtmd_template.video_title<<endl;
-			output_file << "type: "<<vtmd_template.video_type<<endl;
-			output_file << "segments: "<<vtmd_template.num_segments<<endl;
-			output_file << "rates: "<<vtmd_template.num_quality_levels<<endl;
-			output_file << "interval: "<<vtmd_template.quality_interval<<endl;
-			output_file.flush();
-			output_file.close();
-		}
+		PopularizableVideoTitleID * resource_entry = new PopularizableVideoTitleID(id);
+		_title_collection.addResource(resource_entry);
 	}
 
+	writeConfiguration();
+	writeAllVTMDFiles();
+}
+
+vtmd_ptr_t VMDWorkloadGenerator::generateVTMD()
+{
+	// Generate video title meta data
+	vtmd_ptr_t vtmd  = new VideoTitleMetaData();
+	vtmd->num_quality_levels = bit_rates_to_generate;
+	vtmd->quality_interval = quality_intervals_to_generate;
+	vtmd->video_type = "vod";
+
+	vidt_id_t id = VIDTITLE_NULL;
+
+	// generate a title
+	do
+	{
+		id = VideoTitleMetaData::randomID();
+	} while ( _video_title_map.find(id) != _video_title_map.end() );
+
+	vtmd->video_title = VideoTitleMetaData::asTitle(id);
+
+	// determine number of segments
+	double title_duration = par("titleDuration"); // should be in minutes
+		ASSERT(0.0 < title_duration);
+		ASSERT(0.0 < uniform_segment_duration);
+	vtmd->num_segments = std::ceil( (title_duration*60.0) / uniform_segment_duration );
+
+	// update min and max num segments so far
+	if (vtmd->num_segments < segments_in_smallest_title)
+	{
+		segments_in_smallest_title = vtmd->num_segments;
+	}
+
+	if (segments_in_largest_title < vtmd->num_segments)
+	{
+		segments_in_largest_title = vtmd->num_segments;
+	}
+
+	return vtmd;
+}
+
+void VMDWorkloadGenerator::writeConfiguration()
+{
+	if (_metadata_directory.empty())
+	{
+		return;
+	}
+	// else
+
+	// open output file
+	str_t file_path = _metadata_directory+"vmdwkldgen.cfg";
+
+	std::ofstream output_file(file_path.c_str());
+
+	if (output_file.bad() || output_file.fail())
+	{
+		throw cRuntimeError(this, "Error in writing out configuration file %s", "vtwg.cfg");
+	}
+	// else
 	// write out configuration file
-	if (!_metadata_directory.empty())
-	{
-		file_path = _metadata_directory+"vtwg.cfg";
-		output_file.open(file_path.c_str());
-		if (output_file.bad() || output_file.fail())
-		{
-			throw cRuntimeError(this, "Error in writing out configuration file %s", "vtwg.cfg");
-		}
-		output_file << "titles: "<<num_titles<<endl;
+	ASSERT(titles_to_generate == (int) _video_title_map.size());
+	output_file << "titles: " << titles_to_generate << endl;
+
 		// or vod and live
-		output_file << "minsegments: "<<min_segments<<endl;
-		output_file << "maxsegments: "<<max_segments<<endl;
-		// if going to read in data then will have to write out the file titles
+	output_file << "minsegments: "<< segments_in_smallest_title << endl;
+	output_file << "maxsegments: "<< segments_in_largest_title << endl;
+
+	// if going to read in data then will have to write out the file titles
+}
+
+void VMDWorkloadGenerator::writeAllVTMDFiles()
+{
+	if (_metadata_directory.empty())
+	{
+		return;
+	}
+	// else
+
+	ID_VTMD_Map::iterator vt_itr = _video_title_map.begin();
+	for ( ; vt_itr != _video_title_map.end(); vt_itr++)
+	{
+		writeVTMDFile(vt_itr->second);
 	}
 }
 
-#define NUM_URI_FIELDS_DEFAULT 4
-#define NUM_URI_FIELDS_WITH_BP 6
-#define TYPE_INDEX 0
-#define TITLE_INDEX 1
-#define QUALITY_LEVEL_INDEX 2
-#define SEGMENT_NUM_INDEX 3
-#define FIRST_BYTE_POS_INDEX 4
-#define LAST_BYTE_POS_INDEX 5
-
-/*
- * Returns the video segment data as contained in the uri.
- * Throws an error if the uri isn't in the right format.
- */
-struct VideoSegmentMetaData VMDWorkloadGenerator::parseVideoSegmentUri(uri_t uri)
+void VMDWorkloadGenerator::writeVTMDFile(vidt_id_t id)
 {
-	cStringTokenizer tokenizer = cStringTokenizer(uri.c_str(),"/#,");
-	vector<string> res = tokenizer.asVector();
-	if (res.size() != NUM_URI_FIELDS_DEFAULT && res.size() != NUM_URI_FIELDS_WITH_BP)
+	if (_metadata_directory.empty())
 	{
-		error("invalid uri provided");
+		return;
 	}
+	// else
 
-	// TODO check that res[QAULITY_LEVEL_INDEX] and res[SEGMENT_NUM_INDEX] are numbers?
-	VideoSegmentMetaData vsmd;
-	vsmd.video_type = res[TYPE_INDEX];
-	vsmd.video_title = res[TITLE_INDEX];
-	vsmd.quality_level = atoi(res[QUALITY_LEVEL_INDEX].c_str());
-	vsmd.segment_number = atoi(res[SEGMENT_NUM_INDEX].c_str());
-
-	if (res.size() == NUM_URI_FIELDS_WITH_BP)
+	ID_VTMD_Map::iterator vt_itr = _video_title_map.find(id);
+	if (vt_itr == _video_title_map.end())
 	{
-		vsmd.first_byte_position = atoi(res[FIRST_BYTE_POS_INDEX].c_str());
-		vsmd.last_byte_position = atoi(res[LAST_BYTE_POS_INDEX].c_str());
+		return;
 	}
-	else
-	{
-		vsmd.first_byte_position = -1;
-		vsmd.last_byte_position = -1;
-	}
+	// else
 
-	return vsmd;
+	writeVTMDFile(vt_itr->second);
 }
 
-/*
- * Simple creates a video segment uri according to the provided parameters.
- * Does not check if the parameters are valid.
- */
-std::string VMDWorkloadGenerator::createVideoSegmentUri(const std::string & type,
-		const std::string & title, int quality_level, int segment_number, int fbp, int lbp)
+void VMDWorkloadGenerator::writeVTMDFile(vtmd_ptr_t vtmd)
 {
-	if (0 <= lbp)
+	ASSERT(vtmd != NULL);
+
+	// open output file
+	str_t file_path = getVTMDFilePath(vtmd);
+
+	std::ofstream output_file(file_path.c_str());
+
+	if (output_file.bad() || output_file.fail())
 	{
-		ASSERT( 0 <= fbp );
+		throw cRuntimeError(this, "Error in writing out file %s", file_path.c_str());
 	}
+	// else
 
-	stringstream uri_template;
-	int i = 0;
-	while (i < NUM_URI_FIELDS_WITH_BP)
-	{
-		//uri_template << "/";
-		switch(i)
-		{
-		case TYPE_INDEX: uri_template <<"/"<< type; break;
-		case TITLE_INDEX: uri_template <<"/"<< title; break;
-		case QUALITY_LEVEL_INDEX: uri_template <<"/"<< quality_level; break;
-		case SEGMENT_NUM_INDEX: uri_template <<"/"<< segment_number<<".vid"; break;
-		case FIRST_BYTE_POS_INDEX:
-			if (0 <= fbp)
-			{
-				uri_template << "#" << fbp;
-			}
-			break;
-		case LAST_BYTE_POS_INDEX:
-			if (0 <= fbp)
-			{
-				if (0 <= lbp)
-				{
-					uri_template << ","<<lbp;
-				}
-				else
-				{
-					uri_template << ","<<-1;
-				}
-			}
-			break;
-		default:
-			throw cRuntimeError("Check the #define constants used to generate URIs.");
-		}
-		i++;
-	}
-	//uri_template << ".vid";
+	// write out file
+	output_file << "title: " << vtmd->video_title << endl;
+	output_file << "type: "  << vtmd->video_type  << endl;
+	output_file << "segments: "<< vtmd->num_segments << endl;
+	output_file << "rates: " << vtmd->num_quality_levels << endl;
+	output_file << "interval: "<<vtmd->quality_interval << endl;
 
-	return uri_template.str();
-
-//	Other Format possibility; requires #include <iomanip>
-//	setfill('0');
-//	std::stringstream uri;
-//	uri << "/" << video_type << "/" << video_title << "/" << setw(2) << quality_level << data->segment << ".vid";
-}
-
-/*
- * Determines whether the provided video segment data is valid according to
- * it's corresponding video title's meta data.
- */
-bool VMDWorkloadGenerator::isVideoSegmentDataValid(const struct VideoSegmentMetaData & vsdata)
-{
-	VideoTitleMetaData vtmd = getVideoTitleMetaData(vsdata.video_title);
-
-	if (vtmd.num_segments < MIN_SEGMENT_NUMBER) //implicitly checks that the titles are the same
-	{
-		return false;
-	}
-
-	if (vtmd.video_type != vsdata.video_type)
-	{
-		return false;
-	}
-
-	if (vsdata.quality_level < MIN_QUALITY_LEVEL || vtmd.num_quality_levels < vsdata.quality_level )
-	{
-		return false;
-	}
-
-	if (vsdata.segment_number < MIN_SEGMENT_NUMBER || (vtmd.num_segments - 1) < vsdata.segment_number )
-	{
-		return false;
-	}
-
-	//TODO check the byte ranges if they are kept long term
-
-	return true;
-}
-
-bool VMDWorkloadGenerator::isVideoSegmentDataValid(uri_t uri)
-{
-	return isVideoSegmentDataValid(parseVideoSegmentUri(uri));
+	output_file.flush();
+	output_file.close();
 }

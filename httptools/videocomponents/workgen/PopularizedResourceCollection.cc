@@ -24,6 +24,7 @@
 //---
 
 PopularizedResourceCollection::PopularizedResourceCollection()
+	: _resource_vector()
 {
 	_next_rank = 0;
 	_zipf_rank_offset = 0;
@@ -31,8 +32,9 @@ PopularizedResourceCollection::PopularizedResourceCollection()
 	_zipf_inverse_normalize_factor = 0;
 	_zipf_normalize_factor = 0;
 	_adding_resources = false;
+	_resource_selections = COUNTER_MIN;
 
-	_resource_vector[0] = NULL;
+	_resource_vector.push_back(NULL);
 }
 
 PopularizedResourceCollection::~PopularizedResourceCollection()
@@ -57,8 +59,14 @@ bool PopularizedResourceCollection::addResource(PopularizableResource * resource
 	updateInverseNormalizeFactor(rank);
 
 	PopularizedResource * entry = new PopularizedResource(rank, resource);
-	_resource_vector[rank] = entry;
+	_resource_vector.push_back(entry);
 	return true;
+}
+
+void PopularizedResourceCollection::setRankOffset(double rank_offset)
+{
+	ASSERT(0 <= rank_offset);
+	_zipf_rank_offset = rank_offset;
 }
 
 PopularizableResource * PopularizedResourceCollection::selectResource()
@@ -106,8 +114,27 @@ PopularizableResource * PopularizedResourceCollection::selectResource(rank_t ran
 	}
 
 	_resource_vector[rank]->select();
+	_resource_selections++;
 
 	return _resource_vector[rank]->resource();
+}
+
+void PopularizedResourceCollection::writeSummary(std::ostream & os)
+{
+	os << "Total resources: " << _resource_vector.size() << endl;
+	os << "Total resource selections: " << _resource_selections << endl;
+	os << "Rank Popularity Times selected Resource name" << endl;
+
+	PopularizedResourceVector::iterator rv_itr = _resource_vector.begin();
+	rv_itr++; // skip over the NULL entry
+	for ( ; rv_itr != _resource_vector.end(); rv_itr++)
+	{
+		os  << (*rv_itr)->rank() << "\t"
+			<< (*rv_itr)->popularity() << "\t"
+			<< (*rv_itr)->timesSelected() << "\t"
+			<< (*rv_itr)->resource()->toString()
+			<< endl;
+	}
 }
 
 rank_t PopularizedResourceCollection::nextRank()
@@ -122,7 +149,7 @@ rank_t PopularizedResourceCollection::nextRank()
 
 void PopularizedResourceCollection::updateInverseNormalizeFactor(rank_t rank)
 {
-	_zipf_inverse_normalize_factor += ( 1.0 / std::pow( (rank+_zipf_rank_offset), _zipf_exponent) );
+	_zipf_inverse_normalize_factor += ( 1.0 / std::pow( (rank + _zipf_rank_offset), _zipf_exponent) );
 }
 
 void PopularizedResourceCollection::updateNormalizeFactor()
@@ -148,6 +175,7 @@ void PopularizedResourceCollection::updatePopularityOfAllResources()
 	updateNormalizeFactor();
 
 	PopularizedResourceVector::iterator rv_itr = _resource_vector.begin();
+	rv_itr++; // skip NULL entry
 	for ( ; rv_itr != _resource_vector.end(); rv_itr++)
 	{
 		(*rv_itr)->setPopularity( popularityOf( (*rv_itr)->rank() ) );

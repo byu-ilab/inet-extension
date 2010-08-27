@@ -14,6 +14,7 @@
 
 // from standard C++ libraries
 #include <vector>
+#include <iostream>
 
 // from inet
 #include "InternetTypeDefsWithStandardTypes.h"
@@ -39,12 +40,14 @@ public:
 	virtual PopularizableResource * selectResource(int rank);
 
 	// could be encapsulated in a stratecy object?
-	virtual void setRankOffset(double rank_offset) { _zipf_rank_offset = rank_offset; }
+	virtual void setRankOffset(double rank_offset);
 	virtual void setExponent(double exponent) { _zipf_exponent = exponent; }
 
 	double rankOffset() const { return _zipf_rank_offset; }
 	double exponent() const { return _zipf_exponent; }
 	double normalizeFactor() const { return _zipf_normalize_factor; }
+
+	virtual void writeSummary(std::ostream & os);
 
 protected:
 	rank_t nextRank();
@@ -57,6 +60,8 @@ private:
 	rank_t _next_rank;
 	PopularizedResourceVector _resource_vector;
 	bool _adding_resources;
+
+	counter_t _resource_selections;
 
 	// could be encapsulated in a strategy object?
 	double _zipf_normalize_factor;
@@ -73,6 +78,8 @@ class PopularizableResource
 {
 public:
 	virtual ~PopularizableResource() {}
+
+	virtual str_t toString() =0;
 };
 
 /**

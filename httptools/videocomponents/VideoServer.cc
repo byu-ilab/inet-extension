@@ -147,14 +147,14 @@ httptReplyMessage* VideoServer::handleGetRequest( httptRequestMessage *request, 
 //		opp_error("VideoServer::handleGetRequest: did not receive VideoSegmentRequestMessage");
 //	}
 
-	VideoSegmentMetaData vsmd = workload_generator->parseVideoSegmentUri(resource_uri);
+	VideoSegmentMetaData vsmd(resource_uri);
 
-	if (!workload_generator->isVideoSegmentDataValid(vsmd))
+	VideoTitleMetaData vtmd =  workload_generator->getVTMD(vsmd.video_title);
+
+	if (!vsmd.pertainsTo(vtmd)) //workload_generator->isVideoSegmentDataValid(vsmd))
 	{
 		return generateErrorReply(request, resource_uri, 404);
 	}
-
-	VideoTitleMetaData vtmd =  workload_generator->getVideoTitleMetaData(vsmd.video_title);
 
 	int res_size = vtmd.quality_interval * vsmd.quality_level;
 

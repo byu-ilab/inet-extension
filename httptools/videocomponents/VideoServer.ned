@@ -39,9 +39,9 @@ simple VideoServer like ITCPSocketMgrApp, httptServerBaseInterface
  		// specific to VideoServer
         //string siteDefinition = default("");			// The site script file. Blank to disable.
         //xml config;										// The XML configuration file for random sites
-        string workloadGenerator = default("workloadGenerator");
+        string workloadGenerator = default("vmdWorkloadGenerator");
         
-         // From TCPSocketAPIApp
+         // From ITCPSocketMgrApp
         string socketapi;								// the socketAPI name.
         
         // From httptServerBaseInterface
