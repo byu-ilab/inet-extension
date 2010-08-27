@@ -13,7 +13,7 @@
 #define _IVTMDACCESS_H_
 
 // from inet
-#include "InternetTypeDefsWithStandardTypes.h"
+#include "VideoMetaData.h"
 
 /**
  * Specifies functions for accessing and manipulating video meta data structs.
