@@ -14,12 +14,14 @@
 // along with this program.  If not, see http://www.gnu.org/licenses/.
 // 
 
-import inet.httptools.videocomponents.workgen.VideoTitleWorkloadGenerator;
 package inet.httptools.videocomponents.test;
-network TestVTWG
+
+import inet.httptools.videocomponents.workgen.VMDWorkloadGenerator;
+
+network TestVMDWorkloadGenerator
 {
     submodules:
-    	workloadgenerator: VideoTitleWorkloadGenerator
+    	vmdWorkloadgenerator: VMDWorkloadGenerator
     	{
     	}        
 }

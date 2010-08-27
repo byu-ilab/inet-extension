@@ -15,7 +15,7 @@
 
 package  inet.httptools.videocomponents.workgen;
 
-simple VideoTitleWorkloadGenerator
+simple VMDWorkloadGenerator
 {
     parameters:
         @display("i=block/cogwheel");
@@ -33,7 +33,7 @@ simple VideoTitleWorkloadGenerator
 			// the indicated directory.
         string outputDir = default("");
 
-        // meta data variables
+        // Meta data variables
         //int numVODTitles = default(1000);
         //int numLiveTitles = default(120);
         	// currently there is no difference between VOD and Live
@@ -51,4 +51,8 @@ simple VideoTitleWorkloadGenerator
         // for testing
         	// leave at 0 (or negative) if you do not want to run tests
         int requests = default(0);
+        	// if empty writes the test summary to the simulation's environment,
+        	// if not empty tries to write to the indicated file, if an error
+        	// occurs reverts to the simulation environment 
+        string testOutputFile = default("");
 }

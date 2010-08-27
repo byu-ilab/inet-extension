@@ -112,6 +112,9 @@ packet httptRequestMessage extends httptBaseMessage
     // if is BRS_UNSPECIFIED then the last byte position is not set and/or the header is
     // not set (check firstBytePos)
     int lastBytePos = BRS_UNSPECIFIED;
+    
+    // Simulation convenience only field
+    int entitySize = -1;
 }
 
 //

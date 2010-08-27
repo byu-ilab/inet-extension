@@ -22,6 +22,8 @@ typedef const str_t &	str_cref_t;
 typedef int				counter_t;
 
 #define COUNTER_NULL ((counter_t) -1)
+#define COUNTER_MAX  ((counter_t) 2147483647)
+#define COUNTER_MIN  ((counter_t) 0)
 
 // Internet type defs
 typedef int				bytecount_t;
@@ -36,6 +38,7 @@ typedef address_t		domain_name_t;
 typedef address_cref_t 	domain_name_cref_t;
 
 typedef str_t			uri_t;
+typedef str_cref_t		uri_cref_t;
 
 #define SOCKET_ID_NULL ((socket_id_t) -1)
 #define BYTECOUNT_NULL ((bytecount_t) -1)
