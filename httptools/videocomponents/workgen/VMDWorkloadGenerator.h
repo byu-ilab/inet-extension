@@ -146,7 +146,7 @@ public:
 	virtual void setVideoTitleID(vidt_id_t id) { _id = id; }
 	vidt_id_t videoTitleID() const { return _id; }
 
-	virtual str_t toString() { return VideoTitleMetaData::asTitle(_id); }
+	virtual str_t toString() const { return VideoTitleMetaData::asTitle(_id); }
 
 private:
 	vidt_id_t _id;

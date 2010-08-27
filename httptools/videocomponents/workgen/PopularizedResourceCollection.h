@@ -79,7 +79,7 @@ class PopularizableResource
 public:
 	virtual ~PopularizableResource() {}
 
-	virtual str_t toString() =0;
+	virtual str_t toString() const =0;
 };
 
 /**
