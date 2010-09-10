@@ -248,7 +248,7 @@ vtmd_ptr_t VMDWorkloadGenerator::generateVTMD()
 	{
 		segments_in_largest_title = vtmd->num_segments;
 	}
-
+	vtmd->segment_duration = uniform_segment_duration;
 	return vtmd;
 }
 

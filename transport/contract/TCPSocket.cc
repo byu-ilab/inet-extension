@@ -17,7 +17,7 @@
 
 #include "TCPSocket.h"
 #include <sstream>
-
+#include <iostream>
 TCPSocket::TCPSocket()
 {
     // don't allow user-specified connIds because they may conflict with
@@ -183,7 +183,6 @@ void TCPSocket::close()
     if (sockstate!=CONNECTED /* +++> */ && sockstate != RECEIVING && sockstate != ACCEPTING /* <+++ */
     		&& sockstate!=PEER_CLOSED && sockstate!=CONNECTING && sockstate!=LISTENING)
         opp_error("TCPSocket::close(): not connected or close() already called");
-
     cMessage *msg = new cMessage("CLOSE", TCP_C_CLOSE);
     TCPCommand *cmd = new TCPCommand();
     cmd->setConnId(connId);
