@@ -23,11 +23,11 @@ void VideoServer::initialize()
 	httptServerBase::initialize();
 
 	//workload_generator = dynamic_cast<VideoTitleWorkloadGenerator*>(simulation.getSystemModule()->getSubmodule("vtmdWorkloadGenerator"));
-	workload_generator = dynamic_cast<VMDWorkloadGenerator*>(simulation.getSystemModule()->getSubmodule("workloadGenerator"));
+	workload_generator = dynamic_cast<VMDWorkloadGenerator*>(simulation.getSystemModule()->getSubmodule("moveWorkloadGenerator"));
 		// alternate: getParentModule()->getParentModule()->getSubmodule("workloadGenerator"));
-	if (!workload_generator) {
-		error("workload generator module not found");
-	}
+	//if (!workload_generator) {
+	//	error("workload generator module not found");
+	//change this.}
 	socketsBroken=0;
 	socketsOpened=0;
 	requestsReceived = 0;
