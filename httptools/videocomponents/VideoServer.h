@@ -22,7 +22,9 @@
 
 #include "httptServerBase.h"
 #include "TCPSocketAPI_Inet.h"
-#include "VMDWorkloadGenerator.h"
+//#include "VMDWorkloadGenerator.h"
+
+#include "IFileSystem.h"
 #include "TCPSocketMgrAppUtils.h"
 #include "DuplicateHttpMessageNameObserver.h"
 
@@ -44,7 +46,8 @@ class INET_API VideoServer
 		// internals
 		httptController *controller; // Reference to central controller object.
 		TCPSocketAPI_Inet * tcp_api;
-		VMDWorkloadGenerator * workload_generator;
+		//VMDWorkloadGenerator * workload_generator;
+		IFileSystem * file_system;
 
 		// stats
 		unsigned long socketsBroken;

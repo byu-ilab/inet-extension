@@ -311,6 +311,7 @@ void TCPSocketExtension::recv (bytecount_t byte_mode)
 	if (ret_msg != NULL)
 	{
 		// no change in state
+		// TA -- all callbacks need to come from a separate event.
 		_cb_handler->recvCallback(connId, ret_msg->getByteLength(), ret_msg, removeUserContext());
 	}
 	else

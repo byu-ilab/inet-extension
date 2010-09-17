@@ -243,7 +243,10 @@ void httptServerBase::fillinStandardReply(httptReplyMessage * reply, httptReques
 	reply->setSerial(request->serial());
 	reply->setContentType(content_type);
 
-	reply->setByteLength(size);
+	int header_size = 350;
+	reply->setByteLength(size+header_size);
+	reply->setHeaderLength(header_size);
+	reply->setContentLength(size);
 	reply->setKind(HTTPT_RESPONSE_MESSAGE);
 }
 

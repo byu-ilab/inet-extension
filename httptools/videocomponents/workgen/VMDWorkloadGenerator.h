@@ -18,18 +18,19 @@
 #include "VideoMetaData.h"
 #include "IVMDAccess.h"
 #include "PopularizedResourceCollection.h"
-
+#include "IFileSystem.h"
 // from omnetp
 #include <omnetpp.h>
 
 // from standard C++ libraries
 #include <map>
-
+#include <string>
 typedef VideoTitleMetaData * vtmd_ptr_t;
 
 /** Maps video title id to video title meta data. */
 typedef std::map<vidt_id_t, vtmd_ptr_t> ID_VTMD_Map;
 
+using namespace std;
 /**
  * To Improve: in the event that the configuration should be
  * read in from a configuration file provide the option
@@ -42,7 +43,7 @@ typedef std::map<vidt_id_t, vtmd_ptr_t> ID_VTMD_Map;
  * exponent and rank offset in the cfg file (perhaps even the
  * zipf normalization constant).
  */
-class VMDWorkloadGenerator : public cSimpleModule, public IVMDAccess
+class VMDWorkloadGenerator : public cSimpleModule, public IVMDAccess, public IFileSystem
 {
 public:
 	/** @name Constructor and Desctructor */
@@ -108,6 +109,11 @@ protected:
 
     //@}
 
+	/** @name Overridden from IFileSystem */
+	//@{
+	virtual bool hasResource(string resource);
+	virtual int getResourceSize(string resource);
+    //@}
 private:
 
     /** Stores the VTMD structs. */

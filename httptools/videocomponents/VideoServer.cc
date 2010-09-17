@@ -23,8 +23,9 @@ void VideoServer::initialize()
 	httptServerBase::initialize();
 
 	//workload_generator = dynamic_cast<VideoTitleWorkloadGenerator*>(simulation.getSystemModule()->getSubmodule("vtmdWorkloadGenerator"));
-	workload_generator = dynamic_cast<VMDWorkloadGenerator*>(simulation.getSystemModule()->getSubmodule("moveWorkloadGenerator"));
-		// alternate: getParentModule()->getParentModule()->getSubmodule("workloadGenerator"));
+	//workload_generator = dynamic_cast<VMDWorkloadGenerator*>(simulation.getSystemModule()->getSubmodule("moveWorkloadGenerator"));
+	file_system = dynamic_cast<IFileSystem*>(simulation.getSystemModule()->getSubmodule("moveWorkloadGenerator"));
+			// alternate: getParentModule()->getParentModule()->getSubmodule("workloadGenerator"));
 	//if (!workload_generator) {
 	//	error("workload generator module not found");
 	//change this.}
@@ -148,16 +149,19 @@ httptReplyMessage* VideoServer::handleGetRequest( httptRequestMessage *request, 
 //		opp_error("VideoServer::handleGetRequest: did not receive VideoSegmentRequestMessage");
 //	}
 
-	VideoSegmentMetaData vsmd(resource_uri);
+	//VideoSegmentMetaData vsmd(resource_uri);
 
-	VideoTitleMetaData vtmd =  workload_generator->getVTMD(vsmd.video_title);
+	//VideoTitleMetaData vtmd =  workload_generator->getVTMD(vsmd.video_title);
 
-	if (!vsmd.pertainsTo(vtmd)) //workload_generator->isVideoSegmentDataValid(vsmd))
+	//if (!vsmd.pertainsTo(vtmd)) //workload_generator->isVideoSegmentDataValid(vsmd))
+	if (!file_system->hasResource(resource_uri))
 	{
 		return generateErrorReply(request, resource_uri, 404);
 	}
 
-	int res_size = vtmd.quality_interval * vsmd.quality_level;
+
+	//int res_size = vtmd.quality_interval * vsmd.quality_level;
+	int res_size = file_system->getResourceSize(resource_uri);
 
 //	int res_type = rt_vidseg;
 

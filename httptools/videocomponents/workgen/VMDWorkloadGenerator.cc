@@ -339,3 +339,20 @@ void VMDWorkloadGenerator::writeVTMDFile(vtmd_ptr_t vtmd)
 	output_file.flush();
 	output_file.close();
 }
+
+bool VMDWorkloadGenerator::hasResource(string resource) {
+
+	VideoSegmentMetaData vsmd(resource);
+
+	VideoTitleMetaData vtmd =  getVTMD(vsmd.video_title);
+
+	return vsmd.pertainsTo(vtmd);
+}
+int VMDWorkloadGenerator::getResourceSize(string resource) {
+
+	VideoSegmentMetaData vsmd(resource);
+
+	VideoTitleMetaData vtmd =  getVTMD(vsmd.video_title);
+
+	return vtmd.quality_interval * vsmd.quality_level;
+}
