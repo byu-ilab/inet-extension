@@ -17,7 +17,7 @@
 #include "VideoServer.h"
 
 Define_Module(VideoServer);
-
+#define DEBUG_CLASS false
 void VideoServer::initialize()
 {
 	httptServerBase::initialize();
@@ -161,7 +161,7 @@ httptReplyMessage* VideoServer::handleGetRequest( httptRequestMessage *request, 
 
 
 	//int res_size = vtmd.quality_interval * vsmd.quality_level;
-	int res_size = file_system->getResourceSize(resource_uri);
+	int res_size = request->entitySize(); //file_system->getResourceSize(resource_uri);
 
 //	int res_type = rt_vidseg;
 
@@ -174,6 +174,7 @@ httptReplyMessage* VideoServer::handleGetRequest( httptRequestMessage *request, 
 //	reply->setQualityLevel(vrequest->getQualityLevel());
 	responsesSent++;
 	httptReplyMessage * rep = generateByteRangeReply(request, resource_uri, res_size, rt_vidseg);
+	LOG_DEBUG("Response: "<<rep->getDisplayString()<<", Length:"<<rep->getByteLength());
 	//cout<<"BR Rep Size: "<<rep->getByteLength()<<endl;
 	return rep;
 

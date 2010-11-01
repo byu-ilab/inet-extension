@@ -329,6 +329,8 @@ public:
 	 */
 	virtual void recv (bytecount_t byte_mode, user_data_ptr_t context);
 
+	virtual void doRecvCallback();
+
 	/**
 	 * @brief Sets a timeout on this (active) socket.
 	 *

@@ -29,7 +29,7 @@
 #include "TCPSocketMgr.h"
 #include "httptLogdefs.h" //? user EV_DEBUG?
 #include "TCPCommand_m.h"
-
+#include "TCPSocketExtension.h"
 #include "DuplicateHttpMessageNameObserver.h"
 #include "TCPConnInfoMappingObserver.h"
 
@@ -561,7 +561,10 @@ void TCPSocketMgr::recvCallback(socket_id_t id, cb_status_t result,
 	// forward callback
 	_app_cb_handler_map[id]->recvCallback(id, result, msg, context);
 }
-
+void TCPSocketMgr::scheduleRecvCallback(TCPSocketExtension * sock) {
+	int conn = sock->getConnectionId();
+	_app_cb_handler_map[conn]->scheduleRecvCallback(sock);
+}
 //void TCPSocketMgr::closeCallback (socket_id_t id, cb_status_t result,
 //					user_data_ptr_t context)
 //{
@@ -638,6 +641,9 @@ socket_ptr_t TCPSocketMgr::findAndCheckSocket(socket_id_t id, str_cref_t fname)
 	return socket;
 }
 
+socket_ptr_t TCPSocketMgr::getSocket(socket_id_t id) {
+	return dynamic_cast<socket_ptr_t>(_socket_pool.getSocket(id));
+}
 socket_ptr_t TCPSocketMgr::getSocket(TCPSocketMap & pool, socket_id_t id)
 {
 	return dynamic_cast<socket_ptr_t>(pool.getSocket(id));

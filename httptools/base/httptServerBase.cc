@@ -14,7 +14,7 @@
 //
 
 #include "httptServerBase.h"
-
+#include "DebugDef.h"
 // EnableDebugging(false); // TODO
 #define DEBUG_CLASS false
 
@@ -117,7 +117,7 @@ httptReplyMessage * httptServerBase::handleRequestMessage( cMessage *msg )
 {
 	httptRequestMessage *request = check_and_cast<httptRequestMessage *>(msg);
 
-	EV_DEBUG << "Handling received message " << msg->getName() << ". Target URL: " << request->targetUrl() << endl;
+	LOG_DEBUG("Handling received message " << msg->getName() << ". Target URL: " << request->targetUrl() << endl);
 
 	logRequest(request);
 
@@ -141,7 +141,7 @@ httptReplyMessage * httptServerBase::handleRequestMessage( cMessage *msg )
 	{
 		// Verify that the header string has the correct number of parameters
 			// Parse the request string on spaces
-		LOG_DEBUG(request->heading());
+		//LOG_DEBUG(request->heading());
 		cStringTokenizer tokenizer = cStringTokenizer(request->heading()," ");
 		std::vector<string> res = tokenizer.asVector();
 		if ( res.size() != 3 )
@@ -243,7 +243,7 @@ void httptServerBase::fillinStandardReply(httptReplyMessage * reply, httptReques
 	reply->setSerial(request->serial());
 	reply->setContentType(content_type);
 
-	int header_size = 350;
+	int header_size = 1; //350;
 	reply->setByteLength(size+header_size);
 	reply->setHeaderLength(header_size);
 	reply->setContentLength(size);

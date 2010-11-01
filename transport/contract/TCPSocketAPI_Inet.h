@@ -31,6 +31,10 @@
 // From standard C++ libraries
 #include <deque>
 
+/** Socket pointer type. */
+class TCPSocketExtension;
+typedef TCPSocketExtension * socket_ptr_t;
+
 // Forward declarations		// source should				// from
 class MsgByteBuffer;		// #include "MsgByteBuffer.h"	// inet
 
@@ -62,7 +66,7 @@ public:
 		virtual ~CallbackHandler() {}
 
 		/**
-		 * @breif By default just deletes the received cPacket.
+		 * @brief By default just deletes the received cPacket.
 		 *
 		 * @details Subclasses should: 1) handle the reception of the data
 		 * specific to their application; 2) assume responsibility for the
@@ -88,6 +92,9 @@ public:
 		 */
 		virtual void recvCallback(socket_id_t id, cb_status_t return_value,
 				cPacket * msg, user_data_ptr_t yourPtr);
+
+		virtual void scheduleRecvCallback(TCPSocketExtension * socket);
+
 	};
 
 	typedef TCPSocketAPI_Inet::CallbackHandler * cb_inet_handler_ptr_t;
@@ -145,7 +152,7 @@ public:
 
 		virtual void insertData(cPacket * msg);
 		virtual cPacket * extractAvailableBytes(bytecount_t recv_mode);
-
+		virtual bool isAvailableBytes();
 	protected:
 		virtual cPacket * extractWhole();
 		virtual cPacket * extractInstantMaintainBoundaries();

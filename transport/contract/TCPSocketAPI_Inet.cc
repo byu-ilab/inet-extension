@@ -44,6 +44,10 @@ void TCPSocketAPI_Inet::CallbackHandler::recvCallback(
 	}
 }
 
+void TCPSocketAPI_Inet::CallbackHandler::scheduleRecvCallback(TCPSocketExtension * socket) {
+	// do nothing by default
+	return;
+}
 //---
 
 cb_inet_handler_ptr_t TCPSocketAPI_Inet::verifyCallbackHandlerType(cb_base_handler_ptr_t cbobj)
@@ -256,6 +260,9 @@ void TCPSocketAPI_Inet::ReceiveBuffer::insertData(cPacket * msg)
 	}
 
 	LOG_DEBUG_FUN_END("msgs in buffer: "<<_buffer.size());
+}
+bool TCPSocketAPI_Inet::ReceiveBuffer::isAvailableBytes() {
+	return !(_buffer.empty());
 }
 
 cPacket * TCPSocketAPI_Inet::ReceiveBuffer::extractAvailableBytes(bytecount_t recv_mode)

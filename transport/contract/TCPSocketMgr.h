@@ -468,7 +468,7 @@ public:
 	virtual user_data_ptr_t getMyPtr (socket_id_t id);
 
 	//@}
-
+	virtual socket_ptr_t getSocket(socket_id_t id);
 protected:
 	/** @name Overridden functions from cSimpleModule */
 	//@{
@@ -496,6 +496,7 @@ protected:
 	virtual void recvCallback(socket_id_t id, cb_status_t result,
     				cPacket * msg, user_data_ptr_t context);
 
+	virtual void scheduleRecvCallback(TCPSocketExtension * socket);
 //	virtual void closeCallback (socket_id_t id, cb_status_t result,
 //					user_data_ptr_t context);
 

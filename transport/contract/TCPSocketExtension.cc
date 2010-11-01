@@ -307,8 +307,19 @@ void TCPSocketExtension::recv (bytecount_t byte_mode)
 	_recv_mode = byte_mode;
 
 	// relative to the byte_mode return something out of the buffer
-	cPacket * ret_msg = _recv_buffer.extractAvailableBytes(_recv_mode);
-	if (ret_msg != NULL)
+	//cPacket * ret_msg = _recv_buffer.extractAvailableBytes(_recv_mode);
+	if (_recv_buffer.isAvailableBytes()) {
+		_cb_handler->scheduleRecvCallback(this); // telling Implementer (which happens to be a module) to handle the recv callback on its own time.
+	}
+	else
+	{
+		sockstate = RECEIVING;
+		if (_timeout_msg != NULL)
+		{
+			_timeout_scheduler->scheduleAt(simTime()+_timeout_msg->getTimeoutInterval(), _timeout_msg);
+		}
+	}
+/*	if (ret_msg != NULL)
 	{
 		// no change in state
 		// TA -- all callbacks need to come from a separate event.
@@ -322,11 +333,27 @@ void TCPSocketExtension::recv (bytecount_t byte_mode)
 			_timeout_scheduler->scheduleAt(simTime()+_timeout_msg->getTimeoutInterval(), _timeout_msg);
 		}
 	}
-
+*/
 	LOG_DEBUG_FUN_END(toString());
 }
 
-
+void TCPSocketExtension::doRecvCallback() {
+	cPacket * ret_msg = _recv_buffer.extractAvailableBytes(_recv_mode);
+	if (ret_msg != NULL)
+		{
+			// no change in state
+			// TA -- all callbacks need to come from a separate event.
+			_cb_handler->recvCallback(connId, ret_msg->getByteLength(), ret_msg, removeUserContext());
+		}
+		else
+		{
+			sockstate = RECEIVING;
+			if (_timeout_msg != NULL)
+			{
+				_timeout_scheduler->scheduleAt(simTime()+_timeout_msg->getTimeoutInterval(), _timeout_msg);
+			}
+		}
+}
 void TCPSocketExtension::recv (bytecount_t byte_mode,
 		user_data_ptr_t context)
 {
@@ -344,7 +371,11 @@ void TCPSocketExtension::setTimeout(simtime_t timeout_period)
 
 	ASSERT(timeout_period >= 0);
 	ASSERT(_timeout_scheduler != NULL);
-
+	if (timeout_period == 0.0) { // a 0 timeout causes infinite delay.
+		if (_timeout_msg)_timeout_scheduler->cancelAndDelete(_timeout_msg);
+		_timeout_msg = NULL;
+		return;
+	}
 	if (!canModifyTimeout())
 	{
 		OPP_ERROR("socket state won't allow timeout to be set");
