@@ -97,7 +97,8 @@ void WebCacheNewAPI::initialize() {
 	upstream_server = par("serverwww").stdstringValue();
 	request_timeout = par("request_timeout");
 
-	int64 cache_size = par("cacheSize").longValue();
+	uint64 cache_size = (uint64)(pow(1024.0, 4) * par("cacheSizeTB").doubleValue());
+	cout<<"cache_size: "<<cache_size<<endl;
 		ASSERT(0 < cache_size);
 	resourceCache = new LRUCache((uint64) cache_size);
 

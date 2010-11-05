@@ -60,7 +60,7 @@ simple WebCacheNewAPI like ITCPSocketMgrApp, httptServerBaseInterface
         
         // attributes specific to the WebCacheNewAPI
         	// cache capacity
-        int cacheSize @unit(B)= default(10KB);  // capacity of cache in bytes
+        double cacheSizeTB = default(1.0);  // capacity of cache in bytes
         	// domain name of upstream server/cache
         string serverwww = default(""); // domain name of upstream server/cache.
         	// time an upstream connection should wait without any activity
