@@ -24,7 +24,7 @@ void VideoServer::initialize()
 
 	//workload_generator = dynamic_cast<VideoTitleWorkloadGenerator*>(simulation.getSystemModule()->getSubmodule("vtmdWorkloadGenerator"));
 	//workload_generator = dynamic_cast<VMDWorkloadGenerator*>(simulation.getSystemModule()->getSubmodule("moveWorkloadGenerator"));
-	file_system = dynamic_cast<IFileSystem*>(simulation.getSystemModule()->getSubmodule("moveWorkloadGenerator"));
+	file_system = dynamic_cast<IFileSystem*>(simulation.getSystemModule()->getSubmodule("workloadGenerator"));
 			// alternate: getParentModule()->getParentModule()->getSubmodule("workloadGenerator"));
 	//if (!workload_generator) {
 	//	error("workload generator module not found");
@@ -149,42 +149,21 @@ httptReplyMessage* VideoServer::handleGetRequest( httptRequestMessage *request, 
 //		opp_error("VideoServer::handleGetRequest: did not receive VideoSegmentRequestMessage");
 //	}
 
-	//VideoSegmentMetaData vsmd(resource_uri);
-
-	//VideoTitleMetaData vtmd =  workload_generator->getVTMD(vsmd.video_title);
-
-	//if (!vsmd.pertainsTo(vtmd)) //workload_generator->isVideoSegmentDataValid(vsmd))
 	if (!file_system->hasResource(resource_uri))
 	{
 		return generateErrorReply(request, resource_uri, 404);
 	}
 
+	int res_size = file_system->getResourceSize(request, resource_uri);
 
-	//int res_size = vtmd.quality_interval * vsmd.quality_level;
-	int res_size = request->entitySize(); //file_system->getResourceSize(resource_uri);
+	//int res_size = request->entitySize(); //file_system->getResourceSize(resource_uri);
 
-//	int res_type = rt_vidseg;
-
-	// if it is a byte range request, service it.
-//	VideoSegmentReplyMessage * reply = new VideoSegmentReplyMessage();
-//
-//	reply->setTitle(vrequest->getTitle());
-//	reply->setType(vrequest->getType());
-//	reply->setSegmentNumber(vrequest->getSegmentNumber());
-//	reply->setQualityLevel(vrequest->getQualityLevel());
 	responsesSent++;
 	httptReplyMessage * rep = generateByteRangeReply(request, resource_uri, res_size, rt_vidseg);
 	LOG_DEBUG("Response: "<<rep->getDisplayString()<<", Length:"<<rep->getByteLength());
 	//cout<<"BR Rep Size: "<<rep->getByteLength()<<endl;
 	return rep;
 
-//	if (vrequest->firstBytePos() != BRS_UNSPECIFIED) {
-//		fillinByteRangeReply(reply, vrequest, resource, res_size, res_type);
-//	}
-//	else { // service normal request
-//		fillinStandardReply(reply, vrequest, resource, HTTP_CODE_200, res_size, res_type);
-//	}
-//	return reply;
 }
 
 void VideoServer::updateDisplay() {

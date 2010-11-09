@@ -21,7 +21,6 @@
 #include "IFileSystem.h"
 // from omnetp
 #include <omnetpp.h>
-
 // from standard C++ libraries
 #include <map>
 #include <string>
@@ -112,7 +111,7 @@ protected:
 	/** @name Overridden from IFileSystem */
 	//@{
 	virtual bool hasResource(string resource);
-	virtual int getResourceSize(string resource);
+	virtual int getResourceSize(httptRequestMessage *, string resource);
     //@}
 private:
 

@@ -348,7 +348,7 @@ bool VMDWorkloadGenerator::hasResource(string resource) {
 
 	return vsmd.pertainsTo(vtmd);
 }
-int VMDWorkloadGenerator::getResourceSize(string resource) {
+int VMDWorkloadGenerator::getResourceSize(httptRequestMessage * request, string resource) {
 
 	VideoSegmentMetaData vsmd(resource);
 
