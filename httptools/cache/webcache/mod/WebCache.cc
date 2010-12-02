@@ -14,7 +14,7 @@
 //
 
 /**
- * The web cache behaves as a server to move clients and acts as a client to the
+ * The web cache behaves as a server to clients and acts as a client to the
  * Video servers.
  */
 
@@ -227,13 +227,13 @@ void WebCache::socketDataArrived(int connId, void * yourPtr, cPacket * msg, bool
       httptRequestMessage * m = generateServerRequest(msg);
       TCPSocket * srv_socket = sendRequest(m);
       // log sockets;
-      // TODO: when move client uses same socket for subseq. requests,
+      // TODO: when client uses same socket for subseq. requests,
       // don't create new server socket for it.
       pendingRequests.insert(pair<TCPSocket *, cPacket *>(srv_socket, msg));
     }
   } else if (sockdata->sockType == CLIENT) {
     //handleDataMessage(msg);
-    receiveResource(msg); // only one type of resource: move content.
+    receiveResource(msg); // only one type of resource: content.
     updateDisplay();
 
     if ( --sockdata->pendingReplies==0 )
@@ -375,8 +375,8 @@ string WebCache::extractURLFromResponse(httptReplyMessage * response) {
 	 return resp;
 }
 /**
- * Sends a request to a move server.  The request is based on the
- * request it got from a move client.
+ * Sends a request to a server.  The request is based on the
+ * request it got from a client.
  */
 TCPSocket * WebCache::sendRequest(httptRequestMessage * request) {
 	EV_DEBUG << "WEBCACHE: sendRequest begin"<< endl;
@@ -393,8 +393,8 @@ TCPSocket * WebCache::sendRequest(httptRequestMessage * request) {
 }
 
 /**
- * based on a message containing a request from a move client, generate a
- * httptRequestMessage that will ask a move server where data is.
+ * based on a message containing a request from a client, generate a
+ * httptRequestMessage that will ask a server where data is.
  */
 httptRequestMessage * WebCache::generateServerRequest(cPacket * msg) {
   httptRequestMessage *request = check_and_cast<httptRequestMessage *>(msg);
@@ -406,8 +406,8 @@ httptRequestMessage * WebCache::generateServerRequest(cPacket * msg) {
 }
 
 /**
- * Received a response from a move server; obtain the data,
- * update cache, and then send it to the move client.
+ * Received a response from a  server; obtain the data,
+ * update cache, and then send it to the client.
  */
 void WebCache::receiveResource(cPacket * msg) {
 

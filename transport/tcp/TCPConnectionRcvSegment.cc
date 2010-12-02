@@ -450,7 +450,9 @@ TCPEventCode TCPConnection::processSegment1stThru8th(TCPSegment *tcpseg)
                 // section 2.5).
 
                 uint32 old_usedRcvBuffer = state->usedRcvBuffer;
+                uint32 old_rcv_nxt = state->rcv_nxt;
                 state->rcv_nxt = receiveQueue->insertBytesFromSegment(tcpseg);
+                goodputVector->record(state->rcv_nxt - old_rcv_nxt);
                 //cout<<"Inserting bytes at "<<simTime()<<" for connection "<<connId<<endl;
                 // out-of-order segment?
                 if (old_rcv_nxt==state->rcv_nxt)

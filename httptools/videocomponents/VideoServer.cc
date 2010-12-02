@@ -23,7 +23,6 @@ void VideoServer::initialize()
 	httptServerBase::initialize();
 
 	//workload_generator = dynamic_cast<VideoTitleWorkloadGenerator*>(simulation.getSystemModule()->getSubmodule("vtmdWorkloadGenerator"));
-	//workload_generator = dynamic_cast<VMDWorkloadGenerator*>(simulation.getSystemModule()->getSubmodule("moveWorkloadGenerator"));
 	file_system = dynamic_cast<IFileSystem*>(simulation.getSystemModule()->getSubmodule("workloadGenerator"));
 			// alternate: getParentModule()->getParentModule()->getSubmodule("workloadGenerator"));
 	//if (!workload_generator) {

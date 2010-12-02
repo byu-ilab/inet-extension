@@ -348,7 +348,7 @@ class INET_API TCPConnection
     cOutVector *sackedBytesVector;        // current number of received sacked bytes
     cOutVector *tcpRcvQueueBytesVector;   // current amount of used bytes in tcp receive queue
     cOutVector *tcpRcvQueueDropsVector;   // number of drops in tcp receive queue
-
+    cOutVector *goodputVector; // recorded every time the ACKed sequence number increases.
   protected:
     cOutVector * _createVector(const char *);
     /** @name FSM transitions: analysing events and executing state transitions */

@@ -177,8 +177,7 @@ protected:
 	virtual void makeUpstreamRequest(/*int socket_id,*/ httptRequestMessage * ds_request_template=NULL); //ConnInfo * data); // cache send req. to upper-level cache or server.
 	virtual void processUpstreamResponse(int socket_id, cPacket * msg, ConnInfo * data); // get response from upper-level server.
 	virtual void processDownstreamRequest(int socket_id, cPacket * msg, ConnInfo * data); // handle request from client (or cache)
-//	virtual int  openUpstreamSocket(ConnInfo *data);
-	//virtual void handleTimeout(int socket_id);
+
 	virtual void closeSocket(int socket_id);
 	virtual void respondToClientRequest(int socket_id, httptRequestMessage * request, Resource * resouce);
 

@@ -152,7 +152,7 @@ TCPConnection::TCPConnection()
     the2MSLTimer = connEstabTimer = finWait2Timer = synRexmitTimer = NULL;
     sndWndVector = rcvWndVector = rcvAdvVector = sndNxtVector = sndAckVector = rcvSeqVector = rcvAckVector = unackedVector =
     dupAcksVector = sndSacksVector = rcvSacksVector = rcvOooSegVector =
-    tcpRcvQueueBytesVector = tcpRcvQueueDropsVector = pipeVector = sackedBytesVector = NULL;
+    tcpRcvQueueBytesVector = tcpRcvQueueDropsVector = pipeVector = sackedBytesVector = goodputVector = NULL;
 }
 
 //
@@ -208,6 +208,7 @@ TCPConnection::TCPConnection(TCP *_mod, int _appGateIndex, int _connId)
     tcpRcvQueueDropsVector = NULL;
     pipeVector = NULL;
     sackedBytesVector = NULL;
+    goodputVector = NULL;
 
     /* +++> */
 	updateVectorNames(true);
@@ -272,6 +273,8 @@ void TCPConnection::updateVectorNames(bool firstTime) {
         tcpRcvQueueBytesVector = _createVector("tcpRcvQueueBytes");
         tcpRcvQueueDropsVector = _createVector("tcpRcvQueueDrops");
     }
+    if (!firstTime) delete goodputVector;
+    goodputVector = _createVector("goodput");
 }
 
 cOutVector * TCPConnection::_createVector(const char * name) {
@@ -317,6 +320,7 @@ TCPConnection::~TCPConnection()
     delete tcpRcvQueueDropsVector;
     delete pipeVector;
     delete sackedBytesVector;
+    delete goodputVector;
 }
 
 bool TCPConnection::processTimer(cMessage *msg)
