@@ -68,4 +68,6 @@ simple WebCacheNewAPI like ITCPSocketMgrApp, httptServerBaseInterface
         string filterConfig = default(""); // the filepath to the filter configuration file, relative to the location of the cc file
         int maxUpstreamSockets = default(8);
         int resendRequestThreshold = default(6);
+        
+        bool cacheByteRanges = default(false);
 }

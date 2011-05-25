@@ -16,17 +16,20 @@
 
 #include <omnetpp.h>
 #include "TCPGenericCliAppBase.h"
+#include <iostream>
 
+using namespace std;
 /**
  * An example request-reply based client application.
  */
 class INET_API TCPBasicClientApp : public TCPGenericCliAppBase
 {
   protected:
-    cMessage *timeoutMsg;
+    cMessage *timeoutMsg, *killMsg;
     bool earlySend;  // if true, don't wait with sendRequest() until established()
     int numRequestsToSend; // requests to send in this session
-
+    SimTime lastResponseReceived;
+    bool clientFinished;
     /** Utility: sends a request to the server */
     virtual void sendRequest();
 
@@ -44,6 +47,7 @@ class INET_API TCPBasicClientApp : public TCPGenericCliAppBase
     /** Redefined. */
     virtual void socketEstablished(int connId, void *yourPtr);
 
+    virtual void finish();
     /** Redefined. */
     virtual void socketDataArrived(int connId, void *yourPtr, cPacket *msg, bool urgent);
 

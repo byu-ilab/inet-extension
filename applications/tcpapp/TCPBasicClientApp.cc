@@ -21,18 +21,21 @@
 
 #define MSGKIND_CONNECT  0
 #define MSGKIND_SEND     1
+#define MSGKIND_KILL	 2
 
 
 Define_Module(TCPBasicClientApp);
 
 TCPBasicClientApp::TCPBasicClientApp()
 {
-    timeoutMsg = NULL;
+    timeoutMsg = killMsg = NULL;
+    lastResponseReceived = 0;
 }
 
 TCPBasicClientApp::~TCPBasicClientApp()
 {
     cancelAndDelete(timeoutMsg);
+    cancelAndDelete(killMsg);
 }
 
 void TCPBasicClientApp::initialize()
@@ -41,6 +44,10 @@ void TCPBasicClientApp::initialize()
 
     timeoutMsg = new cMessage("timer");
 
+    killMsg = new cMessage("killTime");
+    killMsg->setKind(MSGKIND_KILL);
+    clientFinished = false;
+
     numRequestsToSend = 0;
     earlySend = false;  // TBD make it parameter
     WATCH(numRequestsToSend);
@@ -48,6 +55,12 @@ void TCPBasicClientApp::initialize()
 
     timeoutMsg->setKind(MSGKIND_CONNECT);
     scheduleAt((simtime_t)par("startTime"), timeoutMsg);
+    if ((bool)par("hasKillTime") == true) {
+    	scheduleAt((simtime_t)par("killTime"), killMsg);
+    }
+}
+void TCPBasicClientApp::finish() {
+	recordScalar("lastReceivedByte", lastResponseReceived);
 }
 
 void TCPBasicClientApp::sendRequest()
@@ -85,6 +98,9 @@ void TCPBasicClientApp::handleTimer(cMessage *msg)
            // no scheduleAt(): next request will be sent when reply to this one
            // arrives (see socketDataArrived())
            break;
+        case MSGKIND_KILL:
+        	clientFinished = true;
+        	//close();
     }
 }
 
@@ -107,16 +123,21 @@ void TCPBasicClientApp::socketDataArrived(int connId, void *ptr, cPacket *msg, b
 {
 
     TCPGenericCliAppBase::socketDataArrived(connId, ptr, msg, urgent);
-
+    lastResponseReceived = simTime();
     if (numRequestsToSend>0)
     {
         EV << "reply arrived\n";
-        timeoutMsg->setKind(MSGKIND_SEND);
-        scheduleAt(simTime()+(simtime_t)par("thinkTime"), timeoutMsg);
+        if (!clientFinished) {
+        	timeoutMsg->setKind(MSGKIND_SEND);
+        	scheduleAt(simTime()+(simtime_t)par("thinkTime"), timeoutMsg);
+        }
     }
     else
     {
-        EV << "reply to last request arrived, closing session\n";
+    	if (clientFinished == true) {
+    		cout<<"Client finishing"<<endl;
+    	}
+    	EV << "reply to last request arrived, closing session\n";
         close();
     }
 }
@@ -127,8 +148,10 @@ void TCPBasicClientApp::socketClosed(int connId, void *ptr)
     TCPGenericCliAppBase::socketClosed(connId, ptr);
 
     // start another session after a delay
-    timeoutMsg->setKind(MSGKIND_CONNECT);
-    scheduleAt(simTime()+(simtime_t)par("idleInterval"), timeoutMsg);
+    if (!clientFinished) {
+    	timeoutMsg->setKind(MSGKIND_CONNECT);
+		scheduleAt(simTime()+(simtime_t)par("idleInterval"), timeoutMsg);
+    }
 }
 
 void TCPBasicClientApp::socketFailure(int connId, void *ptr, int code)
@@ -137,7 +160,9 @@ void TCPBasicClientApp::socketFailure(int connId, void *ptr, int code)
     TCPGenericCliAppBase::socketFailure(connId, ptr, code);
 
     // reconnect after a delay
-    timeoutMsg->setKind(MSGKIND_CONNECT);
-    scheduleAt(simTime()+(simtime_t)par("reconnectInterval"), timeoutMsg);
+    if (!clientFinished) {
+    	timeoutMsg->setKind(MSGKIND_CONNECT);
+		scheduleAt(simTime()+(simtime_t)par("reconnectInterval"), timeoutMsg);
+    }
 }
 

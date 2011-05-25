@@ -43,7 +43,7 @@ class INET_API DropTailQueue : public PassiveQueueBase
     simsignal_t qlenSignal;
 //    simsignal_t qdropSignal; // Recorded by PassiveQueueBase
 //    cOutVector qlenVec;
-//    cOutVector dropVec;
+    cOutVector dropVec;
 
 //    bool recordTrendOnly;
 //    QUEUE_EVENT lastEvent;

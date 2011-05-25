@@ -69,6 +69,8 @@ simple TCPBasicClientApp like TCPApp
         string connectAddress = default("");  // server address (may be symbolic)
         int connectPort = default(1000); // port number to connect to
         double startTime @unit("s") = default(1s); // time first session begins
+        bool hasKillTime = default(false); // do I have a kill time? 
+        double killTime @unit("s") = default(10s); // time to close down the tcp connection and all future sessions/requests.
         volatile int numRequestsPerSession = default(1);  // number of requests sent per session
         volatile int requestLength @unit(B) = default(200B); // length of a request
         volatile int replyLength @unit("B") = default(1MB); // length of a reply

@@ -28,7 +28,7 @@ void DropTailQueue::initialize()
     queue.setName("l2queue");
 
 //    qlenVec.setName("queue length");
-//    dropVec.setName("drops");
+    dropVec.setName("drops");
     qlenSignal = registerSignal(SIGNAME_QLEN);
     qdropSignal = registerSignal(SIGNAME_QDROP);
 
@@ -51,7 +51,7 @@ bool DropTailQueue::enqueue(cMessage *msg)
         EV << "Queue full, dropping packet.\n";
         delete msg;
 //        emit(qdropSignal, (int) 1); // emitted by PassiveQueueBase
-//        dropVec.record(1);
+        dropVec.record(1);
         return true;
     }
     else

@@ -407,6 +407,7 @@ void WebCacheNewAPI::processDownstreamRequest(int socket_id, cPacket * msg, Conn
 
 	LOG_DEBUG("received request for: "<<request->heading());
 
+	// modify the url if we are caching byte-range.
 	string url = extractURLFromRequest(request);
 	Resource * wr_temp = new WebResource(url, 0); // works because the comparator used only looks at the ID not the size
 	Resource * wr_incache = resourceCache->has(wr_temp);

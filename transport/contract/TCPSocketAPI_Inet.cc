@@ -245,7 +245,7 @@ void TCPSocketAPI_Inet::ReceiveBuffer::insertData(cPacket * msg)
 			}
 
 			ASSERT(0 <= remainder);
-			if (0 == remainder)
+			if (0 == remainder) // TA: case occurs where remainder > 0 (556) and mbb->getPayloadArraySize() == 0.
 			{
 				ASSERT(0 == mbb->getPayloadArraySize());
 //				ASSERT(record == NULL); // may not be null if the mbb doesn't have whole message
