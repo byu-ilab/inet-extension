@@ -28,7 +28,7 @@
 // From omnetpp extension
 #include <omnetppextension.h>
 
-#define DEBUG_CLASS false
+#define DEBUG_CLASS true
 
 //---
 
