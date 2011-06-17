@@ -1,0 +1,9 @@
+<config>
+	<htmlPageSize type="exponential" mean="3000" min="1000" />
+	<numResources type="uniform" beginning="0" end="20" />
+	<textImageResourceRatio type="uniform" beginning="0.2" end="0.8" />
+	<imageResourceSize type="exponential" mean="1000" min="500"  />
+	<textResourceSize type="exponential" mean="300" min="50"  />
+	<replyDelay type="normal" mean="3" sd="1" />
+	<errorMessageSize type="normal" mean="100" sd="20" />
+</config>

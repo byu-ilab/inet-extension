@@ -1,4 +1,3 @@
-// Author: Kevin Black
 //
 // This program is free software: you can redistribute it and/or modify
 // it under the terms of the GNU Lesser General Public License as published by
@@ -14,12 +13,23 @@
 // along with this program.  If not, see http://www.gnu.org/licenses/.
 // 
 
+#include "MPCClient.h"
+#include "ModelPredictiveController.h"
+#include "NetworkController.h"
+Define_Module(MPCClient);
 
-message SocketTimeoutMsg {
-    int socketId;
-    double timeoutInterval;
+void MPCClient::initialize()
+{
+    AdaptiveClient::initialize();
 }
-message RecvCallbackMsg {
-	int socketId;
-	string name="RecvCallback";
+
+void MPCClient::handleMessage(cMessage *msg)
+{
+    AdaptiveClient::handleMessage(msg);
+}
+INetworkControl * MPCClient::createNetwork() {
+	return new NetworkController(this);
+}
+IApplicationControl * MPCClient::createApplication() {
+	return new ModelPredictiveController(this);
 }

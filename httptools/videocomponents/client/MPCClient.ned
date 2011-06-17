@@ -1,4 +1,3 @@
-// Author: Kevin Black
 //
 // This program is free software: you can redistribute it and/or modify
 // it under the terms of the GNU Lesser General Public License as published by
@@ -14,12 +13,20 @@
 // along with this program.  If not, see http://www.gnu.org/licenses/.
 // 
 
+package inet.httptools.videocomponents.client;
 
-message SocketTimeoutMsg {
-    int socketId;
-    double timeoutInterval;
-}
-message RecvCallbackMsg {
-	int socketId;
-	string name="RecvCallback";
+//
+// TODO auto-generated module
+//
+simple MPCClient like IAdaptiveClient
+{
+    parameters:
+        string socketapi;
+        string controller = default("controller");
+        string serverwww = default("server.omnet.net");        
+        string address = default("");
+        int port = default(2000);
+        int httpProtocol = default(11);
+ 		int logLevel = default(2);
+ 		string logFile = default("");
 }

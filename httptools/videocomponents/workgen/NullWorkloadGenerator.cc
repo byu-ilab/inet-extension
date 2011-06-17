@@ -1,4 +1,3 @@
-// Author: Kevin Black
 //
 // This program is free software: you can redistribute it and/or modify
 // it under the terms of the GNU Lesser General Public License as published by
@@ -14,12 +13,24 @@
 // along with this program.  If not, see http://www.gnu.org/licenses/.
 // 
 
+#include "NullWorkloadGenerator.h"
 
-message SocketTimeoutMsg {
-    int socketId;
-    double timeoutInterval;
+Define_Module(NullWorkloadGenerator);
+
+void NullWorkloadGenerator::initialize()
+{
+    // TODO - Generated method body
 }
-message RecvCallbackMsg {
-	int socketId;
-	string name="RecvCallback";
+
+void NullWorkloadGenerator::handleMessage(cMessage *msg)
+{
+    // TODO - Generated method body
+}
+/** @name Overridden from IFileSystem */
+//@{
+bool NullWorkloadGenerator::hasResource(string resource) {
+	return true;
+}
+int NullWorkloadGenerator::getResourceSize(httptRequestMessage * message, string resource) {
+	return message->entitySize();
 }

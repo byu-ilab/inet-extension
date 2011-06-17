@@ -109,6 +109,13 @@ void TCPSocketMgr::handleMessage(cMessage *msg)
 	LOG_DEBUG_LN("Handle inbound message " << msg->getName()
 					<< " of kind " << msg->getKind());
 
+	RecvCallbackMsg * rmsg = NULL;
+	if (rmsg = (dynamic_cast<RecvCallbackMsg *>(msg))) {
+		handleRecvCallback(rmsg->getSocketId());
+		delete rmsg;
+		return;
+	}
+
 	// if self message then it is a timeout
 	if (msg->isSelfMessage())
 	{
@@ -563,8 +570,17 @@ void TCPSocketMgr::recvCallback(socket_id_t id, cb_status_t result,
 }
 void TCPSocketMgr::scheduleRecvCallback(TCPSocketExtension * sock) {
 	int conn = sock->getConnectionId();
-	_app_cb_handler_map[conn]->scheduleRecvCallback(sock);
+
+	RecvCallbackMsg * rc = new RecvCallbackMsg();
+	rc->setSocketId(conn);
+	scheduleAt(simTime(),rc);
+	//_app_cb_handler_map[conn]->scheduleRecvCallback(sock);
 }
+void TCPSocketMgr::handleRecvCallback(int socket_id) {
+	TCPSocketExtension * socket = getSocket(socket_id);
+	socket->doRecvCallback();
+}
+
 //void TCPSocketMgr::closeCallback (socket_id_t id, cb_status_t result,
 //					user_data_ptr_t context)
 //{

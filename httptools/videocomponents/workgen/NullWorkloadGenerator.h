@@ -1,4 +1,3 @@
-// Author: Kevin Black
 //
 // This program is free software: you can redistribute it and/or modify
 // it under the terms of the GNU Lesser General Public License as published by
@@ -14,12 +13,26 @@
 // along with this program.  If not, see http://www.gnu.org/licenses/.
 // 
 
+#ifndef __INET_NULLWORKLOADGENERATOR_H_
+#define __INET_NULLWORKLOADGENERATOR_H_
 
-message SocketTimeoutMsg {
-    int socketId;
-    double timeoutInterval;
-}
-message RecvCallbackMsg {
-	int socketId;
-	string name="RecvCallback";
-}
+#include <omnetpp.h>
+#include "IFileSystem.h"
+#include <string>
+using namespace std;
+/**
+ * TODO - Generated class
+ */
+class NullWorkloadGenerator : public cSimpleModule, public IFileSystem
+{
+  protected:
+    virtual void initialize();
+    virtual void handleMessage(cMessage *msg);
+
+	/** @name Overridden from IFileSystem */
+	//@{
+	virtual bool hasResource(string resource);
+	virtual int getResourceSize(httptRequestMessage * request, string resource);
+};
+
+#endif

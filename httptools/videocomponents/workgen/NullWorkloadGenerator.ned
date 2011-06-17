@@ -1,4 +1,3 @@
-// Author: Kevin Black
 //
 // This program is free software: you can redistribute it and/or modify
 // it under the terms of the GNU Lesser General Public License as published by
@@ -14,12 +13,13 @@
 // along with this program.  If not, see http://www.gnu.org/licenses/.
 // 
 
+package inet.httptools.videocomponents.workgen;
 
-message SocketTimeoutMsg {
-    int socketId;
-    double timeoutInterval;
-}
-message RecvCallbackMsg {
-	int socketId;
-	string name="RecvCallback";
+//
+// This does nothing, allowing VideoServer to do nothing more than
+// provide replies for what the client asks for.
+// replies are length `entity_size', as provided in the message.
+//
+simple NullWorkloadGenerator
+{
 }

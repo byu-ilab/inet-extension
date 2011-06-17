@@ -17,7 +17,7 @@
 
 // From standard C++ libraries
 #include <sstream>
-
+#include <iostream>
 #define OPP_ERROR(DETAILS) opp_error("%s::%s: %s.",__FILE__,__FUNCTION__,DETAILS)
 #define OPP_ERROR_INCONSISTENT_STATE opp_error("%s::%s inconsistent state %s",\
 		__FILE__, __FUNCTION__, stateName(sockstate))
@@ -31,7 +31,7 @@ void TCPSocketExtension::initialize(cb_inet_handler_ptr_t handler,
 		cSimpleModule * scheduler, IPAddressResolver::ResolutionMode mode)
 {
 	LOG_DEBUG_FUN_BEGIN(toString());
-
+	_recv_buffer.setSockId(this->connId);
 	_cb_handler = handler;
 	// setCallbackHandler(handler); // just in case handler is non-NULL
 	_cb_handler_for_accepted = NULL;
@@ -281,7 +281,7 @@ void TCPSocketExtension::send(cMessage *msg)
 	{
 		delete ctrl_info;
 	}
-
+	//std::cout<<"At time="<<simTime()<<", Socket "<<this->connId<<" sending app-message of size "<<PK(msg)->getByteLength()<<" bytes"<<std::endl;
 	TCPSocket::send(msg);
 
 	LOG_DEBUG_FUN_END(toString());
@@ -307,8 +307,11 @@ void TCPSocketExtension::recv (bytecount_t byte_mode)
 	_recv_mode = byte_mode;
 
 	// relative to the byte_mode return something out of the buffer
-	//cPacket * ret_msg = _recv_buffer.extractAvailableBytes(_recv_mode);
-	if (_recv_buffer.isAvailableBytes()) {
+	//
+/*	TA-- first revision: schedule a recv callback if there is available bytes.
+ * Problem: depends on ApplicationModule.
+ */
+    if (_recv_buffer.isAvailableBytes()) {
 		_cb_handler->scheduleRecvCallback(this); // telling Implementer (which happens to be a module) to handle the recv callback on its own time.
 	}
 	else
@@ -319,7 +322,26 @@ void TCPSocketExtension::recv (bytecount_t byte_mode)
 			_timeout_scheduler->scheduleAt(simTime()+_timeout_msg->getTimeoutInterval(), _timeout_msg);
 		}
 	}
-/*	if (ret_msg != NULL)
+
+/*	//TA -- revision 2. Goal: avoid dependency on application.
+
+    if (_recv_buffer.isAvailableBytes())
+	{
+    	_timeout_scheduler->scheduleRecvCallback(this); //TOScheduler is actually the TCPSocketMgr.
+	}
+	else
+	{
+		sockstate = RECEIVING;
+		if (_timeout_msg != NULL)
+		{
+			_timeout_scheduler->scheduleAt(simTime()+_timeout_msg->getTimeoutInterval(), _timeout_msg);
+		}
+	}
+*/
+/*  Original Version: Forward directly up to application (doesn't work with emulator,
+ * because emulator requires that recvCallback operate on separate thread.
+	cPacket * ret_msg = _recv_buffer.extractAvailableBytes(_recv_mode);
+    if (ret_msg != NULL)
 	{
 		// no change in state
 		// TA -- all callbacks need to come from a separate event.

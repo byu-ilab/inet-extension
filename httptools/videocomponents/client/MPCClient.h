@@ -1,4 +1,3 @@
-// Author: Kevin Black
 //
 // This program is free software: you can redistribute it and/or modify
 // it under the terms of the GNU Lesser General Public License as published by
@@ -14,12 +13,23 @@
 // along with this program.  If not, see http://www.gnu.org/licenses/.
 // 
 
+#ifndef __INET_MPCCLIENT_H_
+#define __INET_MPCCLIENT_H_
 
-message SocketTimeoutMsg {
-    int socketId;
-    double timeoutInterval;
-}
-message RecvCallbackMsg {
-	int socketId;
-	string name="RecvCallback";
-}
+#include <omnetpp.h>
+#include "AdaptiveClient.h"
+
+/**
+ * TODO - Generated class
+ */
+class MPCClient : public AdaptiveClient
+{
+  protected:
+    virtual void initialize();
+    virtual void handleMessage(cMessage *msg);
+
+	virtual INetworkControl * createNetwork();
+	virtual IApplicationControl * createApplication();
+};
+
+#endif

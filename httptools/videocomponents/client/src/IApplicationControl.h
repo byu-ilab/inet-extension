@@ -1,4 +1,3 @@
-// Author: Kevin Black
 //
 // This program is free software: you can redistribute it and/or modify
 // it under the terms of the GNU Lesser General Public License as published by
@@ -14,12 +13,30 @@
 // along with this program.  If not, see http://www.gnu.org/licenses/.
 // 
 
+#ifndef IAPPLICATIONCONTROL_H_
+#define IAPPLICATIONCONTROL_H_
 
-message SocketTimeoutMsg {
-    int socketId;
-    double timeoutInterval;
-}
-message RecvCallbackMsg {
-	int socketId;
-	string name="RecvCallback";
-}
+class IModule;
+class INetworkControl;
+class IApplicationControl {
+protected:
+	IModule * module;
+	INetworkControl * network; // module & network may be same
+public:
+	IApplicationControl();
+	virtual ~IApplicationControl();
+
+	void setNetwork(INetworkControl * network) {this->network = network;}
+
+	virtual void connectionInitialized(int connId) = 0;
+
+	virtual void connectionFailed(int connId) = 0;
+
+	virtual void jobFinished(int jobId) = 0;
+
+	virtual void jobProgress(int jobId) = 0;
+
+	virtual void handleCallback() = 0;
+};
+
+#endif /* IAPPLICATIONCONTROL_H_ */

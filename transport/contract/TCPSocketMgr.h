@@ -497,6 +497,7 @@ protected:
     				cPacket * msg, user_data_ptr_t context);
 
 	virtual void scheduleRecvCallback(TCPSocketExtension * socket);
+	void handleRecvCallback(int socket_id);
 //	virtual void closeCallback (socket_id_t id, cb_status_t result,
 //					user_data_ptr_t context);
 

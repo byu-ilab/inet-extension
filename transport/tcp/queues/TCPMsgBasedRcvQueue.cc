@@ -60,7 +60,10 @@ std::string TCPMsgBasedRcvQueue::info() const
 
     return res;
 }
-
+/**
+ * Called when TCP receives a message, and there is still room in the receive buffer
+ * to hold the new data. (freeRecieveBuffer >= tcpseg.byteLength())
+ */
 uint32 TCPMsgBasedRcvQueue::insertBytesFromSegment(TCPSegment *tcpseg)
 {
 	/* KPB +++> */
@@ -100,6 +103,10 @@ uint32 TCPMsgBasedRcvQueue::insertBytesFromSegment(TCPSegment *tcpseg)
     // ---> return rcv_nxt; <---
 }
 
+
+/**
+ * Called when there is not enough room in the receive buffer for this new segment.
+ */
 cPacket *TCPMsgBasedRcvQueue::extractBytesUpTo(uint32 seq)
 {
     extractTo(seq);

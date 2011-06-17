@@ -1,4 +1,3 @@
-// Author: Kevin Black
 //
 // This program is free software: you can redistribute it and/or modify
 // it under the terms of the GNU Lesser General Public License as published by
@@ -14,12 +13,15 @@
 // along with this program.  If not, see http://www.gnu.org/licenses/.
 // 
 
-
-message SocketTimeoutMsg {
-    int socketId;
-    double timeoutInterval;
-}
-message RecvCallbackMsg {
-	int socketId;
-	string name="RecvCallback";
-}
+#ifndef IMODULE_H_
+#define IMODULE_H_
+#include <omnetpp.h>
+class IApplicationControl;
+class IModule {
+public:
+	IModule();
+	virtual ~IModule();
+	virtual void scheduleCallback(SimTime time) = 0;
+	virtual void cancelCallback() = 0;
+};
+#endif /* IMODULE_H_ */

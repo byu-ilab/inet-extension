@@ -102,16 +102,21 @@ public:
 	//@}
 
 
-	/** @name Receive Buffer */
+	/** @name LogicalAppMsgRecord
+	 * TA - The LogicalAppMsgRecord is a class that helps "reconstruct" an application-level
+	 * message in the receive buffer.  As bytes arrive at the application layer via TCP, they
+	 * are recorded here.  As the receive callback is invoked, the LAMR class records how much
+	 * of the app-layer message has been received.
+	 * */
 	//@{
 
 	class LogicalAppMsgRecord
 	{
 	private:
-		cPacket * _message;
-		bytecount_t _expected_bytes;
-		bytecount_t _rcvd_bytes;
-		bytecount_t _extracted_bytes;
+		cPacket * _message; // the app-layer message that is being transmitted.
+		bytecount_t _expected_bytes; // how many bytes are in this app-layer message.
+		bytecount_t _rcvd_bytes; // how many of the bytes corresponding to the message have been received by TCP.
+		bytecount_t _extracted_bytes; // how many of the bytes for the message have been sent up to application layer.
 
 	public:
 		LogicalAppMsgRecord(cPacket* msg, bytecount_t rcvd_so_far);
@@ -123,13 +128,18 @@ public:
 		bytecount_t getOutstandingBytes() const { return _expected_bytes - _rcvd_bytes; }
 		bytecount_t getExtractedBytes() const { return _extracted_bytes; }
 
-		/** @return The number of bytes from @em buffer not needed by this LAMR. */
+		/**
+		 * Insert bytes into receive buffer that have been received by TCP.
+		 * @return The number of bytes from @em buffer not needed by this LAMR.
+		 **/
 		virtual bytecount_t insertBytes(bytecount_t buffer);
 
 		/** Buffer must not be NULL.
 		 *
 		 * If no bytes have been extracted before then the message object will be added
 		 * to the buffer, otherwise just the byte length will be changed.
+		 *
+		 * send bytes that are available up to the application layer.
 		 */
 		virtual bytecount_t extractAvailableBytes(MsgByteBuffer * buffer, bytecount_t max=BYTECOUNT_NULL);
 
@@ -145,7 +155,7 @@ public:
 	{
 	private:
 		std::deque<LogicalAppMsgRecord *> _buffer;
-
+		socket_id_t sock_id;
 	public:
 		ReceiveBuffer();
 		virtual ~ReceiveBuffer();
@@ -153,6 +163,8 @@ public:
 		virtual void insertData(cPacket * msg);
 		virtual cPacket * extractAvailableBytes(bytecount_t recv_mode);
 		virtual bool isAvailableBytes();
+		void setSockId(socket_id_t sock_id) {this->sock_id = sock_id;}
+		socket_id_t getSockId(){return this->sock_id;}
 	protected:
 		virtual cPacket * extractWhole();
 		virtual cPacket * extractInstantMaintainBoundaries();

@@ -1,4 +1,3 @@
-// Author: Kevin Black
 //
 // This program is free software: you can redistribute it and/or modify
 // it under the terms of the GNU Lesser General Public License as published by
@@ -14,12 +13,27 @@
 // along with this program.  If not, see http://www.gnu.org/licenses/.
 // 
 
+#ifndef INETWORKCONTROL_H_
+#define INETWORKCONTROL_H_
+#include "Job.h"
+class IApplicationControl;
+class INetworkControl {
+protected:
+	IApplicationControl * application;
+public:
+	INetworkControl();
+	virtual ~INetworkControl();
+	void setApplication(IApplicationControl * app) {this->application = app;}
 
-message SocketTimeoutMsg {
-    int socketId;
-    double timeoutInterval;
-}
-message RecvCallbackMsg {
-	int socketId;
-	string name="RecvCallback";
-}
+	virtual int addConnection() = 0;
+
+	virtual void cleanupConnection(int connId) = 0;
+
+	virtual void resumeConnectionJobs(int oldConnId, int newConnId) = 0;
+
+	virtual void queueJob(int jobId, int connId, int jobSize) = 0;
+
+	virtual Job * getJobProgress(int jobId) = 0;
+};
+
+#endif /* INETWORKCONTROL_H_ */

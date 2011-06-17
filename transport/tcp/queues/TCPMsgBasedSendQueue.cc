@@ -66,7 +66,7 @@ void TCPMsgBasedSendQueue::enqueueAppData(cPacket *msg)
 {
     //tcpEV << "sendQ: " << info() << " enqueueAppData(bytes=" << msg->getByteLength() << ")\n";
     end += msg->getByteLength();
-
+	//std::cout<<"At time="<<simTime()<<", Socket "<<this->conn->connId<<" extending end from "<<(end -  + msg->getByteLength())<<" to "<<(end)<<" ("<<msg->getByteLength()<<" bytes)"<<std::endl;
     Payload payload;
     payload.endSequenceNo = end;
     payload.msg = msg;

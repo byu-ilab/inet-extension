@@ -15,7 +15,7 @@
 import inet.applications.tcpapp.socketapi.ITCPSocketMgrApp;
 import inet.httptools.base.httptServerBaseInterface;
 
-package inet.httptools.videocomponents;
+package inet.httptools.videocomponents.server;
 
 //
 // VideoServer

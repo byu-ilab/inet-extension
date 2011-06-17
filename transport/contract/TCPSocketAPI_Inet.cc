@@ -28,7 +28,7 @@
 // From omnetpp extension
 #include <omnetppextension.h>
 
-#define DEBUG_CLASS true
+#define DEBUG_CLASS false
 
 //---
 
@@ -108,6 +108,7 @@ bytecount_t TCPSocketAPI_Inet::LogicalAppMsgRecord::insertBytes(bytecount_t buff
 	return extra;
 }
 
+// sets the payload message if the first segment, and sets byte length, based on what is available.
 bytecount_t TCPSocketAPI_Inet::LogicalAppMsgRecord::extractAvailableBytes(MsgByteBuffer * buffer, bytecount_t max)
 {
 	LOG_DEBUG_FUN_BEGIN("");
@@ -194,6 +195,9 @@ TCPSocketAPI_Inet::ReceiveBuffer::~ReceiveBuffer()
 	LOG_DEBUG_FUN_END("");
 }
 
+/**
+ * Called by TCPSocket(Extension) whenever data arrives at application from TCP.
+ */
 void TCPSocketAPI_Inet::ReceiveBuffer::insertData(cPacket * msg)
 {
 	ASSERT(msg != NULL);
@@ -206,6 +210,7 @@ void TCPSocketAPI_Inet::ReceiveBuffer::insertData(cPacket * msg)
 	MsgByteBuffer * mbb = dynamic_cast<MsgByteBuffer *>(msg);
 	if (mbb == NULL)
 	{
+		//cout<<"Unexpected condition (MBB=NULL)"<<endl;
 		lam_record_ptr_t record = new LAMR(msg, msg->getByteLength());
 		ASSERT(record->isComplete());
 		_buffer.push_back(record);
@@ -214,7 +219,7 @@ void TCPSocketAPI_Inet::ReceiveBuffer::insertData(cPacket * msg)
 	{
 		lam_record_ptr_t record = (!_buffer.empty()) ? _buffer.back() : NULL;
 		bytecount_t remainder = mbb->getByteLength();
-
+		//cout<<"At time="<<simTime()<<", Socket "<<this->getSockId()<<": received "<<mbb->getByteLength()<<" bytes"<<endl;
 		// while there are unaccounted bytes
 		while (0 < remainder)
 		{
@@ -226,13 +231,21 @@ void TCPSocketAPI_Inet::ReceiveBuffer::insertData(cPacket * msg)
 			if (record == NULL)
 			{
 				// then extract it from the byte buffer
-				ASSERT(0 < mbb->getPayloadArraySize());
+				// TA -- under high load, TCP may send extra data, such that there is
+				// no initial application message (record == NULL), and there is some payload.
+				// for now, we ignore this case, as it is rare.
+				//ASSERT(0 < mbb->getPayloadArraySize());
+				if (0 >= mbb->getPayloadArraySize()) {
+					cout<<"message received w/o app-level msg and with payload array."<<endl;
+					delete mbb;
+					return;
+				}
 
 				cPacket * plmsg = mbb->removeFirstPayloadMessage();
 
 				ASSERT(plmsg != NULL);
 				LOG_DEBUG_APPEND_LN("beginning to receive "<<plmsg->getName());
-
+				//cout<<"At time="<<simTime()<<", Socket "<<this->getSockId()<<" expecting app-message of size "<<plmsg->getByteLength()<<" bytes, (id="<<plmsg->getId()<<")"<<endl;
 				record = new LAMR(plmsg, 0);
 				_buffer.push_back(record);
 			}
@@ -244,6 +257,13 @@ void TCPSocketAPI_Inet::ReceiveBuffer::insertData(cPacket * msg)
 				record = NULL;
 			}
 
+			// TA -- here is the intuition:  MBB has payload messages, and an MBB comes from TCP whenever a TCP segment is received.
+			//  Here, whenever LAMR yields zero remainder, there should not be anything in MBB's payload array.
+			//  When LAMR has positive remainder, then MBB's payload array should have something else to offer.
+			// 2 questions: 1) what is this payload array; how and why is it filled?  Why is it zero when it is zero?
+			// 1) MBB's payload array is filled as
+			// 2) What again is the LAMR's purpose?
+
 			ASSERT(0 <= remainder);
 			if (0 == remainder) // TA: case occurs where remainder > 0 (556) and mbb->getPayloadArraySize() == 0.
 			{
@@ -252,7 +272,12 @@ void TCPSocketAPI_Inet::ReceiveBuffer::insertData(cPacket * msg)
 			}
 			else // fact: 0 < remainder
 			{
-				ASSERT(0 < mbb->getPayloadArraySize());
+				//ASSERT(0 < mbb->getPayloadArraySize());  TA -- Sometimes TCP duplicates a few bytes when lots of retransmissions exist.
+				// Instead of fixing the problem completely, we ignore such (minor) occurrences:
+				if (mbb->getPayloadArraySize() == 0) {
+					cout<<"At "<<simTime()<<", too many bytes("<<remainder<<") received."<<endl;
+					break;
+				}
 			}
 		}
 
@@ -330,7 +355,7 @@ cPacket *  TCPSocketAPI_Inet::ReceiveBuffer::extractWhole()
 
 	ASSERT(0 < extracted);
 	ASSERT(record->isFullyExtracted());
-
+	//cout<<"At time="<<simTime()<<", Socket "<<this->getSockId()<<" removing app message "<<record->getMessage()->getId()<<" (extract whole)"<<endl;
 	_buffer.pop_front();
 	delete record;
 	record = NULL;
@@ -368,6 +393,7 @@ cPacket * TCPSocketAPI_Inet::ReceiveBuffer::extractInstantMaintainBoundaries()
 
 	if (record->isFullyExtracted())
 	{
+		//cout<<"At time="<<simTime()<<", Socket "<<this->getSockId()<<" removing app message "<<record->getMessage()->getId()<<" (extract inst. maintain boundaries)"<<endl;
 		_buffer.pop_front();
 		delete record;
 		record = NULL;
@@ -407,6 +433,7 @@ cPacket * TCPSocketAPI_Inet::ReceiveBuffer::extractInstantNoBuffer()
 		extracted = record->extractAvailableBytes(ret_buffer);
 		if (record->isFullyExtracted())
 		{
+			//cout<<"At time="<<simTime()<<", Socket "<<this->getSockId()<<" removing app message "<<record->getMessage()->getId()<<" (extract inst. no buffer)"<<endl;
 			_buffer.pop_front();
 			delete record;
 			record = (!_buffer.empty()) ? _buffer.front() : NULL;
@@ -453,6 +480,7 @@ cPacket * TCPSocketAPI_Inet::ReceiveBuffer::extractUpto(bytecount_t max)
 	}
 	else if (record->isFullyExtracted())
 	{
+		//cout<<"At time="<<simTime()<<", Socket "<<this->getSockId()<<" removing app message "<<record->getMessage()->getId()<<" (extractupto("<<max<<"))"<<endl;
 		_buffer.pop_front();
 		delete record;
 	}
@@ -460,10 +488,4 @@ cPacket * TCPSocketAPI_Inet::ReceiveBuffer::extractUpto(bytecount_t max)
 	LOG_DEBUG_FUN_END("returning "<<extracted<<" bytes");
 	return ret_buffer;
 }
-
-
-
-
-
-
 

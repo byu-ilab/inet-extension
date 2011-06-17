@@ -81,7 +81,7 @@ TCPSegment *TCPMsgByteBufferSendQueue::createSegmentWithBytes(uint32 fromSeq, ul
     }
     uint32 toSeq = fromSeq + numBytes;
     const char *payloadName = NULL;
-    while (i!=payloadQueue.end())
+    while (i!=payloadQueue.end()) // queue of (unsent) cMessages sent from app.  (removed from queue when sent)
     {
     	// ===> Main difference from TCPMsgBasedSendQueue
     	uint32 beginSequenceNo = i->endSequenceNo - i->msg->getByteLength();
@@ -117,7 +117,7 @@ TCPSegment *TCPMsgByteBufferSendQueue::createSegmentWithBytes(uint32 fromSeq, ul
 	char msgname[80];
 	if (!payloadName)
 	{
-		sprintf(msgname, "tcpseg(l=%lu,%dmsg)", numBytes, tcpseg->getPayloadArraySize());
+		sprintf(msgname, "tcpseg(l=%lu,%dmsg,e=%lu)", numBytes, tcpseg->getPayloadArraySize(), (tcpseg->getSequenceNo()+numBytes));
 		tcpseg->setName(msgname);
 	}
 	else if (conn->getTcpMain()->shouldTrackDupMessageNames)
@@ -126,10 +126,11 @@ TCPSegment *TCPMsgByteBufferSendQueue::createSegmentWithBytes(uint32 fromSeq, ul
 	}
 	else
 	{
-		sprintf(msgname, "%.10s(l=%lu,%dmsg)", payloadName, numBytes, tcpseg->getPayloadArraySize());
+		sprintf(msgname, "%.10s(l=%lu,%dmsg,e=%lu)", payloadName, numBytes, tcpseg->getPayloadArraySize(), (tcpseg->getSequenceNo()+numBytes));
 		tcpseg->setName(msgname);
 	}
 
+	//cout<<"At time="<<simTime()<<", Socket "<<this->conn->connId<<" creating tcp segment with info: "<<tcpseg->getName()<<""<<endl;
 	LOG_DEBUG_FUN_END("");
     return tcpseg;
 }
