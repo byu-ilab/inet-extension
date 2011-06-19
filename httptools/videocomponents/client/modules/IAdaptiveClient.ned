@@ -13,20 +13,20 @@
 // along with this program.  If not, see http://www.gnu.org/licenses/.
 // 
 
-package inet.httptools.videocomponents.client;
+package inet.httptools.videocomponents.client.modules;
+import inet.applications.tcpapp.socketapi.ITCPSocketMgrApp;
 
-//
-// TODO auto-generated module
-//
-simple MPCClient like IAdaptiveClient
+moduleinterface IAdaptiveClient extends ITCPSocketMgrApp
 {
     parameters:
-        string socketapi;
-        string controller = default("controller");
-        string serverwww = default("server.omnet.net");        
-        string address = default("");
-        int port = default(2000);
-        int httpProtocol = default(11);
- 		int logLevel = default(2);
- 		string logFile = default("");
+        //string socketapi;
+        string controller;// = default("controller");
+        string serverwww;// = default("server.omnet.net");        
+        string address; // = default("");
+        int port; // = default(2000);
+        int httpProtocol; // = default(11);
+ 		int logLevel; // = default(2);
+ 		string logFile; // = default("");
+ 		
+ 		// controller-specific parameters
 }

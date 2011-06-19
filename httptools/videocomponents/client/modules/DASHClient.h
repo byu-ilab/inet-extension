@@ -13,20 +13,23 @@
 // along with this program.  If not, see http://www.gnu.org/licenses/.
 // 
 
-package inet.httptools.videocomponents.client;
-import inet.applications.tcpapp.socketapi.ITCPSocketMgrApp;
+#ifndef __INET_DASHCLIENT_H_
+#define __INET_DASHCLIENT_H_
 
-simple AdaptiveClient like IAdaptiveClient
+#include <omnetpp.h>
+#include "AdaptiveClient.h"
+/**
+ * TODO - Generated class
+ */
+class DASHClient : public AdaptiveClient
 {
-    parameters:
-        string socketapi;
-        string controller = default("controller");
-        string serverwww = default("server.omnet.net");        
-        string address = default("");
-        int port = default(2000);
-        int httpProtocol = default(11);
- 		int logLevel = default(2);
- 		string logFile = default("");
- 		
- 		// controller-specific parameters
-}
+  protected:
+    virtual void initialize();
+    virtual void handleMessage(cMessage *msg);
+
+    /** Must be implemented **/
+	virtual INetworkControl * createNetwork();
+	virtual IApplicationControl * createApplication();
+};
+
+#endif

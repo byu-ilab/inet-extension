@@ -13,7 +13,7 @@
 // along with this program.  If not, see http://www.gnu.org/licenses/.
 // 
 
-package inet.httptools.videocomponents.client;
+package inet.httptools.videocomponents.client.test;
 import inet.httptools.videocomponents.workgen.NullWorkloadGenerator;
 import inet.networklayer.autorouting.FlatNetworkConfigurator;
 import inet.nodes.inet.Router;
