@@ -13,16 +13,18 @@
 // along with this program.  If not, see http://www.gnu.org/licenses/.
 // 
 
-#ifndef IMODULE_H_
-#define IMODULE_H_
-#include <omnetpp.h>
-class IApplicationControl;
-class IModule {
+#ifndef HORIZONTALPOLICY_H_
+#define HORIZONTALPOLICY_H_
+
+#include "IPolicy.h"
+
+class HorizontalPolicy: public IPolicy {
 public:
-	IModule();
-	virtual ~IModule();
-	virtual void scheduleCallback(simtime_t time, short type) = 0;
-	virtual void cancelCallback(short type) = 0;
-	virtual simtime_t getSimTime() = 0;
+	HorizontalPolicy();
+	virtual ~HorizontalPolicy();
+	virtual int selectSegment(ActiveRegion *, VideoPlayback *, double rate);
+private:
+	int findMinQuality(ActiveRegion * buffer, int N); // finds min quality in future segments of video
 };
-#endif /* IMODULE_H_ */
+
+#endif /* HORIZONTALPOLICY_H_ */

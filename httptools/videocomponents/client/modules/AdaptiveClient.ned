@@ -28,5 +28,6 @@ simple AdaptiveClient like IAdaptiveClient
  		int logLevel = default(2);
  		string logFile = default("");
  		
+ 		double startTime @unit(s);
  		// controller-specific parameters
 }

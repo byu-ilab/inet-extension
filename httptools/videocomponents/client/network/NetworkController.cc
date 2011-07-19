@@ -36,6 +36,9 @@ int NetworkController::addConnection() {
 	sockets[s] = new Worker(s);
 	return s;
 }
+/**
+ * Cleans up jobs associated with this connection.
+ */
 void NetworkController::cleanupConnection(int connId) {
 	SocketMap::iterator finder = sockets.find(connId);
 	ASSERT(finder != sockets.end());
@@ -44,7 +47,9 @@ void NetworkController::cleanupConnection(int connId) {
 	delete socketInfo;
 	sockets.erase(finder);
 }
-
+void NetworkController::closeConnection(int connId) {
+	socketmgr->close(connId);
+}
 void NetworkController::resumeConnectionJobs(int oldConnId, int newConnId) {
 	SocketMap::iterator finder = sockets.find(oldConnId);
 	ASSERT(finder != sockets.end());

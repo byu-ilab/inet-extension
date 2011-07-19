@@ -34,4 +34,7 @@ simple DASHClient like IAdaptiveClient
  		int k = default(2); // seconds per chunk
  		int numQualities = default(10);
  		int bytesPerQuality = default(10000); // assumed linear increase in bytes per quality.
+ 		int numSegments; // duration of video
+ 		int bufferSize; // buffer size, in segments
+ 		double startTime @unit(s) = default(1s);
 }

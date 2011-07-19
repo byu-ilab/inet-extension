@@ -82,6 +82,13 @@ public:
 	virtual void cleanupConnection(int connId);
 
 	/**
+	 * closes a connection (removes all jobs).
+	 *
+	 * @pre socket must have failed/timed out, then close must have been called.
+	 */
+	virtual void closeConnection(int connId);
+
+	/**
 	 * resume all jobs on connection oldConn using the connection newConnId
 	 * Assumption: the only reason that a connection stops is due to socket failure.
 	 * @pre oldConnId, newConnId are existing, valid socket ids.

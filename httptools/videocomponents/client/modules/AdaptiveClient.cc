@@ -14,10 +14,9 @@
 // 
 
 #include "AdaptiveClient.h"
-#include "ModelPredictiveController.h"
 #include "NetworkController.h"
 #include "IModule.h"
-
+#include "IApplicationControl.h"
 Define_Module(AdaptiveClient);
 
 AdaptiveClient::AdaptiveClient() {
@@ -30,18 +29,22 @@ AdaptiveClient::~AdaptiveClient() {
 /** Inherited from cSimpleModule **/
 void AdaptiveClient::initialize()
 {
+	SimTime startTime = par("startTime");
 	network = this->createNetwork(); //new NetworkController(this);
 	application = this->createApplication(); //new ModelPredictiveController(this);
 	network->setApplication(application);
 	application->setNetwork(network);
-	appCallback = new cMessage("AppCallback");
-	scheduleAt(simTime()+1, appCallback);
+	//scheduleAt(startTime, new cMessage("AppCallback", 0)); To be done within implementations.
 }
 
 void AdaptiveClient::handleMessage(cMessage *msg)
 {
-	if (msg == appCallback) {
-		application->handleCallback();
+	if (msg->isSelfMessage()) {
+		map<short, cMessage*>::iterator finder = callbacks.find(msg->getKind());
+		ASSERT(finder != callbacks.end());
+		delete finder->second;
+		callbacks.erase(finder);
+		application->handleCallback(msg->getKind());
 	} else {
 		// don't know what this is for...
 		error("Could not determine what message was.");
@@ -50,19 +53,38 @@ void AdaptiveClient::handleMessage(cMessage *msg)
 }
 void AdaptiveClient::finish()
 {
+	Enter_Method_Silent();
 	delete application;
 	delete network;
-	cancelAndDelete(appCallback);
+	map<short, cMessage*>::iterator it = callbacks.begin();
+	for (; it != callbacks.end(); it++) {
+		cancelAndDelete(it->second);
+	}
+	callbacks.clear();
 }
 
 
 /** Inherited from IModule **/
-void AdaptiveClient::scheduleCallback(SimTime time) {
-	scheduleAt(time, appCallback);
+void AdaptiveClient::scheduleCallback(simtime_t time, short type) {
+	Enter_Method_Silent();
+	map<short, cMessage*>::iterator finder = callbacks.find(type);
+	ASSERT(finder == callbacks.end());
+	cMessage * cb = new cMessage("AppCallback", type);
+	callbacks[type] = cb;
+	scheduleAt(time, cb);
 }
-void AdaptiveClient::cancelCallback() {
-	cancelEvent(appCallback);
+void AdaptiveClient::cancelCallback(short type) {
+	Enter_Method_Silent();
+	map<short, cMessage*>::iterator finder = callbacks.find(type);
+	if (finder != callbacks.end()) {
+		cancelAndDelete(finder->second);
+		callbacks.erase(finder);
+	}
 }
+simtime_t AdaptiveClient::getSimTime() {
+	return simTime();
+}
+
 INetworkControl * AdaptiveClient::createNetwork() {
 	error("Must override this function in descendant class.");
 	return NULL;

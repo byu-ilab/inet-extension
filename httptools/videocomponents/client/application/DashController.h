@@ -18,16 +18,56 @@
 
 #include <omnetpp.h>
 #include "IApplicationControl.h"
+#include "INetworkControl.h"
+#include "IModule.h"
+class DashState;
+
+struct Playback {
+	enum {PENDING, PAUSED, PLAYING} Status;
+	Playback():Status(PENDING),currSegment(-1),currSegmentStart(0) {}
+	int currSegment;
+	SimTime currSegmentStart;
+};
+struct Download {
+	Download() {segment = 0;reset();}
+	void reset() {DLStatus = PENDING; lastRecvTime = 0;}
+	enum {PENDING,PAUSED,DOWNLOADING,COMPLETE} DLStatus;
+	int segment;
+	SimTime lastRecvTime; // time of last received packet.
+};
 
 class DashController: public IApplicationControl {
 private:
 	IModule * module;
-	int numSockets;
+	int numSockets; // Todo: change implementation to support multiple sockets.
 	int bytesPerQuality;
 	int k;
+	int numSegments;
+	int bufferSize;
+	int nextSegId;
+	int pausedSegmentConn; // -1 means nothing is paused.
+	int currentConn; // connection currently used.
+	Playback playback;
+	Download currentDownload;
+	double rate; // estimated weight
+	double alpha; // ewma weight for current measurement. (0 <= alpha <= 1)
+
 public:
 	DashController(IModule * module, cSimpleModule * mainModule);
 	virtual ~DashController();
+
+	/**
+	 * Helper functions
+	 */
+	void setConnection(int connId); // set current connection.
+	bool isBufferFull(); // is the wait buffer full
+	void pauseSegmentDownload(int connId); // signals a paused download
+	void segmentComplete(int jobId); // signals completion of a segment
+	bool isVideoDownloaded(); // well, is it?
+	void closeConnections(); // close all connections (assume that they are not working).
+	void waitUntilBufferEmpty(); // schedules a callback when playback reaches new segment.
+	void requestNextSegment(); // either resumes segment, or picks a new segment to download.
+	void measureSpeed(int jobId); // measures job speed.
 
 	/** IApplicationControl Functions **/
 	/**
@@ -55,7 +95,13 @@ public:
 	/**
 	 * handles callback from application.
 	 */
-	virtual void handleCallback();
+	virtual void handleCallback(short type);
+private:
+	friend class DashState;
+	DashState * _state;
+public:
+
+	void ChangeState(DashState*);
 };
 
 #endif /* DASHCONTROLLER_H_ */

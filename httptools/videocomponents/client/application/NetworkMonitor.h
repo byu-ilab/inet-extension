@@ -13,16 +13,28 @@
 // along with this program.  If not, see http://www.gnu.org/licenses/.
 // 
 
-#ifndef IMODULE_H_
-#define IMODULE_H_
+#ifndef NETWORKMONITOR_H_
+#define NETWORKMONITOR_H_
 #include <omnetpp.h>
-class IApplicationControl;
-class IModule {
+class NetworkMonitor {
+private:
+	double rtt; // seconds
+	double rate; // bps
+	double rtt_alpha; // params for ewmas.
+	double rate_alpha;
+	simtime_t last_recv_time; // time of last received packet.
+	int last_recv_bytes; // bytes received since last rate update.
+	simtime_t send_time; // time of sending packet measuring rtt.
 public:
-	IModule();
-	virtual ~IModule();
-	virtual void scheduleCallback(simtime_t time, short type) = 0;
-	virtual void cancelCallback(short type) = 0;
-	virtual simtime_t getSimTime() = 0;
+	NetworkMonitor();
+	virtual ~NetworkMonitor();
+	void setLastSendTime(simtime_t lastSendTime);
+	bool rttMeasurementPending();
+	void updateRate();
+	void updateRTT();
+	double getNextRequestTime(int remainingBytes);
+	void receivedBytes(int numBytes);
+	double getRate() {return rate;}
 };
-#endif /* IMODULE_H_ */
+
+#endif /* NETWORKMONITOR_H_ */

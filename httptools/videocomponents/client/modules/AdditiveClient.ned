@@ -14,20 +14,26 @@
 // 
 
 package inet.httptools.videocomponents.client.modules;
-import inet.applications.tcpapp.socketapi.ITCPSocketMgrApp;
 
-moduleinterface IAdaptiveClient extends ITCPSocketMgrApp
+//
+// TODO auto-generated module
+//
+simple AdditiveClient like IAdaptiveClient
 {
     parameters:
-        //string socketapi;
-        string controller;// = default("controller");
-        string serverwww;// = default("server.omnet.net");        
-        string address; // = default("");
-        int port; // = default(2000);
-        int httpProtocol; // = default(11);
- 		int logLevel; // = default(2);
- 		string logFile; // = default("");
+        string socketapi;
+        string controller = default("controller");
+        string serverwww = default("server.omnet.net");
+        string address = default("");
+        int port = default(2000);
+        int httpProtocol = default(11);
+ 		int logLevel = default(2);
+ 		string logFile = default("");
  		
- 		double startTime @unit(s);
- 		// controller-specific parameters
+ 		int numSockets = default(1);
+ 		double segmentDuration @unit(s) = default(2s); // seconds per chunk
+ 		string policy = default("vertical");
+ 		int blockSize = default(10000); // assumed linear increase in bytes per quality.
+ 		int numSegments = default(7); // duration of video
+ 		double startTime @unit(s) = default(1s);
 }

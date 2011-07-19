@@ -35,7 +35,7 @@ network TestNetwork
         }
         channel C2 extends DatarateChannel
         {
-            datarate = 30bps;
+            datarate = 1Mbps;
             delay = 1ms;
         }
     submodules:

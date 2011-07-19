@@ -13,23 +13,26 @@
 // along with this program.  If not, see http://www.gnu.org/licenses/.
 // 
 
-#include "MPCClient.h"
-#include "ModelPredictiveController.h"
-#include "NetworkController.h"
-Define_Module(MPCClient);
+#ifndef VIDEOPLAYBACK_H_
+#define VIDEOPLAYBACK_H_
+#include "ActiveRegion.h"
+#include <omnetpp.h>
+enum PlaybackState {IDLE, WATCH, WATCH_LAST, BUFFER, END};
+class VideoPlayback {
+private:
+	PlaybackState state;
+	int currSegment, numSegments;
+	cSimpleModule * host;
+public:
+	VideoPlayback(int numSegments, cSimpleModule * host);
+	virtual ~VideoPlayback();
+	bool videoComplete();
+	int getHeadPosition() {return currSegment;}
+	bool canDownload(); // true if we are not in last segment or done.
+	void networkReady(ActiveRegion *);
+	int advanceHead(ActiveRegion *);
+	bool videoBuffering();
+	int getNumSegments() {return numSegments;}
+};
 
-void MPCClient::initialize()
-{
-    AdaptiveClient::initialize();
-}
-
-void MPCClient::handleMessage(cMessage *msg)
-{
-    AdaptiveClient::handleMessage(msg);
-}
-INetworkControl * MPCClient::createNetwork() {
-	return new NetworkController(this);
-}
-IApplicationControl * MPCClient::createApplication() {
-	return new ModelPredictiveController(this);
-}
+#endif /* VIDEOPLAYBACK_H_ */

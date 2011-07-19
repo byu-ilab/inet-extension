@@ -38,7 +38,7 @@ private:
 	IApplicationControl * application;
 	INetworkControl * network;
 
-	cMessage * appCallback;
+	map<short,cMessage*> callbacks;
 
 public:
 	AdaptiveClient();
@@ -51,8 +51,9 @@ protected:
 
 
     /** Inherited from IModule **/
-	virtual void scheduleCallback(SimTime time);
-	virtual void cancelCallback();
+	virtual void scheduleCallback(simtime_t time, short type);
+	virtual void cancelCallback(short type);
+	virtual simtime_t getSimTime();
 
 	/** Makes it possible to build different client types **/
 	virtual INetworkControl * createNetwork();

@@ -13,23 +13,16 @@
 // along with this program.  If not, see http://www.gnu.org/licenses/.
 // 
 
-#ifndef __INET_MPCCLIENT_H_
-#define __INET_MPCCLIENT_H_
+#include "VerticalPolicy.h"
 
-#include <omnetpp.h>
-#include "AdaptiveClient.h"
+VerticalPolicy::VerticalPolicy() {
 
-/**
- * TODO - Generated class
- */
-class MPCClient : public AdaptiveClient
-{
-  protected:
-    virtual void initialize();
-    virtual void handleMessage(cMessage *msg);
 
-	virtual INetworkControl * createNetwork();
-	virtual IApplicationControl * createApplication();
-};
+}
 
-#endif
+VerticalPolicy::~VerticalPolicy() {
+
+}
+int VerticalPolicy::selectSegment(ActiveRegion * buffer, VideoPlayback * playback, double rate) {
+	return buffer->getNextSegment();
+}

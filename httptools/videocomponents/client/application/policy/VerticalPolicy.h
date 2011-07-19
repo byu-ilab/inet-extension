@@ -13,16 +13,16 @@
 // along with this program.  If not, see http://www.gnu.org/licenses/.
 // 
 
-#ifndef IMODULE_H_
-#define IMODULE_H_
-#include <omnetpp.h>
-class IApplicationControl;
-class IModule {
+#ifndef VERTICALPOLICY_H_
+#define VERTICALPOLICY_H_
+
+#include "IPolicy.h"
+
+class VerticalPolicy: public IPolicy {
 public:
-	IModule();
-	virtual ~IModule();
-	virtual void scheduleCallback(simtime_t time, short type) = 0;
-	virtual void cancelCallback(short type) = 0;
-	virtual simtime_t getSimTime() = 0;
+	VerticalPolicy();
+	virtual ~VerticalPolicy();
+	virtual int selectSegment(ActiveRegion *, VideoPlayback *, double rate);
 };
-#endif /* IMODULE_H_ */
+
+#endif /* VERTICALPOLICY_H_ */

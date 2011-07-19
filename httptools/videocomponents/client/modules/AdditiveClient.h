@@ -13,16 +13,23 @@
 // along with this program.  If not, see http://www.gnu.org/licenses/.
 // 
 
-#ifndef IMODULE_H_
-#define IMODULE_H_
+#ifndef __INET_ADDITIVECLIENT_H_
+#define __INET_ADDITIVECLIENT_H_
+
 #include <omnetpp.h>
-class IApplicationControl;
-class IModule {
-public:
-	IModule();
-	virtual ~IModule();
-	virtual void scheduleCallback(simtime_t time, short type) = 0;
-	virtual void cancelCallback(short type) = 0;
-	virtual simtime_t getSimTime() = 0;
+#include "AdaptiveClient.h"
+/**
+ * TODO - Generated class
+ */
+class AdditiveClient : public AdaptiveClient
+{
+  protected:
+    virtual void initialize();
+    virtual void handleMessage(cMessage *msg);
+
+    /** Must be implemented **/
+	virtual INetworkControl * createNetwork();
+	virtual IApplicationControl * createApplication();
 };
-#endif /* IMODULE_H_ */
+
+#endif

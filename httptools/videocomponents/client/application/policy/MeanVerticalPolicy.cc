@@ -13,16 +13,24 @@
 // along with this program.  If not, see http://www.gnu.org/licenses/.
 // 
 
-#ifndef IMODULE_H_
-#define IMODULE_H_
-#include <omnetpp.h>
-class IApplicationControl;
-class IModule {
-public:
-	IModule();
-	virtual ~IModule();
-	virtual void scheduleCallback(simtime_t time, short type) = 0;
-	virtual void cancelCallback(short type) = 0;
-	virtual simtime_t getSimTime() = 0;
-};
-#endif /* IMODULE_H_ */
+#include "MeanVerticalPolicy.h"
+#include <math.h>
+
+MeanVerticalPolicy::MeanVerticalPolicy() {
+
+}
+
+MeanVerticalPolicy::~MeanVerticalPolicy() {
+	// TODO Auto-generated destructor stub
+}
+int MeanVerticalPolicy::selectSegment(ActiveRegion *buffer, VideoPlayback *playback, double rate) {
+	int N = playback->getNumSegments();
+	double index = N * (1.0 - (rate - (int)rate));
+	int nextIndex = buffer->getNextSegment();
+	for (int i=nextIndex; i < N; i++) {
+		if (buffer->expectedQualityAt(i) < (i < index ? floor(rate): ceil(rate))) {
+			return i;
+		}
+	}
+	return nextIndex;
+}

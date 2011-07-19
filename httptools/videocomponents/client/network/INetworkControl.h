@@ -29,6 +29,8 @@ public:
 
 	virtual void cleanupConnection(int connId) = 0;
 
+	virtual void closeConnection(int connId) = 0;
+
 	virtual void resumeConnectionJobs(int oldConnId, int newConnId) = 0;
 
 	virtual void queueJob(int jobId, int connId, int jobSize) = 0;

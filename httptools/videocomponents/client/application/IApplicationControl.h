@@ -15,19 +15,18 @@
 
 #ifndef IAPPLICATIONCONTROL_H_
 #define IAPPLICATIONCONTROL_H_
-
-class IModule;
-class INetworkControl;
+#include "IModule.h"
+#include "INetworkControl.h"
 class IApplicationControl {
 protected:
 	IModule * module;
-	INetworkControl * network; // module & network may be same
+	INetworkControl * network;
 public:
 	IApplicationControl();
 	virtual ~IApplicationControl();
 
 	void setNetwork(INetworkControl * network) {this->network = network;}
-
+	INetworkControl * getNetwork() {return network;}
 	virtual void connectionInitialized(int connId) = 0;
 
 	virtual void connectionFailed(int connId) = 0;
@@ -36,7 +35,7 @@ public:
 
 	virtual void jobProgress(int jobId) = 0;
 
-	virtual void handleCallback() = 0;
+	virtual void handleCallback(short type) = 0;
 };
 
 #endif /* IAPPLICATIONCONTROL_H_ */

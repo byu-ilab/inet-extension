@@ -13,20 +13,24 @@
 // along with this program.  If not, see http://www.gnu.org/licenses/.
 // 
 
-package inet.httptools.videocomponents.client.modules;
+#include "AdditiveClient.h"
+#include "NetworkController.h"
+#include "AdditiveController.h"
 
-//
-// TODO auto-generated module
-//
-simple MPCClient like IAdaptiveClient
+Define_Module(AdditiveClient);
+
+void AdditiveClient::initialize()
 {
-    parameters:
-        string socketapi;
-        string controller = default("controller");
-        string serverwww = default("server.omnet.net");        
-        string address = default("");
-        int port = default(2000);
-        int httpProtocol = default(11);
- 		int logLevel = default(2);
- 		string logFile = default("");
+    AdaptiveClient::initialize();
+}
+
+void AdditiveClient::handleMessage(cMessage *msg)
+{
+    AdaptiveClient::handleMessage(msg);
+}
+INetworkControl * AdditiveClient::createNetwork() {
+	return new NetworkController(this);
+}
+IApplicationControl * AdditiveClient::createApplication() {
+	return new AdditiveController(this,this);
 }
