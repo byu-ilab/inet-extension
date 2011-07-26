@@ -21,10 +21,11 @@ enum PlaybackState {IDLE, WATCH, WATCH_LAST, BUFFER, END};
 class VideoPlayback {
 private:
 	PlaybackState state;
-	int currSegment, numSegments;
+	int currSegment, numSegments, segmentDuration;
 	cSimpleModule * host;
+	simtime_t lastPlaybackAdvance;
 public:
-	VideoPlayback(int numSegments, cSimpleModule * host);
+	VideoPlayback(int numSegments, double segmentDuration, cSimpleModule * host);
 	virtual ~VideoPlayback();
 	bool videoComplete();
 	int getHeadPosition() {return currSegment;}
@@ -33,6 +34,9 @@ public:
 	int advanceHead(ActiveRegion *);
 	bool videoBuffering();
 	int getNumSegments() {return numSegments;}
+	double getExactHeadPosition(); // returns the fractional value plus head position.
+	void getReady(); // called the first time, segDuration before video starts.
+	double getSegmentDuration() {return segmentDuration;}
 };
 
 #endif /* VIDEOPLAYBACK_H_ */

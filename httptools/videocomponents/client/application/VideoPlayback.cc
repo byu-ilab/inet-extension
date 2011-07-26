@@ -14,12 +14,13 @@
 // 
 
 #include "VideoPlayback.h"
-
-VideoPlayback::VideoPlayback(int numSegments, cSimpleModule * host) {
+VideoPlayback::VideoPlayback(int numSegments, double segmentDuration, cSimpleModule * host) {
 	this->numSegments = numSegments;
 	this->host = host;
 	this->currSegment = -1;
+	this->segmentDuration = segmentDuration;
 	this->state = IDLE;
+	lastPlaybackAdvance = MAXTIME;
 }
 
 VideoPlayback::~VideoPlayback() {
@@ -50,6 +51,8 @@ int VideoPlayback::advanceHead(ActiveRegion * buffer) {
 			quality = buffer->shift();
 		}
 		++currSegment;
+		lastPlaybackAdvance = simTime();
+		//cout<<"At t="<<lastPlaybackAdvance<<", advancing head to "<<currSegment<<endl;
 		if (currSegment == numSegments - 1) {
 			state = WATCH_LAST;
 		} else if (currSegment == numSegments) {
@@ -58,4 +61,15 @@ int VideoPlayback::advanceHead(ActiveRegion * buffer) {
 	}
 	return quality;
 }
-
+void VideoPlayback::getReady() {
+	lastPlaybackAdvance = simTime();
+	//cout<<"At t="<<lastPlaybackAdvance<<", advancing head to "<<currSegment<<endl;
+}
+double VideoPlayback::getExactHeadPosition() {
+	double delta = (simTime() - lastPlaybackAdvance).dbl() / segmentDuration;
+	ASSERT(delta >= 0.0);
+	if (delta > 1.0) {
+		delta = 1.0;
+	}
+	return currSegment + delta;
+}

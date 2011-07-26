@@ -22,8 +22,8 @@ class HorizontalPolicy: public IPolicy {
 public:
 	HorizontalPolicy();
 	virtual ~HorizontalPolicy();
-	virtual int selectSegment(ActiveRegion *, VideoPlayback *, double rate);
 private:
+	virtual int _selectSegment(ActiveRegion *, VideoPlayback *, NetworkMonitor * monitor);
 	int findMinQuality(ActiveRegion * buffer, int N); // finds min quality in future segments of video
 };
 

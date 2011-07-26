@@ -33,7 +33,7 @@ int HorizontalPolicy::findMinQuality(ActiveRegion * buffer, int N) {
 	}
 	return minQuality;
 }
-int HorizontalPolicy::selectSegment(ActiveRegion *buffer, VideoPlayback *playback, double rate) {
+int HorizontalPolicy::_selectSegment(ActiveRegion *buffer, VideoPlayback *playback, NetworkMonitor * monitor) {
 
 	int N = playback->getNumSegments();
 	int minQuality = findMinQuality(buffer, N);

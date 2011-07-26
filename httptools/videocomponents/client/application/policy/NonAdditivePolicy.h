@@ -13,17 +13,20 @@
 // along with this program.  If not, see http://www.gnu.org/licenses/.
 // 
 
-#ifndef VERTICALPOLICY_H_
-#define VERTICALPOLICY_H_
+#ifndef NONADDITIVEPOLICY_H_
+#define NONADDITIVEPOLICY_H_
 
 #include "IPolicy.h"
 
-class VerticalPolicy: public IPolicy {
-public:
-	VerticalPolicy();
-	virtual ~VerticalPolicy();
+class NonAdditivePolicy: public IPolicy {
 private:
+	Codec * codec;
+	double targetCompletionPosition; // segment position in [0,1] by which a job 'should' be complete by.
 	virtual int _selectSegment(ActiveRegion *, VideoPlayback *, NetworkMonitor * monitor);
+public:
+	NonAdditivePolicy(double completionPos, Codec * codec);
+	virtual ~NonAdditivePolicy();
+	virtual int selectSegment(Codec *,ActiveRegion *, VideoPlayback *, NetworkMonitor *);
 };
 
-#endif /* VERTICALPOLICY_H_ */
+#endif /* NONADDITIVEPOLICY_H_ */

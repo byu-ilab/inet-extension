@@ -15,20 +15,18 @@
 
 #include "DiagonalPolicy.h"
 #include <limits>
-DiagonalPolicy::DiagonalPolicy() {
-	// TODO Auto-generated constructor stub
-
+DiagonalPolicy::DiagonalPolicy(double slope) {
+	ASSERT(slope < 0);
+	this->slope = slope;
 }
 
 DiagonalPolicy::~DiagonalPolicy() {
 	// TODO Auto-generated destructor stub
 }
-int DiagonalPolicy::selectSegment(ActiveRegion *buffer, VideoPlayback *playback, double rate) {
-	double slope = -1;
-
+int DiagonalPolicy::_selectSegment(ActiveRegion *buffer, VideoPlayback *playback, NetworkMonitor * monitor) {
 	int nextIndex = buffer->getNextSegment();
 	int last = findFirstZeroSegment(buffer, buffer->getNextSegment(), playback->getNumSegments());
-
+	//cout<<"Last: "<<last<<endl;
 	int index = nextIndex;
 	double minVal = numeric_limits<double>::max();
 	for (int i = nextIndex; i <= last; i++) {

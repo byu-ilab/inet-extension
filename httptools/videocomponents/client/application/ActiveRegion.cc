@@ -14,8 +14,10 @@
 // 
 
 #include "ActiveRegion.h"
+#include "NetworkMonitor.h"
+#include "VideoPlayback.h"
 
-ActiveRegion::ActiveRegion(): nextSegment(0) {
+ActiveRegion::ActiveRegion(double segmentDuration):segmentDuration(segmentDuration), nextSegment(0), offset(0) {
 }
 
 ActiveRegion::~ActiveRegion() {
@@ -56,13 +58,14 @@ int ActiveRegion::qualityAt(int segment) {
 }
 
 int ActiveRegion::expectedQualityAt(int segment) {
-	ASSERT(segment >= nextSegment);
+	int ns = nextSegment - offset; // get true 'nextSegment'
+	ASSERT(segment >= ns);
 	if (expectedRegion.size() == 0) {
 		return 0;
-	} else if (segment >= nextSegment + expectedRegion.size()) {
+	} else if (segment >= ns + expectedRegion.size()) {
 		return 0;
 	} else {
-		return expectedRegion[segment - nextSegment];
+		return expectedRegion[segment - ns];
 	}
 }
 void ActiveRegion::requestedBlock(int segment) {
@@ -73,4 +76,56 @@ void ActiveRegion::requestedBlock(int segment) {
 	} else {
 		expectedRegion[segment - nextSegment]+= 1;
 	}
+}
+int ActiveRegion::getSize() {
+	int total = 0;
+	vector<int>::iterator it = region.begin();
+	for(; it != region.end(); it++) {
+		total += *it;
+	}
+	return total;
+}
+int ActiveRegion::advance(Codec * codec, VideoPlayback * playback, NetworkMonitor * monitor) {
+	int offset_l = 0;
+	for (int i=nextSegment; i < playback->getNumSegments(); i++,offset_l++) {
+		if (expectedQualityAt(i) == 0) {
+			break;
+		}
+		int quality = expectedQualityAt(i) + 1;
+		int blockSizeBytes = codec->getBlockSize(i, quality);
+		double completionTime =(monitor->getRTT() + ( 8.0 * blockSizeBytes / monitor->getRate()));
+		double completionSegmentOffset = completionTime / segmentDuration;
+		double head = playback->getExactHeadPosition();
+		bool offsetInsufficient = floor(head + completionSegmentOffset) - floor(head) > offset_l;
+		if (!offsetInsufficient) {
+			break;
+		}
+
+	}
+	/*if (expectedQualityAt(nextSegment) > 0) {
+		double completionTime =(monitor->getRTT() + ( 8.0 * blockSize / monitor->getRate()));
+		//cout<<"At "<<simTime()<<", completionTime is "<<completionTime<<endl;
+		double completionSegmentOffset = completionTime / segmentDuration;
+		double head = playback->getExactHeadPosition();
+		offset_l = floor(head + completionSegmentOffset) - floor(head);
+
+		// move the offset back so that it's not after any zero segments.
+		for (; offset_l>0; offset_l-- ){
+			if (expectedQualityAt(nextSegment + offset_l - 1) > 0) {
+				break;
+			}
+		}
+	}*/
+	nextSegment += offset_l;
+	offset = offset_l;
+	return offset_l;
+}
+void ActiveRegion::retreat() {
+	nextSegment -= offset;
+	offset = 0;
+}
+int ActiveRegion::getNextExpectedZeroSegment() {
+	int i=nextSegment;
+	for (;expectedQualityAt(i)>0;i++);
+	return i;
 }

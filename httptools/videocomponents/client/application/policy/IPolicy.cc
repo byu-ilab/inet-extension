@@ -14,7 +14,7 @@
 // 
 
 #include "IPolicy.h"
-
+#include <omnetpp.h>
 IPolicy::IPolicy() {
 	// TODO Auto-generated constructor stub
 
@@ -22,4 +22,14 @@ IPolicy::IPolicy() {
 
 IPolicy::~IPolicy() {
 	// TODO Auto-generated destructor stub
+}
+
+int IPolicy::selectSegment(Codec * codec, ActiveRegion *buffer, VideoPlayback *playback, NetworkMonitor * monitor) {
+	int offset = buffer->advance(codec, playback, monitor);
+	int segment = this->_selectSegment(buffer, playback, monitor);
+	buffer->retreat();
+	//cout<<"Selecting "<<segment<<", offset of "<<offset;
+	buffer->requestedBlock(segment);
+	//cout<<", Running total for segment: "<<buffer->expectedQualityAt(segment)<<endl;
+	return segment;
 }

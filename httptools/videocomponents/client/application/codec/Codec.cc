@@ -13,17 +13,13 @@
 // along with this program.  If not, see http://www.gnu.org/licenses/.
 // 
 
-#ifndef VERTICALPOLICY_H_
-#define VERTICALPOLICY_H_
+#include "Codec.h"
 
-#include "IPolicy.h"
+Codec::Codec() {
+	// TODO Auto-generated constructor stub
 
-class VerticalPolicy: public IPolicy {
-public:
-	VerticalPolicy();
-	virtual ~VerticalPolicy();
-private:
-	virtual int _selectSegment(ActiveRegion *, VideoPlayback *, NetworkMonitor * monitor);
-};
+}
 
-#endif /* VERTICALPOLICY_H_ */
+Codec::~Codec() {
+	// TODO Auto-generated destructor stub
+}

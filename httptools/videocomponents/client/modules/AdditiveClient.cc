@@ -16,7 +16,7 @@
 #include "AdditiveClient.h"
 #include "NetworkController.h"
 #include "AdditiveController.h"
-
+#include "MultiSockets.h"
 Define_Module(AdditiveClient);
 
 void AdditiveClient::initialize()
@@ -29,7 +29,13 @@ void AdditiveClient::handleMessage(cMessage *msg)
     AdaptiveClient::handleMessage(msg);
 }
 INetworkControl * AdditiveClient::createNetwork() {
-	return new NetworkController(this);
+	int numSockets = par("numSockets");
+	cout<<"Num Sockets: "<<numSockets<<endl;
+	if (numSockets == 1) {
+		return new NetworkController(this);
+	} else {
+		return new MultiSockets(this, par("numSockets"));
+	}
 }
 IApplicationControl * AdditiveClient::createApplication() {
 	return new AdditiveController(this,this);

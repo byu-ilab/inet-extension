@@ -16,10 +16,14 @@
 #ifndef NETWORKMONITOR_H_
 #define NETWORKMONITOR_H_
 #include <omnetpp.h>
+#include <iostream>
+using namespace std;
 class NetworkMonitor {
 private:
 	double rtt; // seconds
 	double rate; // bps
+	int totalBytes; //
+	double timeElapsed;
 	double rtt_alpha; // params for ewmas.
 	double rate_alpha;
 	simtime_t last_recv_time; // time of last received packet.
@@ -35,6 +39,8 @@ public:
 	double getNextRequestTime(int remainingBytes);
 	void receivedBytes(int numBytes);
 	double getRate() {return rate;}
+	double getMeanRate() {if (timeElapsed == 0) return 0;return 8.0 * totalBytes / timeElapsed;}
+	double getRTT() {return rtt;}
 };
 
 #endif /* NETWORKMONITOR_H_ */

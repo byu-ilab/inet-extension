@@ -17,25 +17,35 @@
 #define ACTIVEREGION_H_
 #include <vector>
 #include <omnetpp.h>
+#include "Codec.h"
 using namespace std;
+class VideoPlayback;
+class NetworkMonitor;
 class ActiveRegion {
 private:
 	vector<int> region; // region mapping future segments to qualities
 
 	/* active region accounting for both received and anticipated qualities */
 	vector<int> expectedRegion;
+	//int blockSize;
+	int segmentDuration;
 	int nextSegment; // 0-based index of next segment to be played
+	int offset; // used to change appearance of active region for the policy.
+				// important in expectedQualityAt() method.
 public:
-	ActiveRegion();
+	ActiveRegion(double segmentDuration);
 	virtual ~ActiveRegion();
 	int shift();
 	bool hasAvailableVideo();
 	bool receivedBlock(int segment); // signal a block received. True iff block arrived on time.
 	int getNextSegment() {return nextSegment;}
+	int getNextExpectedZeroSegment();
 	int qualityAt(int segment); //
 	int expectedQualityAt(int segment);
 	void requestedBlock(int segment); // requests a segment
-	int findFirstZeroSegment(vector<int> *);
+	int getSize();
+	int advance(Codec *,VideoPlayback*, NetworkMonitor*); // advance nextSegment 'artificially' for policy selection
+	void retreat();  // move nextSegment back (must be called right after policy selection)
 
 };
 

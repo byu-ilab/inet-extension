@@ -16,17 +16,24 @@
 #include "MeanVerticalPolicy.h"
 #include <math.h>
 
-MeanVerticalPolicy::MeanVerticalPolicy() {
+MeanVerticalPolicy::MeanVerticalPolicy(int blockSize):blockSize(blockSize) {
 
 }
 
 MeanVerticalPolicy::~MeanVerticalPolicy() {
 	// TODO Auto-generated destructor stub
 }
-int MeanVerticalPolicy::selectSegment(ActiveRegion *buffer, VideoPlayback *playback, double rate) {
+int MeanVerticalPolicy::_selectSegment(ActiveRegion *buffer, VideoPlayback *playback,  NetworkMonitor * monitor) {
+	double rate = monitor->getMeanRate();
+	// quality-induced rate: (bits per second to blocks per segmentDuration)
+	rate = (playback->getSegmentDuration() *rate) / (8.0 * blockSize);
+	//cout<<"Mean Rate (blocks per second): "<<rate<<endl;
 	int N = playback->getNumSegments();
 	double index = N * (1.0 - (rate - (int)rate));
 	int nextIndex = buffer->getNextSegment();
+	if (rate < 1.0) {
+		return nextIndex;
+	}
 	for (int i=nextIndex; i < N; i++) {
 		if (buffer->expectedQualityAt(i) < (i < index ? floor(rate): ceil(rate))) {
 			return i;

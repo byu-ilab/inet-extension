@@ -33,6 +33,7 @@ private:
 	int id; // job id
 	int size; // size of job (application bytes)
 	int bytesReceived;
+	int lastReceiveAmount;
 	State state;
 public:
 	Job(int jobId, int size);
@@ -59,6 +60,8 @@ public:
 	 */
 	State getState();
 	void setState(State state);
+
+	int getLastBytesRecvd();
 };
 
 #endif /* SEGMENTSTATUS_H_ */

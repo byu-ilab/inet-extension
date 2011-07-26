@@ -17,7 +17,8 @@
 
 Job::Job(int jobId, int size):
 	id(jobId), size(size),
-	bytesReceived(0),state(QUEUEING){
+	bytesReceived(0),state(QUEUEING),
+	lastReceiveAmount(-1){
 	return;
 }
 Job::~Job() {}
@@ -32,6 +33,7 @@ void Job::receivedBytes(int numBytes) {
 	if (bytesReceived == size) {
 		state = COMPLETE;
 	}
+	lastReceiveAmount = numBytes;
 }
 /**
  * Bytes left
@@ -64,3 +66,9 @@ State Job::getState() {
 void Job::setState(State state) {
 	this->state = state;
 }
+
+int Job::getLastBytesRecvd() {
+	ASSERT(lastReceiveAmount != -1);
+	return lastReceiveAmount;
+}
+

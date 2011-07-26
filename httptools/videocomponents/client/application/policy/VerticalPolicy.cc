@@ -23,6 +23,6 @@ VerticalPolicy::VerticalPolicy() {
 VerticalPolicy::~VerticalPolicy() {
 
 }
-int VerticalPolicy::selectSegment(ActiveRegion * buffer, VideoPlayback * playback, double rate) {
+int VerticalPolicy::_selectSegment(ActiveRegion * buffer, VideoPlayback * playback,  NetworkMonitor * monitor) {
 	return buffer->getNextSegment();
 }

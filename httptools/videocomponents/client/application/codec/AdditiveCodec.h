@@ -13,17 +13,19 @@
 // along with this program.  If not, see http://www.gnu.org/licenses/.
 // 
 
-#ifndef VERTICALPOLICY_H_
-#define VERTICALPOLICY_H_
+#ifndef ADDITIVECODEC_H_
+#define ADDITIVECODEC_H_
 
-#include "IPolicy.h"
+#include "Codec.h"
 
-class VerticalPolicy: public IPolicy {
-public:
-	VerticalPolicy();
-	virtual ~VerticalPolicy();
+class AdditiveCodec: public Codec {
 private:
-	virtual int _selectSegment(ActiveRegion *, VideoPlayback *, NetworkMonitor * monitor);
+	int blockSize;
+public:
+	AdditiveCodec(int blockSize);
+	virtual ~AdditiveCodec();
+	virtual int getBlockSize(int segment, int quality);
+	virtual bool receivedBlock(ActiveRegion * buffer, int segment, int quality);
 };
 
-#endif /* VERTICALPOLICY_H_ */
+#endif /* ADDITIVECODEC_H_ */

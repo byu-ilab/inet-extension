@@ -17,12 +17,14 @@
 #define IPOLICY_H_
 #include "ActiveRegion.h"
 #include "VideoPlayback.h"
+#include "NetworkMonitor.h"
 
 class IPolicy {
+	virtual int _selectSegment(ActiveRegion *, VideoPlayback *, NetworkMonitor *) = 0;
 public:
 	IPolicy();
 	virtual ~IPolicy();
-	virtual int selectSegment(ActiveRegion *, VideoPlayback *, double rate) = 0;
+	virtual int selectSegment(Codec *,ActiveRegion *, VideoPlayback *, NetworkMonitor *);
 };
 
 #endif /* IPOLICY_H_ */

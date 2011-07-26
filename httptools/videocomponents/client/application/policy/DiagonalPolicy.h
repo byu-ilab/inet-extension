@@ -20,10 +20,11 @@
 
 class DiagonalPolicy: public IPolicy {
 public:
-	DiagonalPolicy();
+	DiagonalPolicy(double slope);
 	virtual ~DiagonalPolicy();
-	virtual int selectSegment(ActiveRegion *, VideoPlayback *, double rate);
 private:
+	double slope;
+	virtual int _selectSegment(ActiveRegion *, VideoPlayback *,  NetworkMonitor * monitor);
 	int findFirstZeroSegment(ActiveRegion *buffer, int nextIndex, int N);
 };
 

@@ -13,17 +13,25 @@
 // along with this program.  If not, see http://www.gnu.org/licenses/.
 // 
 
-#ifndef VERTICALPOLICY_H_
-#define VERTICALPOLICY_H_
+#include "NonAdditiveCodec.h"
+#include "ActiveRegion.h"
+#include <omnetpp.h>
+NonAdditiveCodec::NonAdditiveCodec(int baseBlockSize): baseBlockSize(baseBlockSize) {
+	// TODO Auto-generated constructor stub
 
-#include "IPolicy.h"
+}
 
-class VerticalPolicy: public IPolicy {
-public:
-	VerticalPolicy();
-	virtual ~VerticalPolicy();
-private:
-	virtual int _selectSegment(ActiveRegion *, VideoPlayback *, NetworkMonitor * monitor);
-};
+NonAdditiveCodec::~NonAdditiveCodec() {
+	// TODO Auto-generated destructor stub
+}
 
-#endif /* VERTICALPOLICY_H_ */
+int NonAdditiveCodec::getBlockSize(int segment, int quality) {
+	ASSERT(quality > 0);
+	return quality * baseBlockSize;
+}
+bool NonAdditiveCodec::receivedBlock(ActiveRegion * buffer, int segment, int quality) {
+	for (int i=0; i < quality; i++) {
+		buffer->receivedBlock(segment);
+	}
+	return true;
+}

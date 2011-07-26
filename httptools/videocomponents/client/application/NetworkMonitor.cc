@@ -14,15 +14,16 @@
 // 
 
 #include "NetworkMonitor.h"
-
 NetworkMonitor::NetworkMonitor() {
 	rtt = .1;
-	rate = 0;
-	rtt_alpha = 0.8; // sampled rarely, so we don't care abt. history.
-	rate_alpha = 0.3; // sampled often, so we care about history
+	rate = 0; // bits per second!!
+	rtt_alpha = 0.6; // sampled rarely, so we don't care abt. history.
+	rate_alpha = 0.25; // sampled often, so we care about history
 	last_recv_time = 0.0;
 	last_recv_bytes = 0;
 	send_time = 0.0;
+	totalBytes = 0;
+	timeElapsed = 0;
 }
 
 NetworkMonitor::~NetworkMonitor() {
@@ -38,6 +39,9 @@ void NetworkMonitor::updateRate() {
 	double dT = (simTime() - last_recv_time).dbl();
 	if (dT > 0.0) {
 		double currRate = last_recv_bytes * 8.0 / dT;
+		totalBytes += last_recv_bytes;
+		timeElapsed += dT;
+		//cout<<"TotalBytes: "<<totalBytes<<", timeElapsed: "<<timeElapsed<<endl;
 	    rate = rate_alpha * currRate + (1 - rate_alpha) * rate;
 	    last_recv_time = simTime();
 	    last_recv_bytes = 0;
@@ -45,12 +49,11 @@ void NetworkMonitor::updateRate() {
 
 }
 void NetworkMonitor::updateRTT() {
-	if (rttMeasurementPending()) {
-		double currRtt = (simTime() - send_time).dbl();
-	    rtt = rtt_alpha * currRtt + (1 - rtt_alpha) * rtt;
-		send_time = 0.0;
-	}
-
+	ASSERT(rttMeasurementPending());
+	double currRtt = (simTime() - send_time).dbl();
+	//cout<<"currRtt: "<<currRtt<<endl;
+	rtt = rtt_alpha * currRtt + (1 - rtt_alpha) * rtt;
+	send_time = 0.0;
 }
 double NetworkMonitor::getNextRequestTime(int bytesLeft) {
 	double secondsLeft = 8.0 * bytesLeft / rate;
@@ -60,3 +63,4 @@ double NetworkMonitor::getNextRequestTime(int bytesLeft) {
 void NetworkMonitor::receivedBytes(int numBytes) {
 	last_recv_bytes += numBytes;
 }
+

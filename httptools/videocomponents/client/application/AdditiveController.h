@@ -21,10 +21,19 @@
 #include "VideoPlayback.h"
 #include "ActiveRegion.h"
 #include "NetworkMonitor.h"
+#include "Codec.h"
 #include <map>
 #include "IApplicationControl.h"
-enum CallbackType{BEGIN=0,ADVANCE_PLAYBACK,SEND_REQUEST};
+enum CallbackType{BEGIN=0,ADVANCE_PLAYBACK,SEND_REQUEST,MEASURE_RATE};
 enum AdditiveState{BEFORE, CONNECTING, DOWNLOADING, DONE};
+struct Pair{
+	int segment;
+	int quality;
+	Pair(int s,int q):segment(s),quality(q) {}
+	Pair(const Pair & p):segment(p.segment),quality(p.quality) {}
+	Pair():segment(0),quality(0) {}
+};
+typedef map<int,Pair> JobMap;
 class AdditiveController: public IApplicationControl {
 private:
 	IModule * module;
@@ -32,8 +41,8 @@ private:
 	IPolicy * policy;
 	VideoPlayback * playback;
 	ActiveRegion buffer;
-	map<int, int> activeJobs; // job to segment.
-	int blockSize;
+	Codec * codec;
+	JobMap activeJobs; // job to segment/quality.
 	double segmentDuration;
 	int connId, oldConnId;
 	int nextJobId;
@@ -41,11 +50,23 @@ private:
 
 	// rate measurement
 	NetworkMonitor networkMonitor;
+	double rateMeasurementInterval;
 	int currJob;
 	int currJobProgress;
+	int currJobSize;
 	int lastJobSent;
 	simtime_t next_job_send_time; // estimated time to schedule next request.
 	bool isRequestPending;
+	unsigned counter;
+
+	// output
+	cOutVector o_rate;
+	cOutVector o_rtt;
+	cOutVector o_playbackQuality;
+	cOutVector o_missedBlocks;
+	cOutVector o_zeroSegments;
+	cOutVector o_bufferSize;
+	cOutVector o_connectionFailures; // 1 when down, 2 when back up.
 
     void sendRequest();
     void measureNetwork(int jobId);

@@ -20,9 +20,11 @@
 
 class MeanVerticalPolicy: public IPolicy {
 public:
-	MeanVerticalPolicy();
+	MeanVerticalPolicy(int);
 	virtual ~MeanVerticalPolicy();
-	virtual int selectSegment(ActiveRegion *, VideoPlayback *, double rate);
+private:
+	int blockSize;
+	virtual int _selectSegment(ActiveRegion *, VideoPlayback *, NetworkMonitor * monitor);
 };
 
 #endif /* MEANVERTICALPOLICY_H_ */

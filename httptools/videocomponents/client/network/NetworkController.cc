@@ -32,6 +32,7 @@ NetworkController::~NetworkController() {
 
 int NetworkController::addConnection() {
 	int s = socketmgr->socket(this);
+	socketmgr->setTimeout(s, 3.0);
 	socketmgr->connect(s, ipaddr_resolver->addressOf(controller->getServerModule(module->par("serverwww"))->getParentModule()).str(), module->par("port"));
 	sockets[s] = new Worker(s);
 	return s;
@@ -68,9 +69,11 @@ void NetworkController::resumeConnectionJobs(int oldConnId, int newConnId) {
 		job->setState(QUEUEING);
 		cPacket * request = generateRequest(left);
 		socketmgr->send(newConnId, request);
-		cout<<"Resending request of size "<<left<<" for job "<<job->getId()<<endl;
+		//cout<<"Resending request of size "<<left<<" for job "<<job->getId()<<endl;
 	}
-	socketmgr->recv(newConnId, Worker::RECV_MODE); // start recv'ing again!
+	if (queue.size() > 0) {
+		socketmgr->recv(newConnId, Worker::RECV_MODE); // start recv'ing again!
+	}
 }
 
 cPacket * NetworkController::generateRequest(int numBytes) {
