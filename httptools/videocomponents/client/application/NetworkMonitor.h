@@ -34,7 +34,7 @@ public:
 	virtual ~NetworkMonitor();
 	void setLastSendTime(simtime_t lastSendTime);
 	bool rttMeasurementPending();
-	void updateRate();
+	double updateRate();
 	void updateRTT();
 	double getNextRequestTime(int remainingBytes);
 	void receivedBytes(int numBytes);

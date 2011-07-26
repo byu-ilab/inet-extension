@@ -26,6 +26,7 @@
 #include "IApplicationControl.h"
 enum CallbackType{BEGIN=0,ADVANCE_PLAYBACK,SEND_REQUEST,MEASURE_RATE};
 enum AdditiveState{BEFORE, CONNECTING, DOWNLOADING, DONE};
+
 struct Pair{
 	int segment;
 	int quality;
@@ -35,6 +36,8 @@ struct Pair{
 };
 typedef map<int,Pair> JobMap;
 class AdditiveController: public IApplicationControl {
+	enum Policy {VERTICAL=0,MEANVERTICAL,HORIZONTAL,NONADDITIVE,
+		DIAG_N1,DIAG_NHALF,DIAG_N2,DIAG_NTHIRD,DIAG_N3,DIAG_NFOURTH,DIAG_N4};
 private:
 	IModule * module;
 	cSimpleModule * host;
@@ -61,6 +64,7 @@ private:
 
 	// output
 	cOutVector o_rate;
+	cOutVector o_rateSample;
 	cOutVector o_rtt;
 	cOutVector o_playbackQuality;
 	cOutVector o_missedBlocks;

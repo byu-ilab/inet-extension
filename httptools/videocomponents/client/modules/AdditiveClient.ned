@@ -32,10 +32,11 @@ simple AdditiveClient like IAdaptiveClient
  		
  		int numSockets = default(1);
  		double segmentDuration @unit(s) = default(2s); // seconds per chunk
- 		string policy = default("vertical");
+ 		//string policy = default("vertical");
+ 		int policy = default(0); // enumerated
  		double diagPolicySlope = default(-1.0);
  		int blockSize @unit(Byte) = default(10000B); // assumed linear increase in bytes per quality.
  		int numSegments = default(7); // duration of video
- 		double startTime @unit(s) = default(1s);
+ 		double startTime @unit(s) = uniform(0s,10s);
  		double rateMeasurementInterval @unit(s) = default(0.125s);
 }

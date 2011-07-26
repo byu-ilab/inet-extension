@@ -35,7 +35,7 @@ void NetworkMonitor::setLastSendTime(simtime_t lastSendTime) {
 bool NetworkMonitor::rttMeasurementPending() {
 	return send_time > 0.0;
 }
-void NetworkMonitor::updateRate() {
+double NetworkMonitor::updateRate() {
 	double dT = (simTime() - last_recv_time).dbl();
 	if (dT > 0.0) {
 		double currRate = last_recv_bytes * 8.0 / dT;
@@ -46,6 +46,7 @@ void NetworkMonitor::updateRate() {
 	    last_recv_time = simTime();
 	    last_recv_bytes = 0;
 	}
+	return dT;
 
 }
 void NetworkMonitor::updateRTT() {

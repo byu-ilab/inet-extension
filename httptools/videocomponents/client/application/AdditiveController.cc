@@ -25,28 +25,63 @@
 AdditiveController::AdditiveController(IModule * module, cSimpleModule * mainModule):
 	module(module), host(mainModule), buffer(mainModule->par("segmentDuration")) {
 
-	string policy_s = host->par("policy").str();
+	/*string policy_s = host->par("policy").str();
 	policy_s.erase(
 	    remove( policy_s.begin(), policy_s.end(), '\"' ),
 	    policy_s.end()
 	    );
-	cout<<"Policy: "<<policy_s<<endl;
+	    */
+	int pol_enum = host->par("policy");
+	double slope = -1.0;
+
+	cout<<"Policy: "<<pol_enum<<endl;
 	codec = NULL;
-	if (policy_s.compare("vertical") == 0) {
+	switch(pol_enum) {
+	case VERTICAL:
 		policy = new VerticalPolicy();
-	} else if (policy_s.compare("meanvertical") == 0) {
+		break;
+	case MEANVERTICAL:
 		codec = new AdditiveCodec(host->par("blockSize"));
 		policy = new MeanVerticalPolicy(codec->getBlockSize(0,1));
-	} else if (policy_s.compare("horizontal") == 0) {
+		break;
+	case HORIZONTAL:
 		policy = new HorizontalPolicy();
-	} else if (policy_s.compare("diagonal") == 0) {
-		double slope = host->par("diagPolicySlope");
-		policy = new DiagonalPolicy(slope);
-	} else if (policy_s.compare("nonadditive") == 0) {
+		break;
+	case NONADDITIVE:
 		codec = new NonAdditiveCodec(host->par("blockSize"));
 		policy = new NonAdditivePolicy(0.8, codec);
-	} else {
+		break;
+	case DIAG_N1:
+		slope = -1.0;
+		policy = new DiagonalPolicy(slope);
+		break;
+	case DIAG_NHALF:
+		slope = -0.5;
+		policy = new DiagonalPolicy(slope);
+		break;
+	case DIAG_N2:
+		slope = -2.0;
+		policy = new DiagonalPolicy(slope);
+		break;
+	case DIAG_NTHIRD:
+		slope = -1.0 / 3;
+		policy = new DiagonalPolicy(slope);
+		break;
+	case DIAG_N3:
+		slope = -3.0;
+		policy = new DiagonalPolicy(slope);
+		break;
+	case DIAG_NFOURTH:
+		slope = -0.25;
+		policy = new DiagonalPolicy(slope);
+		break;
+	case DIAG_N4:
+		slope = -4.0;
+		policy = new DiagonalPolicy(slope);
+		break;
+	default:
 		host->error("Unknown policy.");
+		break;
 	}
 	if (!codec) {
 		codec = new AdditiveCodec(host->par("blockSize"));
@@ -68,6 +103,7 @@ AdditiveController::AdditiveController(IModule * module, cSimpleModule * mainMod
 	module->scheduleCallback(start_time, BEGIN);
 
 	o_rate.setName("rate");
+	o_rateSample.setName("sampledRate");
 	o_rtt.setName("rtt");
 	o_playbackQuality.setName("quality");
 	o_missedBlocks.setName("missedBlocks");
@@ -221,7 +257,7 @@ void AdditiveController::handleCallback(short type) {
 		sendRequest();
 		break;
 	case MEASURE_RATE:
-		networkMonitor.updateRate();
+		o_rateSample.record(networkMonitor.updateRate());
 		o_rate.record(networkMonitor.getRate());
 		if (state != DONE && playback->canDownload()) {
 			rescheduleNextRequest(currJob);
