@@ -18,7 +18,7 @@ NetworkMonitor::NetworkMonitor() {
 	rtt = .1;
 	rate = 0; // bits per second!!
 	rtt_alpha = 0.6; // sampled rarely, so we don't care abt. history.
-	rate_alpha = 0.25; // sampled often, so we care about history
+	rate_alpha = 0.125; // sampled often, so we care about history
 	last_recv_time = 0.0;
 	last_recv_bytes = 0;
 	send_time = 0.0;
@@ -37,8 +37,8 @@ bool NetworkMonitor::rttMeasurementPending() {
 }
 double NetworkMonitor::updateRate() {
 	double dT = (simTime() - last_recv_time).dbl();
+	double currRate = last_recv_bytes * 8.0 / dT;
 	if (dT > 0.0) {
-		double currRate = last_recv_bytes * 8.0 / dT;
 		totalBytes += last_recv_bytes;
 		timeElapsed += dT;
 		//cout<<"TotalBytes: "<<totalBytes<<", timeElapsed: "<<timeElapsed<<endl;
@@ -46,7 +46,7 @@ double NetworkMonitor::updateRate() {
 	    last_recv_time = simTime();
 	    last_recv_bytes = 0;
 	}
-	return dT;
+	return currRate;
 
 }
 void NetworkMonitor::updateRTT() {
