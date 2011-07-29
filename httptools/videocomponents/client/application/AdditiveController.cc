@@ -23,7 +23,10 @@
 #include "NonAdditiveCodec.h"
 
 AdditiveController::AdditiveController(IModule * module, cSimpleModule * mainModule):
-	module(module), host(mainModule), buffer(mainModule->par("segmentDuration")) {
+	module(module), host(mainModule), buffer(mainModule->par("segmentDuration"),
+	mainModule->par("maxBufferSizeKB")),networkMonitor(mainModule->par("rttMeasurementAlpha"),
+	mainModule->par("rateMeasurementAlpha"),mainModule->par("meanRateAlpha"),
+	mainModule->par("useRealMean")) {
 
 	/*string policy_s = host->par("policy").str();
 	policy_s.erase(
@@ -37,45 +40,45 @@ AdditiveController::AdditiveController(IModule * module, cSimpleModule * mainMod
 	cout<<"Policy: "<<pol_enum<<endl;
 	codec = NULL;
 	switch(pol_enum) {
-	case VERTICAL:
+	case VERTICAL: // 0
 		policy = new VerticalPolicy();
 		break;
-	case MEANVERTICAL:
+	case MEANVERTICAL: // 1
 		codec = new AdditiveCodec(host->par("blockSize"));
 		policy = new MeanVerticalPolicy(codec->getBlockSize(0,1));
 		break;
-	case HORIZONTAL:
+	case HORIZONTAL: // 2
 		policy = new HorizontalPolicy();
 		break;
-	case NONADDITIVE:
+	case NONADDITIVE: // 3
 		codec = new NonAdditiveCodec(host->par("blockSize"));
 		policy = new NonAdditivePolicy(0.8, codec);
 		break;
-	case DIAG_N1:
+	case DIAG_N1: // 4
 		slope = -1.0;
 		policy = new DiagonalPolicy(slope);
 		break;
-	case DIAG_NHALF:
+	case DIAG_NHALF: // 5
 		slope = -0.5;
 		policy = new DiagonalPolicy(slope);
 		break;
-	case DIAG_N2:
+	case DIAG_N2: // 6
 		slope = -2.0;
 		policy = new DiagonalPolicy(slope);
 		break;
-	case DIAG_NTHIRD:
+	case DIAG_NTHIRD: // 7
 		slope = -1.0 / 3;
 		policy = new DiagonalPolicy(slope);
 		break;
-	case DIAG_N3:
+	case DIAG_N3: // 8
 		slope = -3.0;
 		policy = new DiagonalPolicy(slope);
 		break;
-	case DIAG_NFOURTH:
+	case DIAG_NFOURTH: // 9
 		slope = -0.25;
 		policy = new DiagonalPolicy(slope);
 		break;
-	case DIAG_N4:
+	case DIAG_N4: // 10
 		slope = -4.0;
 		policy = new DiagonalPolicy(slope);
 		break;
@@ -243,7 +246,7 @@ void AdditiveController::handleCallback(short type) {
 		network->addConnection();
 		break;
 	case ADVANCE_PLAYBACK:
-		o_bufferSize.record(buffer.getSize());
+		o_bufferSize.record(buffer.getSize(false,NULL));
 		qual = playback->advanceHead(&buffer);
 		//cout<<"At t="<<simTime()<<", qual="<<qual<<endl;
 		if (!playback->videoBuffering() && !playback->videoComplete()) {
@@ -257,10 +260,12 @@ void AdditiveController::handleCallback(short type) {
 		sendRequest();
 		break;
 	case MEASURE_RATE:
-		o_rateSample.record(networkMonitor.updateRate());
-		o_rate.record(networkMonitor.getRate());
+		o_rateSample.record(networkMonitor.updateRate()); // returns sampled rate
+		o_rate.record(networkMonitor.getRate()); // returns smoothed rate.
 		if (state != DONE && playback->canDownload()) {
-			rescheduleNextRequest(currJob);
+			if (!buffer.isFull(codec)) {
+				rescheduleNextRequest(currJob);
+			}
 			module->scheduleCallback(simTime() + rateMeasurementInterval, MEASURE_RATE);
 		}
 		break;

@@ -39,4 +39,9 @@ simple AdditiveClient like IAdaptiveClient
  		int numSegments = default(7); // duration of video
  		double startTime @unit(s) = uniform(0s,10s);
  		double rateMeasurementInterval @unit(s) = default(0.125s);
+ 		double rateMeasurementAlpha = default(0.125);
+ 		double rttMeasurementAlpha = default(0.6);
+ 		double meanRateAlpha = default(0.02);
+ 		bool useRealMean = default(false); // for meanVertical (rate est. for larger timescales of about 1 minute)
+ 		int maxBufferSizeKB = default(5000000); // maximum buffer size.
 }

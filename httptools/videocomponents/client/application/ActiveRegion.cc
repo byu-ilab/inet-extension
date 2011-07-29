@@ -17,7 +17,9 @@
 #include "NetworkMonitor.h"
 #include "VideoPlayback.h"
 
-ActiveRegion::ActiveRegion(double segmentDuration):segmentDuration(segmentDuration), nextSegment(0), offset(0) {
+ActiveRegion::ActiveRegion(double segmentDuration,int maxBufferSizeKB):
+	segmentDuration(segmentDuration), nextSegment(0), offset(0) {
+	maxBuffer_bytes = 1000 * maxBufferSizeKB;
 }
 
 ActiveRegion::~ActiveRegion() {
@@ -77,13 +79,30 @@ void ActiveRegion::requestedBlock(int segment) {
 		expectedRegion[segment - nextSegment]+= 1;
 	}
 }
-int ActiveRegion::getSize() {
-	int total = 0;
+int64_t ActiveRegion::getSize(bool inBytes, Codec * codec) {
+	ASSERT(!inBytes || codec); // no null codec if inbytes is true.
+	int64_t total = 0;
 	vector<int>::iterator it = region.begin();
-	for(; it != region.end(); it++) {
-		total += *it;
+	for(int i=nextSegment; it != region.end(); it++,i++) {
+		int ql = *it;
+		total += (inBytes?codec->getBlockSize(i,ql):ql);
 	}
 	return total;
+}
+int64_t ActiveRegion::getExpectedSize(bool inBytes, Codec * codec) {
+	ASSERT(!inBytes || codec); // no null codec if inbytes is true.
+	int64_t total = 0;
+	vector<int>::iterator it = expectedRegion.begin();
+	for(int i=nextSegment; it != expectedRegion.end(); it++,i++) {
+		int ql = *it;
+		total += (inBytes?codec->getBlockSize(i,ql):ql);
+	}
+	return total;
+}
+bool ActiveRegion::isFull(Codec * codec) {
+	return getExpectedSize(true, codec) >=
+			maxBuffer_bytes - codec->getBlockSize(nextSegment,1);
+	// Todo: is this block size the max of possible choices?
 }
 int ActiveRegion::advance(Codec * codec, VideoPlayback * playback, NetworkMonitor * monitor) {
 	int offset_l = 0;

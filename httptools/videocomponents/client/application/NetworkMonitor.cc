@@ -14,11 +14,13 @@
 // 
 
 #include "NetworkMonitor.h"
-NetworkMonitor::NetworkMonitor() {
+NetworkMonitor::NetworkMonitor(double rttAlpha, double rateAlpha, double meanAlpha, bool realMean) {
 	rtt = .1;
 	rate = 0; // bits per second!!
-	rtt_alpha = 0.6; // sampled rarely, so we don't care abt. history.
-	rate_alpha = 0.125; // sampled often, so we care about history
+	rtt_alpha = rttAlpha; // sampled rarely, so we don't care abt. history.
+	rate_alpha = rateAlpha; // sampled often, so we care about history
+	mean_alpha = meanAlpha;
+	this->realMean = realMean;
 	last_recv_time = 0.0;
 	last_recv_bytes = 0;
 	send_time = 0.0;
@@ -43,6 +45,7 @@ double NetworkMonitor::updateRate() {
 		timeElapsed += dT;
 		//cout<<"TotalBytes: "<<totalBytes<<", timeElapsed: "<<timeElapsed<<endl;
 	    rate = rate_alpha * currRate + (1 - rate_alpha) * rate;
+	    meanRate = mean_alpha * currRate + (1 - mean_alpha) * meanRate;
 	    last_recv_time = simTime();
 	    last_recv_bytes = 0;
 	}
@@ -55,6 +58,10 @@ void NetworkMonitor::updateRTT() {
 	//cout<<"currRtt: "<<currRtt<<endl;
 	rtt = rtt_alpha * currRtt + (1 - rtt_alpha) * rtt;
 	send_time = 0.0;
+}
+double NetworkMonitor::getMeanRate(){
+	if (timeElapsed == 0) return 0;
+	return 8.0 * totalBytes / timeElapsed;
 }
 double NetworkMonitor::getNextRequestTime(int bytesLeft) {
 	double secondsLeft = 8.0 * bytesLeft / rate;

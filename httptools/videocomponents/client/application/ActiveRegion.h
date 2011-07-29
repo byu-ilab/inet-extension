@@ -32,8 +32,12 @@ private:
 	int nextSegment; // 0-based index of next segment to be played
 	int offset; // used to change appearance of active region for the policy.
 				// important in expectedQualityAt() method.
+	int64_t maxBuffer_bytes;
+
+	int64_t getExpectedSize(bool inBytes, Codec * codec);
+
 public:
-	ActiveRegion(double segmentDuration);
+	ActiveRegion(double segmentDuration, int maxBufferSizeKB);
 	virtual ~ActiveRegion();
 	int shift();
 	bool hasAvailableVideo();
@@ -43,7 +47,8 @@ public:
 	int qualityAt(int segment); //
 	int expectedQualityAt(int segment);
 	void requestedBlock(int segment); // requests a segment
-	int getSize();
+	int64_t getSize(bool inBytes, Codec * codec);
+	bool isFull(Codec * codec);
 	int advance(Codec *,VideoPlayback*, NetworkMonitor*); // advance nextSegment 'artificially' for policy selection
 	void retreat();  // move nextSegment back (must be called right after policy selection)
 

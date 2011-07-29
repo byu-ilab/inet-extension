@@ -20,17 +20,20 @@
 using namespace std;
 class NetworkMonitor {
 private:
+	bool realMean; // for getMeanRate(), use real mean or EWMA with mean_alpha
 	double rtt; // seconds
 	double rate; // bps
+	double meanRate; // bps
 	int totalBytes; //
 	double timeElapsed;
 	double rtt_alpha; // params for ewmas.
+	double mean_alpha;
 	double rate_alpha;
 	simtime_t last_recv_time; // time of last received packet.
 	int last_recv_bytes; // bytes received since last rate update.
 	simtime_t send_time; // time of sending packet measuring rtt.
 public:
-	NetworkMonitor();
+	NetworkMonitor(double rttAlpha, double rateAlpha, double meanRateAlpha, bool realMean);
 	virtual ~NetworkMonitor();
 	void setLastSendTime(simtime_t lastSendTime);
 	bool rttMeasurementPending();
@@ -39,7 +42,7 @@ public:
 	double getNextRequestTime(int remainingBytes);
 	void receivedBytes(int numBytes);
 	double getRate() {return rate;}
-	double getMeanRate() {if (timeElapsed == 0) return 0;return 8.0 * totalBytes / timeElapsed;}
+	double getMeanRate();
 	double getRTT() {return rtt;}
 };
 
