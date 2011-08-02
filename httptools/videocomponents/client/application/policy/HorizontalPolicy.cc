@@ -44,5 +44,6 @@ int HorizontalPolicy::_selectSegment(ActiveRegion *buffer, VideoPlayback *playba
 			return i;
 		}
 	}
-	return -1;
+	//ASSERT(false);
+	return N-1;
 }
