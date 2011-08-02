@@ -24,7 +24,7 @@
 
 AdditiveController::AdditiveController(IModule * module, cSimpleModule * mainModule):
 	module(module), host(mainModule), buffer(mainModule->par("segmentDuration"),
-	mainModule->par("maxBufferSizeKB")),networkMonitor(mainModule->par("rttMeasurementAlpha"),
+	mainModule->par("maxBufferSizeKB"), mainModule->par("epsilon")),networkMonitor(mainModule->par("rttMeasurementAlpha"),
 	mainModule->par("rateMeasurementAlpha"),mainModule->par("meanRateAlpha"),
 	mainModule->par("useRealMean")) {
 

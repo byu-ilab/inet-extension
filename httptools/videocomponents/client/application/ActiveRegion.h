@@ -33,11 +33,12 @@ private:
 	int offset; // used to change appearance of active region for the policy.
 				// important in expectedQualityAt() method.
 	int64_t maxBuffer_bytes;
+	double epsilon; // when avoiding missed deadlines, this is the amount of 'grace time' we get.
 
 	int64_t getExpectedSize(bool inBytes, Codec * codec);
 
 public:
-	ActiveRegion(double segmentDuration, int maxBufferSizeKB);
+	ActiveRegion(double segmentDuration, int maxBufferSizeKB, double epsilon);
 	virtual ~ActiveRegion();
 	int shift();
 	bool hasAvailableVideo();

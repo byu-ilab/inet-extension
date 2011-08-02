@@ -17,8 +17,8 @@
 #include "NetworkMonitor.h"
 #include "VideoPlayback.h"
 
-ActiveRegion::ActiveRegion(double segmentDuration,int maxBufferSizeKB):
-	segmentDuration(segmentDuration), nextSegment(0), offset(0) {
+ActiveRegion::ActiveRegion(double segmentDuration,int maxBufferSizeKB, double epsilon):
+	segmentDuration(segmentDuration), epsilon(epsilon), nextSegment(0), offset(0) {
 	maxBuffer_bytes = 1000 * maxBufferSizeKB;
 }
 
@@ -113,7 +113,7 @@ int ActiveRegion::advance(Codec * codec, VideoPlayback * playback, NetworkMonito
 		int quality = expectedQualityAt(i) + 1;
 		int blockSizeBytes = codec->getBlockSize(i, quality);
 		double completionTime =(monitor->getRTT() + ( 8.0 * blockSizeBytes / monitor->getRate()));
-		double completionSegmentOffset = completionTime / segmentDuration;
+		double completionSegmentOffset = completionTime / segmentDuration + epsilon;
 		double head = playback->getExactHeadPosition();
 		bool offsetInsufficient = floor(head + completionSegmentOffset) - floor(head) > offset_l;
 		if (!offsetInsufficient) {

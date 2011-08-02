@@ -41,6 +41,7 @@ simple AdditiveClient like IAdaptiveClient
  		double rateMeasurementInterval @unit(s) = default(0.125s);
  		double rateMeasurementAlpha = default(0.125);
  		double rttMeasurementAlpha = default(0.6);
+ 		double epsilon @unit(s) = default(0.5s);
  		double meanRateAlpha = default(0.02);
  		bool useRealMean = default(false); // for meanVertical (rate est. for larger timescales of about 1 minute)
  		int maxBufferSizeKB = default(5000000); // maximum buffer size.
