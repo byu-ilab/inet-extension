@@ -257,7 +257,9 @@ void AdditiveController::handleCallback(short type) {
 		}
 		break;
 	case SEND_REQUEST:
-		sendRequest();
+		if (playback->canDownload()) {
+			sendRequest();
+		}
 		break;
 	case MEASURE_RATE:
 		o_rateSample.record(networkMonitor.updateRate()); // returns sampled rate

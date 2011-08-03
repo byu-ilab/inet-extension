@@ -121,6 +121,9 @@ int ActiveRegion::advance(Codec * codec, VideoPlayback * playback, NetworkMonito
 		}
 
 	}
+	if(offset_l + nextSegment == playback->getNumSegments() && offset_l > 0) {
+		offset_l--; // don't want offset to push us past video.
+	}
 	/*if (expectedQualityAt(nextSegment) > 0) {
 		double completionTime =(monitor->getRTT() + ( 8.0 * blockSize / monitor->getRate()));
 		//cout<<"At "<<simTime()<<", completionTime is "<<completionTime<<endl;
