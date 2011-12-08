@@ -31,6 +31,6 @@ int IPolicy::selectSegment(Codec * codec, ActiveRegion *buffer, VideoPlayback *p
 	//cout<<"Selecting "<<segment<<", offset of "<<offset;
 	buffer->requestedBlock(segment);
 	//cout<<", Running total for segment: "<<buffer->expectedQualityAt(segment)<<endl;
-	//cout<<"With nextSegment "<<buffer->getNextSegment()<<" Chose segment "<<segment<<endl;
+	cout<<"With nextSegment "<<buffer->getNextSegment()<<" Chose segment "<<segment<<endl;
 	return segment;
 }
